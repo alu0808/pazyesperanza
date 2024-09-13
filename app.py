@@ -1,15 +1,17 @@
-from logging import StreamHandler
 import os
 from datetime import datetime
 from flask import Flask, jsonify, logging, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import func
+import logging
 
 app = Flask(__name__)
+
+# Configuración del logging
 if not app.debug:
-    stream_handler = StreamHandler()
-    stream_handler.setLevel(logging.INFO)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.INFO)  # Configura el nivel de logging como INFO
     app.logger.addHandler(stream_handler)
 
 app.config['SECRET_KEY'] = 'fhg563235453663434576377355246362463634573t32erf'
