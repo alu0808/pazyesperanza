@@ -8,10 +8,16 @@ from sqlalchemy import func
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'fhg563235453663434576377355246362463634573t32erf'
 
-# Configuración de la conexión a MySQL
-# app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('JAWSDB_URL')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Qsccsq.1221@localhost/pazyesperanza'
+# Configuración de la conexión a la base de datos
+# Verifica si la aplicación está en el entorno de Heroku (usará DATABASE_URL)
+# o si está en tu entorno local (usará la base de datos local)
+if os.getenv('DATABASE_URL'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL').replace("mysql://", "mysql+pymysql://")
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Qsccsq.1221@localhost/pazyesperanza'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 
 db = SQLAlchemy(app)
 # Después de la configuración de la base de datos (db = SQLAlchemy(app))
