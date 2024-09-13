@@ -1,0 +1,165 @@
+/* Incluir la fuente Roboto desde Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+/* Estilos para el título principal */
+*{
+    font-family: 'Roboto', sans-serif; /* Usar la fuente Roboto */ 
+}
+/* Ajustes para hacer la tabla más compacta */
+table {
+    font-size: 0.8rem;
+}
+table th, table td {
+    padding: 0.15rem;
+    vertical-align: middle;
+}
+.form-control {
+    padding: 0.2rem;
+    font-size: 0.8rem;
+    /* margin-bottom: 10px; Espacio debajo de cada input */
+    font-family: 'Roboto', sans-serif; /* Usar la fuente Roboto */
+}
+
+h4 {
+    font-size: 0.8rem;
+}
+
+.alert-container {
+    height: 45px; /* Altura fija para reservar el espacio */
+    margin-bottom: 10px; /* Un margen opcional para separar la alerta del formulario */
+    font-family: 'Roboto', sans-serif; /* Usar la fuente Roboto */
+}
+
+.alert_mod {
+    display: flex; /* Usamos flexbox para centrar el contenido */
+    /* justify-content: center; Centrar horizontalmente */
+    align-items: center; /* Centrar verticalmente */
+    height: 100%; /* Aseguramos que ocupe el 100% del contenedor */
+    /* font-size: 16px; Ajusta el tamaño de la fuente según sea necesario */
+}
+
+.title-bar {
+    background-color: #383838; /* Color de fondo verde */
+    color: white; /* Color de texto blanco */
+    padding: 15px 0; /* Espaciado arriba y abajo */
+    font-weight: bold;
+    text-align: center; /* Alinear el texto al centro */
+    font-size: 1.3rem;
+    margin-bottom: 50px; /* Espacio debajo del título */
+    font-family: 'Roboto', sans-serif; /* Usar la fuente Roboto */
+}
+
+/* Estilos para los cuadros de las secciones */
+.section-box {
+    border: 2px solid #18834d; /* Borde verde */
+    padding: 20px; /* Espaciado interno */
+    margin-bottom: 30px; /* Espacio entre las secciones */
+    border-radius: 5px; /* Esquinas redondeadas */
+    font-family: 'Roboto', sans-serif; /* Usar la fuente Roboto */
+    height: 100%; /* Asegura que todas las secciones tengan la misma altura */
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: #f9f9f9; /* Un fondo ligeramente gris */
+}
+
+/* Estilos para los títulos de las secciones */
+.section-box h4 {
+    background-color: #1c9c5c; /* Color de fondo verde */
+    color: white; /* Color de texto blanco */
+    padding: 10px; /* Espaciado del título */
+    border-radius: 5px 5px 0 0; /* Esquinas redondeadas solo arriba */
+    margin-top: -35px; /* Para que el título sobresalga del cuadro */
+    margin-bottom: 20px; /* Espacio debajo del título */
+    text-align: center; /* Alinear el título al centro */
+    font-family: 'Roboto', sans-serif; /* Usar la fuente Roboto */
+    font-size: 0.8rem;
+    font-weight: 700; /* Más peso para hacerlo destacar */
+}
+
+/* Estilo para mantener las columnas del mismo tamaño */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.col-md-6 {
+    display: flex;
+    flex-direction: column;
+}
+
+.col-md-6 > .section-box {
+    flex: 1;
+}
+
+/* Responsive: Para pantallas pequeñas (móviles) */
+@media (max-width: 768px) {
+    .row > .col-md-6 {
+        margin-bottom: 20px;
+    }
+
+    .section-box {
+        margin-top: 0 !important; /* Restablece el margen en pantallas pequeñas */
+        
+    }
+
+    .title-bar {
+        font-size: 1rem; /* Tamaño de fuente reducido en pantallas pequeñas */
+    }
+
+    .section-box h4 {
+        font-size: 0.8rem; /* Tamaño de fuente reducido en pantallas pequeñas */
+    }
+}
+
+/* @media (max-width: 576px) {
+    .table-responsive {
+        overflow-x: auto;
+    }
+    table {
+        width: 100%;
+        min-width: 500px;
+    }
+    table th, table td {
+        white-space: nowrap;
+    }
+} */
+
+/* Estilo para poner en negrita solo los labels principales */
+.label-principal {
+    font-family: 'Roboto', sans-serif; /* Opcional: aplicar también la fuente Roboto */
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.form-check-label{
+    font-family: 'Roboto', sans-serif; /* Opcional: aplicar también la fuente Roboto */
+    font-size: 0.8rem;
+}
+
+/* Asegurarse de que el botón esté bien alineado en la parte inferior */
+.d-flex.align-items-center {
+    justify-content: center; /* Alinear el botón al final de la columna */
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+}
+
+.btn-block {
+    width: 20%; /* Haz que el botón ocupe solo el 20% del ancho */
+}
+
+.alert {
+    margin-bottom: 30px; /* Añade espacio debajo del mensaje flash */
+}
+
+th{
+    font-size: 0.6rem;
+    text-align: center; /* Centrar el texto horizontalmente */
+    vertical-align: middle; /* Centrar el texto verticalmente */
+    padding: 10px; /* Añadir padding para darle un poco de espacio */
+}
+
+.input-clarity {
+    background-color: #fbfbfb; /* Un fondo más claro */
+}

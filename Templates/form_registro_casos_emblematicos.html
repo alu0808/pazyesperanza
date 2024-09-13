@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Caso Emblematico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <style>
+        /* Nueva barra con logo y nombre de la empresa */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1d7c3a;
+            color: white;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+        }
+
+        .title-bar-company img {
+            height: 40px; /* Ajusta la altura del logo */
+        }
+
+        @media (min-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                margin-bottom: 40px;
+            }
+            .title-bar-company img {
+                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
+            }
+            
+        }
+        .title-bar {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 7px;
+            font-size: 1rem;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra superior con el nombre de la empresa y el logo -->
+    <div class="title-bar-company">
+        <img src="/static/images/logo.png" alt="Logo de la empresa">
+    </div>
+    <!-- Título Principal -->
+    <div class="title-bar">
+        Registro de Caso Emblematico
+    </div>
+    <div class="container mt-5">
+        <!-- Mostrar mensajes flash -->
+        <div class="alert-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert alert_mod alert-{{ messages[0][0] }}">
+                        {{ messages[0][1] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <form method="POST" action="/form_registro_casos_emblematicos">
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Datos del caso</h4>
+                        <!-- Nombre genérico del caso (llave primaria) -->
+                        <div class="form-group">
+                            <label for="nombre_caso" class="label-principal">Nombre genérico del Caso:</label>
+                            <input type="text" id="nombre_caso" name="nombre_caso" class="form-control" required>
+                        </div>
+                        <!-- Número de Expediente -->
+                        <div class="form-group">
+                            <label for="numero_expediente" class="label-principal">N° de Expediente:</label>
+                            <input type="text" id="numero_expediente" name="numero_expediente" class="form-control">
+                        </div>
+
+                        <!-- Sala -->
+                        <div class="form-group">
+                            <label for="sala" class="label-principal">Sala:</label>
+                            <input type="text" id="sala" name="sala" class="form-control">
+                        </div>
+
+                        <!-- Antecedentes -->
+                        <div class="form-group">
+                            <label for="antecedentes" class="label-principal">Antecedentes:</label>
+                            <textarea id="antecedentes" name="antecedentes" class="form-control" rows="3"></textarea>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Segunda columna: Número de Expediente, Sala, Antecedentes -->
+                <div class="col-md-6">
+                    <div class="section-box mt-3 label-principal">
+                        <h4>Información adicional</h4>
+
+                        <!-- Breve descripción del caso -->
+                        <div class="form-group">
+                            <label for="descripcion_caso" >Breve descripción del Caso que se sigue:</label>
+                            <textarea id="descripcion_caso" name="descripcion_caso" class="form-control" rows="5"></textarea>
+                        </div>
+
+                        <!-- Número de personas/familias afectadas -->
+                        <div class="form-group">
+                            <label for="numero_afectados" >Número de personas / familias afectadas:</label>
+                            <input type="number" id="numero_afectados" name="numero_afectados" class="form-control" min="0">
+                        </div>
+
+                        <!-- Objetivo que se persigue con/desde la defensa -->
+                        <div class="form-group">
+                            <label for="objetivo_defensa" >Objetivo que se persigue con/desde la defensa de Paz y Esperanza:</label>
+                            <textarea id="objetivo_defensa" name="objetivo_defensa" class="form-control" rows="5"></textarea>
+                        </div>
+                        
+                    </div>
+                </div>
+
+                
+            </div>
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3 label-principal">
+                        <h4>Información adicional</h4>
+                        <div class="form-group">
+                            <label for="situacion_caso">Situación actual del Caso:</label>
+                            <textarea id="situacion_caso" name="situacion_caso" class="form-control" rows="3"></textarea>
+                        </div>
+                        <!-- Otro dato relevante -->
+                        <div class="form-group">
+                            <label for="otro_dato">Otro dato relevante:</label>
+                            <textarea id="otro_dato" name="otro_dato" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de navegación -->
+            <div class="row justify-content-end mt-3 mb-5">
+                <div class="col-md-3 d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary btn-sm text-center mr-3 flex-grow-1" style="font-size: 1rem;" onclick="window.location.href='/'">Ir al menú</button>
+                    <!-- <button type="button" class="btn btn-success btn-sm text-center mr-3 flex-grow-1" style="font-size: 1rem;" onclick="window.location.href='/form_registro_inicial'">Ir a Registro</button> -->
+                    <button type="submit" class="btn btn-primary btn-sm text-center flex-grow-1" style="font-size: 1rem;">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

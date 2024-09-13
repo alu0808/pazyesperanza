@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Iniciativa o Propuesta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <style>
+        .mostrar {
+            display: block;
+        }
+
+        .ocultar {
+            display: none;
+        }
+        .title-bar {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 7px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        /* Nueva barra con logo y nombre de la empresa */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1d7c3a;
+            color: white;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+        }
+
+        .title-bar-company img {
+            height: 40px; /* Ajusta la altura del logo */
+        }
+
+        @media (min-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                margin-bottom: 40px;
+            }
+            .title-bar-company img {
+                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
+            }
+            
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra superior con el nombre de la empresa y el logo -->
+    <div class="title-bar-company">
+        <img src="/static/images/logo.png" alt="Logo de la empresa">
+    </div>
+    <!-- Título Principal -->
+    <div class="title-bar">
+        Editar Iniciativa o Propuesta
+    </div>
+
+    <div class="container mt-5">
+        <!-- Mostrar mensajes flash -->
+        <div class="alert-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert alert_mod alert-{{ messages[0][0] }}">
+                        {{ messages[0][1] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <form method="POST" action="/editar_iniciativa/{{ iniciativa.nombre_iniciativa }}">
+            <div class="row mt-4">
+                <!-- Columna izquierda -->
+                <div class="col-md-6">
+                    <!-- Sección 1: Nombre de la Iniciativa o Propuesta -->
+                    <div class="section-box">
+                        <h4>Nombre de la Iniciativa o Propuesta</h4>
+                        <div class="form-group">
+                            <label class="label-principal" for="nombre_iniciativa">Nombre de la iniciativa:</label>
+                            <input type="text" class="form-control" id="nombre_iniciativa" name="nombre_iniciativa" value="{{ iniciativa.nombre_iniciativa }}" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Sección 3: Derecho Genérico en el que se Inscribe -->
+                    <div class="section-box ">
+                        <h4>Derecho Genérico en el que se Inscribe</h4>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="derecho_generico" value="Vida libre de violencia y discriminación" {% if iniciativa.derecho_generico == 'Vida libre de violencia y discriminación' %}checked{% endif %}>
+                                <label class="form-check-label" for="derecho_generico1">Vida libre de violencia y discriminación</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="derecho_generico" value="Calidad e igualdad de oportunidades en la educación" {% if iniciativa.derecho_generico == 'Calidad e igualdad de oportunidades en la educación' %}checked{% endif %}>
+                                <label class="form-check-label" for="derecho_generico2">Calidad e igualdad de oportunidades en la educación</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="derecho_generico" value="Seguridad jurídica de los territorios y justicia ambiental" {% if iniciativa.derecho_generico == 'Seguridad jurídica de los territorios y justicia ambiental' %}checked{% endif %}>
+                                <label class="form-check-label" for="derecho_generico3">Seguridad jurídica de los territorios y justicia ambiental</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="derecho_generico" value="Entornos seguros y libres de riesgos de desastres" {% if iniciativa.derecho_generico == 'Entornos seguros y libres de riesgos de desastres' %}checked{% endif %}>
+                                <label class="form-check-label" for="derecho_generico4">Entornos seguros y libres de riesgos de desastres</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="derecho_generico" value="Justicia y reparación" {% if iniciativa.derecho_generico == 'Justicia y reparación' %}checked{% endif %}>
+                                <label class="form-check-label" for="derecho_generico5">Justicia y reparación</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="otro_derecho_checkbox" name="derecho_generico" value="Otro" {% if iniciativa.derecho_generico == 'Otro' %}checked{% endif %} onchange="toggleOther('otro_derecho_checkbox', 'otro_derecho_detalle')">
+                                <label class="form-check-label" for="otro_derecho_checkbox">Otro derecho (indicar cuál):</label>
+                                <input type="text" class="form-control mt-2 {% if iniciativa.derecho_generico == 'Otro' %}mostrar{% else %}ocultar{% endif %}" id="otro_derecho_detalle" name="otro_derecho_detalle" value="{{ iniciativa.otro_derecho_detalle }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 4: Colectivo u Organización Asociada -->
+                    <div class="section-box ">
+                        <h4>Colectivo u Organización Asociada</h4>
+                        <div class="form-group">
+                            <label class="label-principal" for="colectivo_organizacion">Colectivo u organización:</label>
+                            <input type="text" class="form-control" id="colectivo_organizacion" name="colectivo_organizacion" value="{{ iniciativa.colectivo_organizacion }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna derecha -->
+                <div class="col-md-6">
+                    <!-- Sección 2: Población / Colectivo / Grupos Social Titular de Derecho -->
+                    <div class="section-box flex-grow-1">
+                        <h4>Población / Colectivo / Grupos Social Titular de Derecho</h4>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Población titular de derecho</th>
+                                        <th>Hombres</th>
+                                        <th>Mujeres</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Niños y niñas" {% if 'Niños y niñas' in iniciativa.poblacion %}checked{% endif %}> Niños y niñas</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_ninos" value="{{ iniciativa.total_hombres_ninos }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_ninos" value="{{ iniciativa.total_mujeres_ninos }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Adolescentes" {% if 'Adolescentes' in iniciativa.poblacion %}checked{% endif %}> Adolescentes</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_adolescentes" value="{{ iniciativa.total_hombres_adolescentes }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_adolescentes" value="{{ iniciativa.total_mujeres_adolescentes }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Jóvenes" {% if 'Jóvenes' in iniciativa.poblacion %}checked{% endif %}> Jóvenes</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_jovenes" value="{{ iniciativa.total_hombres_jovenes }}"  min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_jovenes" value="{{ iniciativa.total_mujeres_jovenes }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Mujeres" {% if 'Mujeres' in iniciativa.poblacion %}checked{% endif %}> Mujeres</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_mujeres" value="{{ iniciativa.total_hombres_mujeres }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_mujeres" value="{{ iniciativa.total_mujeres_mujeres }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Personas con discapacidad" {% if 'Personas con discapacidad' in iniciativa.poblacion %}checked{% endif %}> Personas con discapacidad</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_discapacidad" value="{{ iniciativa.total_hombres_discapacidad }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_discapacidad" value="{{ iniciativa.total_mujeres_discapacidad }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Migrantes y desplazados internos" {% if 'Migrantes y desplazados internos' in iniciativa.poblacion %}checked{% endif %}> Migrantes y desplazados internos</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_migrantes" value="{{ iniciativa.total_hombres_migrantes }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_migrantes" value="{{ iniciativa.total_mujeres_migrantes }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Poblaciones amazónicas indígenas y de comunidades campesinas de los andes" {% if 'Poblaciones amazónicas indígenas y de comunidades campesinas de los andes' in iniciativa.poblacion %}checked{% endif %}> Poblaciones amazónicas indígenas y de comunidades campesinas de los andes</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_amazonicas" value="{{ iniciativa.total_hombres_amazonicas }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_amazonicas" value="{{ iniciativa.total_mujeres_amazonicas }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Poblaciones de comunidades periurbanas" {% if 'Poblaciones de comunidades periurbanas' in iniciativa.poblacion %}checked{% endif %}> Poblaciones de comunidades periurbanas</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_periurbanas" value="{{ iniciativa.total_hombres_periurbanas }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_periurbanas" value="{{ iniciativa.total_mujeres_periurbanas }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" name="poblacion[]" value="Poblaciones afectadas por el conflicto armado interno" {% if 'Poblaciones afectadas por el conflicto armado interno' in iniciativa.poblacion %}checked{% endif %}> Poblaciones afectadas por el conflicto armado interno</td>
+                                        <td><input type="number" class="form-control" name="total_hombres_conflicto" value="{{ iniciativa.total_hombres_conflicto }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_conflicto" value="{{ iniciativa.total_mujeres_conflicto }}" min="0"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" id="otra_poblacion_checkbox" name="poblacion[]" value="Otra población" {% if 'Otra población' in iniciativa.poblacion %}checked{% endif %} onchange="toggleOther('otra_poblacion_checkbox', 'otra_poblacion_detalle')"> Otra población o colectivo de referencia:
+                                            <input type="text" class="form-control mt-2 {% if 'Otra población' in iniciativa.poblacion %}mostrar{% else %}ocultar{% endif %}" id="otra_poblacion_detalle" name="otra_poblacion_detalle" value="{{ iniciativa.otra_poblacion_detalle }}">
+                                        </td>
+                                        <td><input type="number" class="form-control" name="total_hombres_otra" value="{{ iniciativa.total_hombres_otra }}" min="0"></td>
+                                        <td><input type="number" class="form-control" name="total_mujeres_otra" value="{{ iniciativa.total_mujeres_otra }}" min="0"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fila 2: Tipo o Naturaleza de la Iniciativa o Propuesta (Solo en la columna izquierda) -->
+            <div class="row mt-4">
+                <div class="col-md-6"> 
+                    <!-- Sección 5: Tipo o Naturaleza de la Iniciativa o Propuesta -->
+                    <div class="section-box mt-3">
+                        <h4>Tipo o Naturaleza de la Iniciativa o Propuesta</h4>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cambio_politica_checkbox" name="tipo_naturaleza[]" value="Cambios en la política pública nacional" {% if 'Cambios en la política pública nacional' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('cambio_politica_checkbox', 'cambio_politica_detalle')">
+                                <label class="form-check-label" for="cambio_politica_checkbox">Cambios en la política pública nacional</label>
+                                <input type="text" class="form-control mt-2 {% if 'Cambios en la política pública nacional' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_politica_detalle"  placeholder="¿Cuál en particular?" name="cambio_politica_detalle" value="{{ iniciativa.cambio_politica_detalle }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cambio_marcos_checkbox" name="tipo_naturaleza[]" value="Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos" {% if 'Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('cambio_marcos_checkbox', 'cambio_marcos_detalle')">
+                                <label class="form-check-label" for="cambio_marcos_checkbox">Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos</label>
+                                <input type="text" class="form-control mt-2 {% if 'Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_marcos_detalle" placeholder="¿Cuál en particular?" name="cambio_marcos_detalle" value="{{ iniciativa.cambio_marcos_detalle }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cambio_practicas_checkbox" name="tipo_naturaleza[]" value="Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos" {% if 'Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('cambio_practicas_checkbox', 'cambio_practicas_detalle')">
+                                <label class="form-check-label" for="cambio_practicas_checkbox">Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos</label>
+                                <input type="text" class="form-control mt-2 {% if 'Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_practicas_detalle" placeholder="¿Cuál en particular?" name="cambio_practicas_detalle" value="{{ iniciativa.cambio_practicas_detalle }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cambio_sensibilidad_checkbox" name="tipo_naturaleza[]" value="Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos" {% if 'Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('cambio_sensibilidad_checkbox', 'cambio_sensibilidad_detalle')">
+                                <label class="form-check-label" for="cambio_sensibilidad_checkbox">Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos</label>
+                                <input type="text" class="form-control mt-2 {% if 'Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_sensibilidad_detalle" placeholder="¿Cuál en particular?" name="cambio_sensibilidad_detalle" value="{{ iniciativa.cambio_sensibilidad_detalle }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="otro_naturaleza_checkbox" name="tipo_naturaleza[]" value="Otro" {% if 'Otro' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('otro_naturaleza_checkbox', 'otro_naturaleza_detalle', 'otro_naturaleza_particular')">
+                                <label class="form-check-label" for="otro_naturaleza_checkbox">Otro (indicar cuál):</label>
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="otro_naturaleza_detalle" placeholder="Otro Tipo o Naturaleza" name="otro_naturaleza_detalle" value="{{ iniciativa.otro_naturaleza_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="otro_naturaleza_particular" placeholder="¿Cuál en particular?" name="otro_naturaleza_particular" value="{{ iniciativa.otro_naturaleza_particular }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <!-- Entidad Competente -->
+                    <div class="section-box mt-3">
+                        <h4>Entidad Competente a la que se dirige de manera directa la iniciativa o propuesta</h4>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Sector público competente</th>
+                                    <th>Dependencia /instancia /similar</th>
+                                    <th>Alcance/escala de la entidad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="sector_publico_competente_1" value="{{ iniciativa.sector_publico_competente_1 }}"></td>
+                                    <td><input type="text" class="form-control" name="dependencia_instancia_1" value="{{ iniciativa.dependencia_instancia_1 }}"></td>
+                                    <td>
+                                        <select class="form-control" name="alcance_escala_1">
+                                            <option value="" {% if not iniciativa.alcance_escala_1 %}selected{% endif %}>Seleccionar</option>
+                                            <option value="Nacional" {% if iniciativa.alcance_escala_1 == 'Nacional' %}selected{% endif %}>Nacional</option>
+                                            <option value="Regional" {% if iniciativa.alcance_escala_1 == 'Regional' %}selected{% endif %}>Regional</option>
+                                            <option value="Local" {% if iniciativa.alcance_escala_1 == 'Local' %}selected{% endif %}>Local</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="sector_publico_competente_2" value="{{ iniciativa.sector_publico_competente_2 }}"></td>
+                                    <td><input type="text" class="form-control" name="dependencia_instancia_2" value="{{ iniciativa.dependencia_instancia_2 }}"></td>
+                                    <td>
+                                        <select class="form-control" name="alcance_escala_2">
+                                            <option value="" {% if not iniciativa.alcance_escala_2 %}selected{% endif %}>Seleccionar</option>
+                                            <option value="Nacional" {% if iniciativa.alcance_escala_2 == 'Nacional' %}selected{% endif %}>Nacional</option>
+                                            <option value="Regional" {% if iniciativa.alcance_escala_2 == 'Regional' %}selected{% endif %}>Regional</option>
+                                            <option value="Local" {% if iniciativa.alcance_escala_2 == 'Local' %}selected{% endif %}>Local</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <!-- Localidades -->
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Localidad/es en donde se sitúa la iniciativa o propuesta</h4>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control" placeholder="Localidad 1" name="localidad_1" value="{{ iniciativa.localidad_1 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" placeholder="Localidad 2" name="localidad_2" value="{{ iniciativa.localidad_2 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" placeholder="Localidad 3" name="localidad_3" value="{{ iniciativa.localidad_3 }}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <!-- Breve descripción de la situación -->
+                    <div class="section-box mt-3">
+                        <h4>Breve descripción de la situación</h4>
+                        <div class="form-group">
+                            <textarea class="form-control" rows="3" placeholder="Indique aquí..." name="descripcion_situacion">{{ iniciativa.descripcion_situacion }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Objetivo específico -->
+                    <div class="section-box mt-3">
+                        <h4>Objetivo específico</h4>
+                        <div class="form-group">
+                            <textarea class="form-control" rows="3" placeholder="Indique aquí..." name="objetivo_especifico">{{ iniciativa.objetivo_especifico }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campos y Componentes -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <!-- Campo/s al que se dirige la iniciativa o propuesta -->
+                    <div class="section-box mt-3">
+                        <h4>Campo/s al que se dirige la iniciativa o propuesta</h4>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campo_creacion_checkbox" name="campos[]" value="Creación, apertura, instauración de un nuevo aspecto dentro del sistema de gestión/organismo" {% if 'Creación, apertura, instauración de un nuevo aspecto dentro del sistema de gestión/organismo' in iniciativa.campos %}checked{% endif %}>
+                                <label class="form-check-label" for="campo_creacion_checkbox">Creación, apertura, instauración de un nuevo aspecto dentro del sistema de gestión/organismo</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campo_enfoque_checkbox" name="campos[]" value="Cambios en el enfoque y/o marco normativo que sustenta la dimensión sobre la que se incide" {% if 'Cambios en el enfoque y/o marco normativo que sustenta la dimensión sobre la que se incide' in iniciativa.campos %}checked{% endif %}>
+                                <label class="form-check-label" for="campo_enfoque_checkbox">Cambios en el enfoque y/o marco normativo que sustenta la dimensión sobre la que se incide</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campo_asignacion_checkbox" name="campos[]" value="Asignación de recursos para viabilizar el asunto vinculado al derecho" {% if 'Asignación de recursos para viabilizar el asunto vinculado al derecho' in iniciativa.campos %}checked{% endif %}>
+                                <label class="form-check-label" for="campo_asignacion_checkbox">Asignación de recursos para viabilizar el asunto vinculado al derecho</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campo_estructuras_checkbox" name="campos[]" value="Cambios en las estructuras y procedimientos del organismo de referencia" {% if 'Cambios en las estructuras y procedimientos del organismo de referencia' in iniciativa.campos %}checked{% endif %}>
+                                <label class="form-check-label" for="campo_estructuras_checkbox">Cambios en las estructuras y procedimientos del organismo de referencia</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campo_normas_checkbox" name="campos[]" value="Cumplimiento / ejecución de normas y acuerdos establecidos" {% if 'Cumplimiento / ejecución de normas y acuerdos establecidos' in iniciativa.campos %}checked{% endif %}>
+                                <label class="form-check-label" for="campo_normas_checkbox">Cumplimiento / ejecución de normas y acuerdos establecidos</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campo_modificacion_checkbox" name="campos[]" value="Modificación positiva de capacidades, comportamientos o prácticas de autoridades y funcionarios" {% if 'Modificación positiva de capacidades, comportamientos o prácticas de autoridades y funcionarios' in iniciativa.campos %}checked{% endif %}>
+                                <label class="form-check-label" for="campo_modificacion_checkbox">Modificación positiva de capacidades, comportamientos o prácticas de autoridades y funcionarios</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campo_otro_checkbox" name="campos[]" value="Otro" {% if 'Otro' in iniciativa.campos %}checked{% endif %} onchange="toggleOther('campo_otro_checkbox', 'campo_otro_detalle')">
+                                <label class="form-check-label" for="campo_otro_checkbox">Otro (indicar cuál):</label>                                                     
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.campos %}mostrar{% else %}ocultar{% endif %}" id="campo_otro_detalle" name="campo_otro_detalle" value="{{ iniciativa.campo_otro_detalle }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <!-- Componentes -->
+                    <div class="section-box mt-3">
+                        <h4>Componentes / elementos / aspectos que son parte fundamental</h4>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="componente_1" value="{{ iniciativa.componente_1 }}" placeholder="1."></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="componente_2" value="{{ iniciativa.componente_2 }}" placeholder="2."></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="componente_3" value="{{ iniciativa.componente_3 }}" placeholder="3."></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenidos -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Contenido de la iniciativa o propuesta</h4>
+                        <!-- Contenido 1 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_1">No se ha iniciado aún la elaboración de la iniciativa o propuesta:</label>
+                            <select class="form-control mt-1" id="contenido_1" name="contenido_1">
+                                <option value="" {% if not iniciativa.contenido_1 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if iniciativa.contenido_1 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if iniciativa.contenido_1 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="3" {% if iniciativa.contenido_1 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
+                                <option value="4" {% if iniciativa.contenido_1 == 4 %}selected{% endif %}>4 - Concluido</option>
+                            </select>
+                        </div>
+                        <!-- Contenido 2 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_2">Definición de la problemática relacionada al derecho materia de la iniciativa o propuesta:</label>
+                            <select class="form-control mt-1" id="contenido_2" name="contenido_2">
+                                <option value="" {% if not iniciativa.contenido_2 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if iniciativa.contenido_2 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if iniciativa.contenido_2 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="3" {% if iniciativa.contenido_2 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
+                                <option value="4" {% if iniciativa.contenido_2 == 4 %}selected{% endif %}>4 - Concluido</option>
+                            </select>
+                        </div>
+                        <!-- Contenido 3 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_3">Fundamentación / argumentación de la iniciativa o propuesta (normativa, estadística, política pública, etc.):</label>
+                            <select class="form-control mt-1" id="contenido_3" name="contenido_3">
+                                <option value="" {% if not iniciativa.contenido_3 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if iniciativa.contenido_3 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if iniciativa.contenido_3 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="3" {% if iniciativa.contenido_3 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
+                                <option value="4" {% if iniciativa.contenido_3 == 4 %}selected{% endif %}>4 - Concluido</option>
+                            </select>
+                        </div>
+                        <!-- Contenido 4 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_4">Formulación de los objetivos / propósitos / metas / o similares:</label>
+                            <select class="form-control mt-1" id="contenido_4" name="contenido_4">
+                                <option value="" {% if not iniciativa.contenido_4 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if iniciativa.contenido_4 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if iniciativa.contenido_4 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="3" {% if iniciativa.contenido_4 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
+                                <option value="4" {% if iniciativa.contenido_4 == 4 %}selected{% endif %}>4 - Concluido</option>
+                            </select>
+                        </div>
+                        <!-- Contenido 5 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_5">Definición de estrategias / lineamientos / o similares:</label>
+                            <select class="form-control mt-1" id="contenido_5" name="contenido_5">
+                                <option value="" {% if not iniciativa.contenido_5 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if iniciativa.contenido_5 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if iniciativa.contenido_5 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="3" {% if iniciativa.contenido_5 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
+                                <option value="4" {% if iniciativa.contenido_5 == 4 %}selected{% endif %}>4 - Concluido</option>
+                            </select>
+                        </div>
+                        <!-- Contenido 6 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_6">Estimación de presupuesto y mecanismos y/o fuentes de financiamiento:</label>
+                            <select class="form-control mt-1" id="contenido_6" name="contenido_6">
+                                <option value="" {% if not iniciativa.contenido_6 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if iniciativa.contenido_6 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if iniciativa.contenido_6 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="3" {% if iniciativa.contenido_6 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
+                                <option value="4" {% if iniciativa.contenido_6 == 4 %}selected{% endif %}>4 - Concluido</option>
+                            </select>
+                        </div>
+                        <!-- Contenido 7 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_7">Organización / implementación de la propuesta dentro del sistema en el que se inscribe:</label>
+                            <select class="form-control mt-1" id="contenido_7" name="contenido_7">
+                                <option value="" {% if not iniciativa.contenido_7 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if iniciativa.contenido_7 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if iniciativa.contenido_7 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="3" {% if iniciativa.contenido_7 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
+                                <option value="4" {% if iniciativa.contenido_7 == 4 %}selected{% endif %}>4 - Concluido</option>
+                            </select>
+                        </div>
+                        <!-- Contenido Otro -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_otro">Otros elementos que consideren pertinente valorar (especificar):</label>
+                            <input type="text" class="form-control" id="contenido_otro" name="contenido_otro" value="{{ iniciativa.contenido_otro }}">
+                            <label class="label-principal mt-2" for="calificacion_otro_contenido">Calificación de Otros:</label>
+                            <select class="form-control mt-1" id="calificacion_otro_contenido" name="calificacion_otro_contenido">
+                                <option value="" {% if not iniciativa.calificacion_otro_contenido %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if iniciativa.calificacion_otro_contenido == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if iniciativa.calificacion_otro_contenido == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="3" {% if iniciativa.calificacion_otro_contenido == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
+                                <option value="4" {% if iniciativa.calificacion_otro_contenido == 4 %}selected{% endif %}>4 - Concluido</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <!-- Fase de Implementación -->
+                    <div class="section-box mt-3">
+                        <h4>Fase de Implementación</h4>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_gestacion_checkbox" name="fase_implementacion[]" value="Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar" {% if 'Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_gestacion_checkbox">Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_organizacion_checkbox" name="fase_implementacion[]" value="Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta" {% if 'Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_organizacion_checkbox">Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_coordinacion_checkbox" name="fase_implementacion[]" value="Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta" {% if 'Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_coordinacion_checkbox">Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_dialogo_checkbox" name="fase_implementacion[]" value="Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias" {% if 'Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_dialogo_checkbox">Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_argumentacion_checkbox" name="fase_implementacion[]" value="Argumentación / fundamentación ante autoridades y funcionarios" {% if 'Argumentación / fundamentación ante autoridades y funcionarios' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_argumentacion_checkbox">Argumentación / fundamentación ante autoridades y funcionarios</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_respuesta_checkbox" name="fase_implementacion[]" value="Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta" {% if 'Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_respuesta_checkbox">Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_formalizacion_checkbox" name="fase_implementacion[]" value="Formalización de los acuerdos con el organismo o instancia involucrada o competente" {% if 'Formalización de los acuerdos con el organismo o instancia involucrada o competente' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_formalizacion_checkbox">Formalización de los acuerdos con el organismo o instancia involucrada o competente</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_normas_checkbox" name="fase_implementacion[]" value="Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente" {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_normas_checkbox', 'fase_normas_detalle')">
+                                <label class="form-check-label" for="fase_normas_checkbox">Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente (en cuál):</label>
+                                <input type="text" class="form-control mt-2 {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_normas_detalle" placeholder="¿En cuál?" name="fase_normas_detalle" value="{{ iniciativa.fase_normas_detalle }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_institucionalizacion_checkbox" name="fase_implementacion[]" value="Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión" {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_institucionalizacion_checkbox', 'fase_institucionalizacion_detalle')">
+                                <label class="form-check-label" for="fase_institucionalizacion_checkbox">Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión (qué entidad):</label>
+                                <input type="text" class="form-control mt-2 {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" name="fase_institucionalizacion_detalle" value="{{ iniciativa.fase_institucionalizacion_detalle }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_monitoreo_checkbox" name="fase_implementacion[]" value="Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente" {% if 'Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_monitoreo_checkbox">Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_otro_checkbox" name="fase_implementacion[]" value="Otro" {% if 'Otro' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_otro_checkbox', 'fase_otro_detalle')">
+                                <label class="form-check-label" for="fase_otro_checkbox">Otra fase (indicar cuál):</label>
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_otro_detalle" placeholder="Indicar cual..." name="fase_otro_detalle" value="{{ iniciativa.fase_otro_detalle }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actividades principales planificadas -->
+                    <div class="section-box">
+                        <h4>Actividades principales planificadas</h4>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control" placeholder="Actividad 1" name="actividad_1" value="{{ iniciativa.actividad_1 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" placeholder="Actividad 2" name="actividad_2" value="{{ iniciativa.actividad_2 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" placeholder="Actividad 3" name="actividad_3" value="{{ iniciativa.actividad_3 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" placeholder="Actividad 4" name="actividad_4" value="{{ iniciativa.actividad_4 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" placeholder="Actividad 5" name="actividad_5" value="{{ iniciativa.actividad_5 }}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proyecto/s de referencia -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Proyecto/s de referencia</h4>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Proyecto que financia</th>
+                                    <th>Fuente de financiamiento</th>
+                                    <th>Financiamiento US$</th>
+                                    <th>Período de financiamiento</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="proyecto_1" value="{{ iniciativa.proyecto_1 }}"></td>
+                                    <td><input type="text" class="form-control" name="fuente_financiamiento_1" value="{{ iniciativa.fuente_financiamiento_1 }}"></td>
+                                    <td><input type="text" class="form-control" name="financiamiento_1" value="{{ iniciativa.financiamiento_1 }}"></td>
+                                    <td><input type="text" class="form-control" name="periodo_financiamiento_1" value="{{ iniciativa.periodo_financiamiento_1 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="proyecto_2" value="{{ iniciativa.proyecto_2 }}"></td>
+                                    <td><input type="text" class="form-control" name="fuente_financiamiento_2" value="{{ iniciativa.fuente_financiamiento_2 }}"></td>
+                                    <td><input type="text" class="form-control" name="financiamiento_2" value="{{ iniciativa.financiamiento_2 }}"></td>
+                                    <td><input type="text" class="form-control" name="periodo_financiamiento_2" value="{{ iniciativa.periodo_financiamiento_2 }}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <!-- Observaciones -->
+                    <div class="section-box mt-3 label-principal">
+                        <h4>Observaciones / comentarios / sugerencias</h4>
+                        <textarea placeholder="Ingresar información aquí y utilice todo el espacio necesario" class="form-control" rows="4" name="observaciones">{{ iniciativa.observaciones }}</textarea>
+                    </div>
+                    <!-- Responsable del registro -->
+                    <div class="section-box label-principal">
+                        <h4>Responsable del registro:</h4>
+                        <div class="form-group">
+                            <label for="responsable_registro">Responsable del registro:</label>
+                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro" value="{{ iniciativa.responsable_registro }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fila 3: Botón de Envío -->
+            <div class="row justify-content-end mt-3 mb-5">
+                <div class="col-md-3 d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary btn-sm text-center mr-3 flex-grow-1" style="font-size: 1rem;" onclick="window.location.href='/listado_iniciativas'">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm text-center flex-grow-1" style="font-size: 1rem;">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Iniciativas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px; /* Añade espacio entre los botones */
+        }
+
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            font-size: 0.8rem;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border: none;
+            color: white;
+        }
+        .btn-success{
+            background-color: #e8e53e;
+            border: none;
+            color: rgb(40, 40, 40);
+        }
+        .btn-success:hover {
+            color: #fff;
+            background-color: #383838;
+            border-color: #383838;
+        }
+
+        .title-bar {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 7px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .btn-icon:hover {
+            opacity: 0.9;
+        }
+
+        .table-responsive {
+            overflow-x: auto; /* Agrega scroll horizontal */
+        }
+
+        .table {
+            border-collapse: collapse; /* Asegura que los bordes se muestren correctamente */
+            width: 100%;
+        }
+
+        .table th, .table td {
+            white-space: nowrap; /* Evita que las celdas se rompan en varias líneas */
+            border: 1px solid #dee2e6; /* Agrega borde entre las celdas */
+            padding: 8px;
+            text-align: center; /* Centra el texto horizontalmente */
+            vertical-align: middle; /* Centra el texto verticalmente */
+        }
+
+        .table th {
+            background-color: #18834d; /* Fondo color verde oscuro para los encabezados */
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        /* Estilo para el botón superior derecho */
+        .button-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px; /* Añade un espacio entre el botón y la tabla */
+        }
+
+        /* Nueva barra con logo y nombre de la empresa */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1d7c3a;
+            color: white;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+        }
+
+        .title-bar-company img {
+            height: 40px; /* Ajusta la altura del logo */
+        }
+
+        @media (min-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                margin-bottom: 40px;
+            }
+            .title-bar-company img {
+                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Barra superior con el nombre de la empresa y el logo -->
+    <div class="title-bar-company">
+        <img src="/static/images/logo.png" alt="Logo de la empresa">
+    </div>
+    <!-- Título Principal -->
+    <div class="title-bar">
+        Lista de Fichas de Registro Iniciativas
+    </div>
+
+    <div class="container mt-5">
+        <!-- Mostrar mensajes flash -->
+        <div class="alert-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert alert_mod alert-{{ messages[0][0] }}">
+                        {{ messages[0][1] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Botón en la parte superior derecha -->
+        <div class="button-container">
+            <a href="/form_iniciativas" class="btn btn-success label-principal">Nueva Iniciativa</a>
+        </div>
+
+        <!-- Tabla de registros -->
+        <div class="table-responsive mb-5">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Acciones</th>
+                        <th>Nombre Iniciativa</th>
+                        <th>Derecho Genérico</th>
+                        <th>Otro Derecho Detalle</th>
+                        <th>Colectivo/Organización</th>
+                        <th>Población</th>
+                        <th>Total Hombres Niños</th>
+                        <th>Total Mujeres Niños</th>
+                        <th>Total Hombres Adolescentes</th>
+                        <th>Total Mujeres Adolescentes</th>
+                        <th>Total Hombres Jóvenes</th>
+                        <th>Total Mujeres Jóvenes</th>
+                        <th>Total Hombres Mujeres</th> <!-- Dato para los hombres en la categoría "Mujeres" -->
+                        <th>Total Mujeres Mujeres</th>
+                        <th>Total Hombres Discapacidad</th>
+                        <th>Total Mujeres Discapacidad</th>
+                        <th>Total Hombres Migrantes</th>
+                        <th>Total Mujeres Migrantes</th>
+                        <th>Total Hombres Amazónicas</th>
+                        <th>Total Mujeres Amazónicas</th>
+                        <th>Total Hombres Periurbanas</th>
+                        <th>Total Mujeres Periurbanas</th>
+                        <th>Total Hombres Conflicto</th>
+                        <th>Total Mujeres Conflicto</th>
+                        <th>Otro Población Detalle</th>
+                        <th>Total Hombres Otra</th>
+                        <th>Total Mujeres Otra</th>
+                        <th>Tipo Naturaleza</th>
+                        <th>Cambio Política Detalle</th>
+                        <th>Cambio Marcos Detalle</th>
+                        <th>Cambio Prácticas Detalle</th>
+                        <th>Cambio Sensibilidad Detalle</th>
+                        <th>Otro Naturaleza Detalle</th>
+                        <th>Otro Naturaleza Particular</th>
+                        <th>Sector Público Competente 1</th>
+                        <th>Dependencia/Instancia 1</th>
+                        <th>Alcance/Escala 1</th>
+                        <th>Sector Público Competente 2</th>
+                        <th>Dependencia/Instancia 2</th>
+                        <th>Alcance/Escala 2</th>
+                        <th>Localidad 1</th>
+                        <th>Localidad 2</th>
+                        <th>Localidad 3</th>
+                        <th>Descripción Situación</th>
+                        <th>Objetivo Específico</th>
+                        <th>Campos</th>
+                        <th>Campo Otro Detalle</th>
+                        <th>Componente 1</th>
+                        <th>Componente 2</th>
+                        <th>Componente 3</th>
+                        <th>Contenido 1</th>
+                        <th>Contenido 2</th>
+                        <th>Contenido 3</th>
+                        <th>Contenido 4</th>
+                        <th>Contenido 5</th>
+                        <th>Contenido 6</th>
+                        <th>Contenido 7</th>
+                        <th>Contenido Otro</th>
+                        <th>Calificación Contenido Otro</th>
+                        <th>Fase Implementación</th>
+                        <th>Fase Normas Detalle</th>
+                        <th>Fase Institucionalización Detalle</th>
+                        <th>Fase Otro Detalle</th>
+                        <th>Actividad 1</th>
+                        <th>Actividad 2</th>
+                        <th>Actividad 3</th>
+                        <th>Actividad 4</th>
+                        <th>Actividad 5</th>
+                        <th>Proyecto 1</th>
+                        <th>Fuente Financiamiento 1</th>
+                        <th>Financiamiento 1</th>
+                        <th>Periodo Financiamiento 1</th>
+                        <th>Proyecto 2</th>
+                        <th>Fuente Financiamiento 2</th>
+                        <th>Financiamiento 2</th>
+                        <th>Periodo Financiamiento 2</th>
+                        <th>Observaciones</th>
+                        <th>Responsable Registro</th>
+                        <th>Fecha Registro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for iniciativa in iniciativas %}
+                    <tr>
+                        <td>
+                            <div class="btn-group">
+                                <a href="/editar_iniciativa/{{ iniciativa.nombre_iniciativa }}" class="btn btn-primary btn-icon">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="/eliminar_iniciativa/{{ iniciativa.nombre_iniciativa }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta iniciativa?');" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-icon">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                        <td>{{ iniciativa.nombre_iniciativa }}</td>
+                        <td>{{ iniciativa.derecho_generico }}</td>
+                        <td>{{ iniciativa.otro_derecho_detalle }}</td>
+                        <td>{{ iniciativa.colectivo_organizacion }}</td>
+                        <td>{{ iniciativa.poblacion }}</td>
+                        <td>{{ iniciativa.total_hombres_ninos }}</td>
+                        <td>{{ iniciativa.total_mujeres_ninos }}</td>
+                        <td>{{ iniciativa.total_hombres_adolescentes }}</td>
+                        <td>{{ iniciativa.total_mujeres_adolescentes }}</td>
+                        <td>{{ iniciativa.total_hombres_jovenes }}</td>
+                        <td>{{ iniciativa.total_mujeres_jovenes }}</td>
+                        <td>{{ iniciativa.total_hombres_mujeres }}</td>
+                        <td>{{ iniciativa.total_mujeres_mujeres }}</td>
+                        <td>{{ iniciativa.total_hombres_discapacidad }}</td>
+                        <td>{{ iniciativa.total_mujeres_discapacidad }}</td>
+                        <td>{{ iniciativa.total_hombres_migrantes }}</td>
+                        <td>{{ iniciativa.total_mujeres_migrantes }}</td>
+                        <td>{{ iniciativa.total_hombres_amazonicas }}</td>
+                        <td>{{ iniciativa.total_mujeres_amazonicas }}</td>
+                        <td>{{ iniciativa.total_hombres_periurbanas }}</td>
+                        <td>{{ iniciativa.total_mujeres_periurbanas }}</td>
+                        <td>{{ iniciativa.total_hombres_conflicto }}</td>
+                        <td>{{ iniciativa.total_mujeres_conflicto }}</td>
+                        <td>{{ iniciativa.otra_poblacion_detalle }}</td>
+                        <td>{{ iniciativa.total_hombres_otra }}</td>
+                        <td>{{ iniciativa.total_mujeres_otra }}</td>
+                        <td>{{ iniciativa.tipo_naturaleza }}</td>
+                        <td>{{ iniciativa.cambio_politica_detalle }}</td>
+                        <td>{{ iniciativa.cambio_marcos_detalle }}</td>
+                        <td>{{ iniciativa.cambio_practicas_detalle }}</td>
+                        <td>{{ iniciativa.cambio_sensibilidad_detalle }}</td>
+                        <td>{{ iniciativa.otro_naturaleza_detalle }}</td>
+                        <td>{{ iniciativa.otro_naturaleza_particular }}</td>
+                        <td>{{ iniciativa.sector_publico_competente_1 }}</td>
+                        <td>{{ iniciativa.dependencia_instancia_1 }}</td>
+                        <td>{{ iniciativa.alcance_escala_1 }}</td>
+                        <td>{{ iniciativa.sector_publico_competente_2 }}</td>
+                        <td>{{ iniciativa.dependencia_instancia_2 }}</td>
+                        <td>{{ iniciativa.alcance_escala_2 }}</td>
+                        <td>{{ iniciativa.localidad_1 }}</td>
+                        <td>{{ iniciativa.localidad_2 }}</td>
+                        <td>{{ iniciativa.localidad_3 }}</td>
+                        <td>{{ iniciativa.descripcion_situacion }}</td>
+                        <td>{{ iniciativa.objetivo_especifico }}</td>
+                        <td>{{ iniciativa.campos }}</td>
+                        <td>{{ iniciativa.campo_otro_detalle }}</td>
+                        <td>{{ iniciativa.componente_1 }}</td>
+                        <td>{{ iniciativa.componente_2 }}</td>
+                        <td>{{ iniciativa.componente_3 }}</td>
+                        <td>{{ iniciativa.contenido_1 }}</td>
+                        <td>{{ iniciativa.contenido_2 }}</td>
+                        <td>{{ iniciativa.contenido_3 }}</td>
+                        <td>{{ iniciativa.contenido_4 }}</td>
+                        <td>{{ iniciativa.contenido_5 }}</td>
+                        <td>{{ iniciativa.contenido_6 }}</td>
+                        <td>{{ iniciativa.contenido_7 }}</td>
+                        <td>{{ iniciativa.contenido_otro }}</td>
+                        <td>{{ iniciativa.calificacion_otro_contenido }}</td>
+                        <td>{{ iniciativa.fase_implementacion }}</td>
+                        <td>{{ iniciativa.fase_normas_detalle }}</td>
+                        <td>{{ iniciativa.fase_institucionalizacion_detalle }}</td>
+                        <td>{{ iniciativa.fase_otro_detalle }}</td>
+                        <td>{{ iniciativa.actividad_1 }}</td>
+                        <td>{{ iniciativa.actividad_2 }}</td>
+                        <td>{{ iniciativa.actividad_3 }}</td>
+                        <td>{{ iniciativa.actividad_4 }}</td>
+                        <td>{{ iniciativa.actividad_5 }}</td>
+                        <td>{{ iniciativa.proyecto_1 }}</td>
+                        <td>{{ iniciativa.fuente_financiamiento_1 }}</td>
+                        <td>{{ iniciativa.financiamiento_1 }}</td>
+                        <td>{{ iniciativa.periodo_financiamiento_1 }}</td>
+                        <td>{{ iniciativa.proyecto_2 }}</td>
+                        <td>{{ iniciativa.fuente_financiamiento_2 }}</td>
+                        <td>{{ iniciativa.financiamiento_2 }}</td>
+                        <td>{{ iniciativa.periodo_financiamiento_2 }}</td>
+                        <td>{{ iniciativa.observaciones }}</td>
+                        <td>{{ iniciativa.responsable_registro }}</td>
+                        <td>{{ iniciativa.fecha_registro.strftime('%d/%m/%Y') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row justify-content-end mt-3 mb-5">
+            <div class="col-md-3 d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary btn-sm text-center" style="font-size: 1rem;" onclick="window.location.href='/'">Ir al menú</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

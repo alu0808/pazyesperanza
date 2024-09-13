@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Proceso de Iniciativa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <style>
+        .mostrar {
+            display: block;
+        }
+
+        .ocultar {
+            display: none;
+        }
+        .title-bar {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 7px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        /* Nueva barra con logo y nombre de la empresa */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1d7c3a;
+            color: white;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+        }
+
+        .title-bar-company img {
+            height: 40px; /* Ajusta la altura del logo */
+        }
+
+        @media (min-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                margin-bottom: 40px;
+            }
+            .title-bar-company img {
+                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
+            }
+            
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra superior con el nombre de la empresa y el logo -->
+    <div class="title-bar-company">
+        <img src="/static/images/logo.png" alt="Logo de la empresa">
+    </div>
+    <!-- Título Principal -->
+    <div class="title-bar">
+        Editar Proceso de Iniciativa
+    </div>
+
+    <div class="container mt-5">
+        <!-- Mostrar mensajes flash -->
+        <div class="alert-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert alert_mod alert-{{ messages[0][0] }}">
+                        {{ messages[0][1] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <form method="POST" action="/editar_proceso_iniciativa/{{ proceso_iniciativas.id }}">
+            
+            <div class="row mt-4">  
+                <!-- Primera columna: Selección de la iniciativa y objetivo específico -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="nombre_iniciativa">Iniciativa Seleccionada:</label>
+                        <input type="text" class="form-control" id="nombre_iniciativa" name="nombre_iniciativa" value="{{ proceso_iniciativas.nombre_iniciativa }}" readonly>
+                    </div>
+            
+                    <!-- Mostrar el objetivo específico de la iniciativa seleccionada -->
+                    <div class="form-group mt-3">
+                        <label for="objetivo_especifico">Objetivo Específico:</label>
+                        <input type="text" class="form-control" id="objetivo_especifico" name="objetivo_especifico" value="{{ proceso_iniciativas.objetivo_especifico }}" readonly>
+                    </div>
+                </div>
+            
+                <!-- Segunda columna: Logros o resultados -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="alert alert-info" id="numero_formulario_container" style="display: none;">
+                            Registro de Monitoreo #<strong id="numero_formulario"></strong> para la iniciativa seleccionada.
+                        </div>
+                    </div>
+                </div>
+                
+            </div>     
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>¿En qué medida se puede apreciar logros o resultados?</h4>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="logros" value="No se aprecia ningún logro adicional" id="logro1" {% if proceso_iniciativas.logros == "No se aprecia ningún logro adicional" %}checked{% endif %} required>
+                            <label class="form-check-label" for="logro1">No se aprecia ningún logro adicional luego del último reporte realizado</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="logros" value="Se aprecia un logro mínimo" id="logro2" {% if proceso_iniciativas.logros == "Se aprecia un logro mínimo" %}checked{% endif %}>
+                            <label class="form-check-label" for="logro2">Se aprecia un logro mínimo, incipiente o inicial</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="logros" value="Se aprecia un logro regular" id="logro3" {% if proceso_iniciativas.logros == "Se aprecia un logro regular" %}checked{% endif %}>
+                            <label class="form-check-label" for="logro3">Se aprecia un logro de regular alcance</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="logros" value="Se aprecia un logro importante" id="logro4" {% if proceso_iniciativas.logros == "Se aprecia un logro importante" %}checked{% endif %}>
+                            <label class="form-check-label" for="logro4">Se aprecia un logro importante o significativo</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="logros" value="Se ha logrado plenamente" id="logro5" {% if proceso_iniciativas.logros == "Se ha logrado plenamente" %}checked{% endif %}>
+                            <label class="form-check-label" for="logro5">Se ha logrado plenamente</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Sustente la valoración de logros adicionales al reporte anterior</h4>
+                        <div class="form-group mt-3">
+                            <textarea class="form-control" id="sustento_logros" name="sustento_logros" rows="5">{{ proceso_iniciativas.sustento_logros }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Contenido de la iniciativa o propuesta</h4>
+                    
+                        <!-- Contenido 1 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_1">No se ha iniciado aún la elaboración de la iniciativa o propuesta:</label>
+                            <select class="form-control mt-1" id="contenido_1" name="contenido_1">
+                                <option value="" {% if not proceso_iniciativas.contenido_1 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.contenido_1 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if proceso_iniciativas.contenido_1 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="2" {% if proceso_iniciativas.contenido_1 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if proceso_iniciativas.contenido_1 == 3 %}selected{% endif %}>3 - Concluido</option>
+                            </select>
+                        </div>
+                    
+                        <!-- Contenido 2 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_2">Definición de la problemática relacionada al derecho materia de la iniciativa o propuesta:</label>
+                            <select class="form-control mt-1" id="contenido_2" name="contenido_2">
+                                <option value="" {% if not proceso_iniciativas.contenido_2 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.contenido_2 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if proceso_iniciativas.contenido_2 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="2" {% if proceso_iniciativas.contenido_2 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if proceso_iniciativas.contenido_2 == 3 %}selected{% endif %}>3 - Concluido</option>
+                            </select>
+                        </div>
+                    
+                        <!-- Contenido 3 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_3">Fundamentación / argumentación de la iniciativa o propuesta (normativa, estadística, política pública, etc.):</label>
+                            <select class="form-control mt-1" id="contenido_3" name="contenido_3">
+                                <option value="" {% if not proceso_iniciativas.contenido_3 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.contenido_3 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if proceso_iniciativas.contenido_3 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="2" {% if proceso_iniciativas.contenido_3 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if proceso_iniciativas.contenido_3 == 3 %}selected{% endif %}>3 - Concluido</option>
+                            </select>
+                        </div>
+                    
+                        <!-- Contenido 4 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_4">Formulación de los objetivos / propósitos / metas / o similares:</label>
+                            <select class="form-control mt-1" id="contenido_4" name="contenido_4">
+                                <option value="" {% if not proceso_iniciativas.contenido_4 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.contenido_4 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if proceso_iniciativas.contenido_4 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="2" {% if proceso_iniciativas.contenido_4 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if proceso_iniciativas.contenido_4 == 3 %}selected{% endif %}>3 - Concluido</option>
+                            </select>
+                        </div>
+
+                        <!-- Contenido 5 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_5">Definición de estrategias / lineamientos / o similares:</label>
+                            <select class="form-control mt-1" id="contenido_5" name="contenido_5">
+                                <option value="" {% if not proceso_iniciativas.contenido_5 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.contenido_5 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if proceso_iniciativas.contenido_5 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="2" {% if proceso_iniciativas.contenido_5 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if proceso_iniciativas.contenido_5 == 3 %}selected{% endif %}>3 - Concluido</option>
+                            </select>
+                        </div>
+
+                        <!-- Contenido 6 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_6">Estimación de presupuesto y mecanismos y/o fuentes de financiamiento:</label>
+                            <select class="form-control mt-1" id="contenido_6" name="contenido_6">
+                                <option value="" {% if not proceso_iniciativas.contenido_6 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.contenido_6 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if proceso_iniciativas.contenido_6 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="2" {% if proceso_iniciativas.contenido_6 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if proceso_iniciativas.contenido_6 == 3 %}selected{% endif %}>3 - Concluido</option>
+                            </select>
+                        </div>
+
+                        <!-- Contenido 7 -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_7">Organización / implementación de la propuesta dentro del sistema en el que se inscribe:</label>
+                            <select class="form-control mt-1" id="contenido_7" name="contenido_7">
+                                <option value="" {% if not proceso_iniciativas.contenido_7 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.contenido_7 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if proceso_iniciativas.contenido_7 == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="2" {% if proceso_iniciativas.contenido_7 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if proceso_iniciativas.contenido_7 == 3 %}selected{% endif %}>3 - Concluido</option>
+                            </select>
+                        </div>
+
+                        <!-- Contenido Otro -->
+                        <div class="form-group label-principal">
+                            <label for="contenido_otro">Otros elementos que consideren pertinente valorar (especificar):</label>
+                            <input type="text" class="form-control" id="contenido_otro" name="contenido_otro" value="{{ proceso_iniciativas.contenido_otro }}">
+                            <label class="label-principal mt-2" for="calificacion_otro_contenido">Calificación de Otros:</label>
+                            <select class="form-control mt-1" id="calificacion_otro_contenido" name="calificacion_otro_contenido">
+                                <option value="" {% if not proceso_iniciativas.calificacion_otro_contenido %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.calificacion_otro_contenido == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
+                                <option value="1" {% if proceso_iniciativas.calificacion_otro_contenido == 1 %}selected{% endif %}>1 - Inicial</option>
+                                <option value="2" {% if proceso_iniciativas.calificacion_otro_contenido == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if proceso_iniciativas.calificacion_otro_contenido == 3 %}selected{% endif %}>3 - Concluido</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    
+                </div>
+            
+                <div class="col-md-6">
+                    <!-- Fase de Implementación -->
+                    <div class="section-box mt-3">
+                        <h4>Fase de Implementación</h4>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_gestacion_checkbox" name="fase_implementacion[]" value="Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar" {% if 'Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_gestacion_checkbox">Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_organizacion_checkbox" name="fase_implementacion[]" value="Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta" {% if 'Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_organizacion_checkbox">Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_coordinacion_checkbox" name="fase_implementacion[]" value="Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta" {% if 'Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_coordinacion_checkbox">Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_dialogo_checkbox" name="fase_implementacion[]" value="Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias" {% if 'Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_dialogo_checkbox">Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_argumentacion_checkbox" name="fase_implementacion[]" value="Argumentación / fundamentación ante autoridades y funcionarios" {% if 'Argumentación / fundamentación ante autoridades y funcionarios' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_argumentacion_checkbox">Argumentación / fundamentación ante autoridades y funcionarios</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_respuesta_checkbox" name="fase_implementacion[]" value="Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta" {% if 'Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_respuesta_checkbox">Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_formalizacion_checkbox" name="fase_implementacion[]" value="Formalización de los acuerdos con el organismo o instancia involucrada o competente" {% if 'Formalización de los acuerdos con el organismo o instancia involucrada o competente' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_formalizacion_checkbox">Formalización de los acuerdos con el organismo o instancia involucrada o competente</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_normas_checkbox" name="fase_implementacion[]" value="Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente" {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in proceso_iniciativas.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_normas_checkbox', 'fase_normas_detalle')">
+                                <label class="form-check-label" for="fase_normas_checkbox">Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente (en cuál):</label>
+                                <input type="text" class="form-control mt-2 {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_normas_detalle" placeholder="¿En cuál?" name="fase_normas_detalle" value="{{ proceso_iniciativas.fase_normas_detalle }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_institucionalizacion_checkbox" name="fase_implementacion[]" value="Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión" {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in proceso_iniciativas.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_institucionalizacion_checkbox', 'fase_institucionalizacion_detalle')">
+                                <label class="form-check-label" for="fase_institucionalizacion_checkbox">Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión (qué entidad):</label>
+                                <input type="text" class="form-control mt-2 {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" name="fase_institucionalizacion_detalle" value="{{ proceso_iniciativas.fase_institucionalizacion_detalle }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_monitoreo_checkbox" name="fase_implementacion[]" value="Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente" {% if 'Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
+                                <label class="form-check-label" for="fase_monitoreo_checkbox">Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fase_otro_checkbox" name="fase_implementacion[]" value="Otro" {% if 'Otro' in proceso_iniciativas.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_otro_checkbox', 'fase_otro_detalle')">
+                                <label class="form-check-label" for="fase_otro_checkbox">Otra fase (indicar cuál):</label>
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_otro_detalle" placeholder="Indicar cual..." name="fase_otro_detalle" value="{{ proceso_iniciativas.fase_otro_detalle }}">
+                            </div>
+                        </div>
+                    </div>
+            
+                    <!-- Sección 14: Actividades principales planificadas -->
+                    <div class="section-box mt-3">
+                        <h4>Comente / argumente / valore el nivel de avance</h4>
+                        <div class="form-group mt-3">
+                            <textarea class="form-control" id="nivel_avance_comentarios" name="nivel_avance_comentarios" rows="8" placeholder="Ingresar comentarios aquí...">{{ proceso_iniciativas.nivel_avance_comentarios }}</textarea>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- Tabla para mostrar los componentes y calificaciones -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Nivel de Presencia/Aceptación de los Componentes</h4>
+                        
+                        <!-- Componente 1 -->
+                        <div class="form-group label-principal">
+                            <label for="componente_1">Componente 1:</label>
+                            <input type="text" class="form-control" id="componente_1" name="componente_1" value="{{ proceso_iniciativas.componente_1 }}" readonly>
+                            <select class="form-control mt-1" id="calificacion_componente_1" name="calificacion_componente_1">
+                                <option value="" {% if not proceso_iniciativas.calificacion_componente_1 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.calificacion_componente_1 == 0 %}selected{% endif %}>0 - No se ha tomado en cuenta</option>
+                                <option value="1" {% if proceso_iniciativas.calificacion_componente_1 == 1 %}selected{% endif %}>1 - En una mínima parte</option>
+                                <option value="2" {% if proceso_iniciativas.calificacion_componente_1 == 2 %}selected{% endif %}>2 - De manera parcial</option>
+                                <option value="3" {% if proceso_iniciativas.calificacion_componente_1 == 3 %}selected{% endif %}>3 - Se ha considerado plenamente</option>
+                                <option value="4" {% if proceso_iniciativas.calificacion_componente_1 == 4 %}selected{% endif %}>4 - Se ha superado los planteamientos iniciales</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Componente 2 -->
+                        <div class="form-group label-principal">
+                            <label for="componente_2">Componente 2:</label>
+                            <input type="text" class="form-control" id="componente_2" name="componente_2" value="{{ proceso_iniciativas.componente_2 }}" readonly>
+                            <select class="form-control mt-1" id="calificacion_componente_2" name="calificacion_componente_2">
+                                <option value="" {% if not proceso_iniciativas.calificacion_componente_2 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.calificacion_componente_2 == 0 %}selected{% endif %}>0 - No se ha tomado en cuenta</option>
+                                <option value="1" {% if proceso_iniciativas.calificacion_componente_2 == 1 %}selected{% endif %}>1 - En una mínima parte</option>
+                                <option value="2" {% if proceso_iniciativas.calificacion_componente_2 == 2 %}selected{% endif %}>2 - De manera parcial</option>
+                                <option value="3" {% if proceso_iniciativas.calificacion_componente_2 == 3 %}selected{% endif %}>3 - Se ha considerado plenamente</option>
+                                <option value="4" {% if proceso_iniciativas.calificacion_componente_2 == 4 %}selected{% endif %}>4 - Se ha superado los planteamientos iniciales</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Componente 3 -->
+                        <div class="form-group label-principal">
+                            <label for="componente_3">Componente 3:</label>
+                            <input type="text" class="form-control" id="componente_3" name="componente_3" value="{{ proceso_iniciativas.componente_3 }}" readonly>
+                            <select class="form-control mt-1" id="calificacion_componente_3" name="calificacion_componente_3">
+                                <option value="" {% if not proceso_iniciativas.calificacion_componente_3 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.calificacion_componente_3 == 0 %}selected{% endif %}>0 - No se ha tomado en cuenta</option>
+                                <option value="1" {% if proceso_iniciativas.calificacion_componente_3 == 1 %}selected{% endif %}>1 - En una mínima parte</option>
+                                <option value="2" {% if proceso_iniciativas.calificacion_componente_3 == 2 %}selected{% endif %}>2 - De manera parcial</option>
+                                <option value="3" {% if proceso_iniciativas.calificacion_componente_3 == 3 %}selected{% endif %}>3 - Se ha considerado plenamente</option>
+                                <option value="4" {% if proceso_iniciativas.calificacion_componente_3 == 4 %}selected{% endif %}>4 - Se ha superado los planteamientos iniciales</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+
+                    <div class="section-box ">
+                        <h4>Sustente la valoración que ha realizado en la tabla anterior</h4>
+                        <div class="form-group mt-3">
+                            <textarea class="form-control" id="sustento_valoracion" name="sustento_valoracion" rows="8" placeholder="Ingresar comentarios aquí...">{{ proceso_iniciativas.sustento_valoracion }}</textarea>
+                        </div>
+                    </div>
+                    
+                </div>
+
+                <!-- Columna derecha: Sustentar la valoración -->
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Nivel de Desempeño de los representantes y/o líderes</h4>
+                    
+                        <!-- Capacidad 1 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_1">Conocimiento de la problemática del derecho vulnerado:</label>
+                            <select class="form-control mt-1" id="capacidad_1" name="capacidad_1">
+                                <option value="" {% if not proceso_iniciativas.capacidad_1 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.capacidad_1 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
+                                <option value="1" {% if proceso_iniciativas.capacidad_1 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
+                                <option value="2" {% if proceso_iniciativas.capacidad_1 == 2 %}selected{% endif %}>2 - Buena presencia</option>
+                                <option value="3" {% if proceso_iniciativas.capacidad_1 == 3 %}selected{% endif %}>3 - Alto dominio</option>
+                            </select>
+                        </div>
+                    
+                        <!-- Capacidad 2 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_2">Manejo de las rutas, mecanismos e instrumentos:</label>
+                            <select class="form-control mt-1" id="capacidad_2" name="capacidad_2">
+                                <option value="" {% if not proceso_iniciativas.capacidad_2 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.capacidad_2 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
+                                <option value="1" {% if proceso_iniciativas.capacidad_2 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
+                                <option value="2" {% if proceso_iniciativas.capacidad_2 == 2 %}selected{% endif %}>2 - Buena presencia</option>
+                                <option value="3" {% if proceso_iniciativas.capacidad_2 == 3 %}selected{% endif %}>3 - Alto dominio</option>
+                            </select>
+                        </div>
+                    
+                        <!-- Capacidad 3 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_3">Organización y movilización a sus pares:</label>
+                            <select class="form-control mt-1" id="capacidad_3" name="capacidad_3">
+                                <option value="" {% if not proceso_iniciativas.capacidad_3 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.capacidad_3 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
+                                <option value="1" {% if proceso_iniciativas.capacidad_3 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
+                                <option value="2" {% if proceso_iniciativas.capacidad_3 == 2 %}selected{% endif %}>2 - Buena presencia</option>
+                                <option value="3" {% if proceso_iniciativas.capacidad_3 == 3 %}selected{% endif %}>3 - Alto dominio</option>
+                            </select>
+                        </div>
+                    
+                        <!-- Capacidad 4 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_4">Argumentación y vocería de la propuesta:</label>
+                            <select class="form-control mt-1" id="capacidad_4" name="capacidad_4">
+                                <option value="" {% if not proceso_iniciativas.capacidad_4 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.capacidad_4 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
+                                <option value="1" {% if proceso_iniciativas.capacidad_4 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
+                                <option value="2" {% if proceso_iniciativas.capacidad_4 == 2 %}selected{% endif %}>2 - Buena presencia</option>
+                                <option value="3" {% if proceso_iniciativas.capacidad_4 == 3 %}selected{% endif %}>3 - Alto dominio</option>
+                            </select>
+                        </div>
+                    
+                        <!-- Capacidad 5 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_5">Participación en colectivos y movimientos de defensa de Agenda por los DDHH:</label>
+                            <select class="form-control mt-1" id="capacidad_5" name="capacidad_5">
+                                <option value="" {% if not proceso_iniciativas.capacidad_5 %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.capacidad_5 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
+                                <option value="1" {% if proceso_iniciativas.capacidad_5 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
+                                <option value="2" {% if proceso_iniciativas.capacidad_5 == 2 %}selected{% endif %}>2 - Buena presencia</option>
+                                <option value="3" {% if proceso_iniciativas.capacidad_5 == 3 %}selected{% endif %}>3 - Alto dominio</option>
+                            </select>
+                        </div>
+                    
+                        <!-- Otra Capacidad -->
+                        <div class="form-group label-principal">
+                            <label for="otra_capacidad">Dominio de otra capacidad (especificar):</label>
+                            <input type="text" class="form-control" id="otra_capacidad" name="otra_capacidad" value="{{ proceso_iniciativas.otra_capacidad }}">
+                            <label class="mt-2" for="calificacion_otra_capacidad">Calificación Otros:</label>
+                            <select class="form-control mt-1" id="calificacion_otra_capacidad" name="calificacion_otra_capacidad">
+                                <option value="" {% if not proceso_iniciativas.calificacion_otra_capacidad %}selected{% endif %}>Seleccione una calificación</option>
+                                <option value="0" {% if proceso_iniciativas.calificacion_otra_capacidad == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
+                                <option value="1" {% if proceso_iniciativas.calificacion_otra_capacidad == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
+                                <option value="2" {% if proceso_iniciativas.calificacion_otra_capacidad == 2 %}selected{% endif %}>2 - Buena presencia</option>
+                                <option value="3" {% if proceso_iniciativas.calificacion_otra_capacidad == 3 %}selected{% endif %}>3 - Alto dominio</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>6. ¿En qué aspectos específicos se tiene que reforzar el desarrollo de competencias de los representantes y/o líderes de la población titular de derecho?</h4>
+                        <div class="form-group mt-3">
+                            <textarea class="form-control" id="reforzar_competencias" name="reforzar_competencias" rows="7" placeholder="Especifique los aspectos a reforzar aquí...">{{ proceso_iniciativas.reforzar_competencias }}</textarea>
+                        </div>
+                    </div>
+                </div>      
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>¿Cuál ha sido la participación/comportamiento de la organización/colectivo/población titular de derecho que promueve la iniciativa?</h4>
+                        <div class="form-group mt-3 label-principal">
+                            <label for="participacion_comportamiento">1. Seleccione el comportamiento:</label>
+                            <select class="form-control" id="participacion_comportamiento" name="participacion_comportamiento">
+                                <option value="" {% if not proceso_iniciativas.participacion_comportamiento %}selected{% endif %}>Seleccione una opción</option>
+                                <option value="0" {% if proceso_iniciativas.participacion_comportamiento == 0 %}selected{% endif %}>0 - Desfavorable</option>
+                                <option value="1" {% if proceso_iniciativas.participacion_comportamiento == 1 %}selected{% endif %}>1 - Indiferente</option>
+                                <option value="2" {% if proceso_iniciativas.participacion_comportamiento == 2 %}selected{% endif %}>2 - Favorable</option>
+                            </select>
+                        </div>
+                    
+                        <div class="form-group mt-2 label-principal">
+                            <label for="comentario_valoracion">2. Comente / argumente la valoración que ha realizado en la tabla anterior:</label>
+                            <div class="form-group">
+                                <textarea class="form-control" id="comentario_valoracion" name="comentario_valoracion" rows="3" placeholder="Ingrese sus comentarios aquí...">{{ proceso_iniciativas.comentario_valoracion }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+
+            <div class="row mt-4">
+                <!-- Columna izquierda: Factores claves que han favorecido y obstaculizado -->
+                <div class="col-md-6">
+                    <!-- Factores claves que han favorecido -->
+                    <div class="section-box mt-3">
+                        <h4>¿Qué factores claves han favorecido el avance de la iniciativa o propuesta?</h4>
+                        <div class="form-group mt-3">
+                            <textarea class="form-control" id="factores_favorecido" name="factores_favorecido" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.factores_favorecido }}</textarea>
+                        </div>
+                    </div>
+                    <!-- Factores claves que han obstaculizado -->
+                    <div class="section-box mt-3">
+                        <h4>¿Qué factores claves han obstaculizado el avance de la iniciativa o propuesta?</h4>
+                        <div class="form-group mt-3">
+                            <textarea class="form-control" id="factores_obstaculizado" name="factores_obstaculizado" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.factores_obstaculizado }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Columna derecha: Actividades claves implementadas -->
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Indique las Actividades claves implementadas por Paz y Esperanza y cómo han favorecido al logro del objetivo de la iniciativa</h4>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Listar Actividades realizadas</th>
+                                    <th>Indicar en qué aporta al logro de la iniciativa o propuesta</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="actividad_1" placeholder="Actividad 1" value="{{ proceso_iniciativas.actividad_1 }}"></td>
+                                    <td><input type="text" class="form-control" name="aporte_1" placeholder="Aporte 1" value="{{ proceso_iniciativas.aporte_1 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="actividad_2" placeholder="Actividad 2" value="{{ proceso_iniciativas.actividad_2 }}"></td>
+                                    <td><input type="text" class="form-control" name="aporte_2" placeholder="Aporte 2" value="{{ proceso_iniciativas.aporte_2 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="actividad_3" placeholder="Actividad 3" value="{{ proceso_iniciativas.actividad_3 }}"></td>
+                                    <td><input type="text" class="form-control" name="aporte_3" placeholder="Aporte 3" value="{{ proceso_iniciativas.aporte_3 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="actividad_4" placeholder="Actividad 4" value="{{ proceso_iniciativas.actividad_4 }}"></td>
+                                    <td><input type="text" class="form-control" name="aporte_4" placeholder="Aporte 4" value="{{ proceso_iniciativas.aporte_4 }}"></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="form-control" name="actividad_5" placeholder="Actividad 5" value="{{ proceso_iniciativas.actividad_5 }}"></td>
+                                    <td><input type="text" class="form-control" name="aporte_5" placeholder="Aporte 5" value="{{ proceso_iniciativas.aporte_5 }}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>            
+
+            <div class="row mt-4">
+                <!-- Primera columna -->
+                <div class="col-md-6">
+                    <div class="section-box mt-3 label-principal">
+                        <h4>Cambios en la estrategia institucional respecto a la promoción de iniciativas o propuestas</h4>
+                        <!-- Sección 12 -->
+                        <div class="form-group">
+                            <label for="cambios_estrategia">1. ¿Qué cambios en la estrategia institucional respecto a la promoción de iniciativas o propuestas sugiere como resultado de la evaluación de este período? ¿Qué innovaciones habría que realizar? ¿Por qué razón?</label>
+                            <textarea class="form-control" id="cambios_estrategia" name="cambios_estrategia" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.cambios_estrategia }}</textarea>
+                        </div>
+            
+                        <!-- Sección 13 -->
+                        <div class="form-group">
+                            <label for="comentario_relevante">2. Otro comentario / observación relevante respecto al período:</label>
+                            <textarea class="form-control" id="comentario_relevante" name="comentario_relevante" rows="4" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.comentario_relevante }}</textarea>
+                        </div>
+            
+                        <!-- Responsable del registro -->
+                        <div class="form-group">
+                            <label for="responsable_registro">3. Responsable del registro:</label>
+                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro" placeholder="Nombre del responsable" value="{{ proceso_iniciativas.responsable_registro }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            
+            
+            
+        
+            <!-- Botón para enviar -->
+            <!-- Botones de navegación -->
+            <div class="row justify-content-end mt-3 mb-5">
+                <div class="col-md-3 d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary btn-sm text-center mr-3 flex-grow-1" style="font-size: 1rem;" onclick="window.location.href='/'">Ir al menú</button>
+                    <!-- <button type="button" class="btn btn-success btn-sm text-center mr-3 flex-grow-1" style="font-size: 1rem;" onclick="window.location.href='/form_registro_inicial'">Ir a Registro</button> -->
+                    <button type="submit" class="btn btn-primary btn-sm text-center flex-grow-1" style="font-size: 1rem;">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>
