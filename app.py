@@ -9,8 +9,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'fhg563235453663434576377355246362463634573t32erf'
 
 # Configuración de la conexión a MySQL
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('JAWSDB_URL')
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Qsccsq.1221@localhost/pazyesperanza'
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('JAWSDB_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Qsccsq.1221@localhost/pazyesperanza'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
