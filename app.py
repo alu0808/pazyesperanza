@@ -52,7 +52,7 @@ def index():
 # Definición del modelo de datos
 class Registro(db.Model):
     dni = db.Column(db.String(20), primary_key=True, nullable=False)
-    nombre = db.Column(db.String(100), nullable=False)
+    nombre = db.Column(db.String(100), nullable=False) 
     edad = db.Column(db.Integer, nullable=True)  # Permitir NULL
     sexo = db.Column(db.String(10), nullable=True)
     lugar_nacimiento = db.Column(db.String(100), nullable=True)
