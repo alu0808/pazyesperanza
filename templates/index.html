@@ -124,7 +124,7 @@
         MENU PRINCIPAL
     </div>
 
-    <div class="container">
+    <!-- <div class="container">
         <div class="btn-container">
             <a href="{{ url_for('listar_registros') }}" class="btn btn-custom btn-red">Registro Participantes</a>
             <a href="{{ url_for('listar_iniciativas') }}" class="btn btn-custom btn-blue">Registro Iniciativas</a>
@@ -134,7 +134,30 @@
             <a href="{{ url_for('listar_politica_nacional_memoria') }}" class="btn btn-custom btn-green">Registro Política Nacional y Sitios de Memoria</a>
             <a href="{{ url_for('listar_avances_politica_nacional_memoria') }}" class="btn btn-custom btn-green">Seguimiento Política Nacional y Sitios de Memoria</a>
         </div>
+    </div> -->
+    <div class="container">
+        <!-- Área de Registro -->
+        <div class="section-title">
+            <h2>Registro</h2>
+        </div>
+        <div class="btn-container">
+            <a href="{{ url_for('listar_registros') }}" class="btn btn-custom btn-red">Registro Participantes</a>
+            <a href="{{ url_for('listar_iniciativas') }}" class="btn btn-custom btn-blue">Registro Iniciativas</a>
+            <a href="{{ url_for('listar_casos_emblematicos') }}" class="btn btn-custom btn-yellow">Registro Casos Emblemáticos</a>
+            <a href="{{ url_for('listar_politica_nacional_memoria') }}" class="btn btn-custom btn-green">Registro Política Nacional y Sitios de Memoria</a>
+        </div>
+    
+        <!-- Área de Seguimiento -->
+        <div class="section-title">
+            <h2>Seguimiento</h2>
+        </div>
+        <div class="btn-container">
+            <a href="{{ url_for('listar_proceso_iniciativa') }}" class="btn btn-custom btn-blue">Seguimiento Iniciativas</a>
+            <a href="{{ url_for('listar_avances_caso_emblematico') }}" class="btn btn-custom btn-yellow">Seguimiento Casos Emblemáticos</a>
+            <a href="{{ url_for('listar_avances_politica_nacional_memoria') }}" class="btn btn-custom btn-green">Seguimiento Política Nacional y Sitios de Memoria</a>
+        </div>
     </div>
+    
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
