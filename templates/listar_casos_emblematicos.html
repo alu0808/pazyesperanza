@@ -153,16 +153,19 @@
         </div>
 
         <!-- Botón en la parte superior derecha -->
+        {% if current_user.role in ['admin', 'editor'] %}
         <div class="button-container">
             <a href="/form_registro_casos_emblematicos" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nuevo Caso Emblemático</a>
         </div>
-
+        {% endif %}
         <!-- Tabla de registros -->
         <div class="table-responsive mb-5">
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        {% if current_user.role in ['admin', 'editor'] %}
                         <th>Acciones</th>
+                        {% endif %}
                         <th>Nombre Caso</th>
                         <th>N° Expediente</th>
                         <th>Sala</th>
@@ -178,6 +181,7 @@
                 <tbody>
                     {% for caso in casos %}
                     <tr>
+                        {% if current_user.role in ['admin', 'editor'] %}
                         <td>
                             <div class="btn-group">
                                 <a href="/editar_caso_emblematico/{{ caso.nombre_caso }}" class="btn btn-primary btn-icon">
@@ -190,6 +194,7 @@
                                 </form>
                             </div>
                         </td>
+                        {% endif %}
                         <td>{{ caso.nombre_caso }}</td>
                         <td>{{ caso.numero_expediente }}</td>
                         <td>{{ caso.sala }}</td>

@@ -154,16 +154,20 @@
         </div>
 
         <!-- Botón en la parte superior derecha -->
+        {% if current_user.role in ['admin', 'editor'] %}
         <div class="button-container">
             <a href="/form_registro_inicial" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nuevo Registro</a>
         </div>
+        {% endif %}
 
         <!-- Tabla de registros -->
         <div class="table-responsive mb-5">
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        {% if current_user.role in ['admin', 'editor'] %}
                         <th>Acciones</th>
+                        {% endif %}
                         <th>DNI</th>
                         <th>Nombre</th>
                         <th>Edad</th>
@@ -203,6 +207,7 @@
                 <tbody>
                     {% for registro in registros %}
                     <tr>
+                        {% if current_user.role in ['admin', 'editor'] %}
                         <td>
                             <div class="btn-group">
                                 <a href="/editar_registro/{{ registro.dni }}" class="btn btn-primary btn-icon">
@@ -215,6 +220,7 @@
                                 </form>
                             </div>
                         </td>
+                        {% endif %}
                         <td>{{ registro.dni }}</td>
                         <td>{{ registro.nombre }}</td>
                         <td>{{ registro.edad }}</td>

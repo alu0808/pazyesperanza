@@ -153,16 +153,20 @@
         </div>
 
         <!-- Botón en la parte superior derecha -->
+        {% if current_user.role in ['admin', 'editor'] %}
         <div class="button-container">
             <a href="/form_avances_politica_nacional_memoria" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nuevo Avance Politica nacional y/o memoria</a>
         </div>
+        {% endif %}
 
         <!-- Tabla de registros -->
         <div class="table-responsive mb-5">
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        {% if current_user.role in ['admin', 'editor'] %}
                         <th>Acciones</th>
+                        {% endif %}
                         <th>Nombre Política Nacional y/o Sitio de Memoria</th>
                         <th>Principales ocurrencias</th>
                         <th>Actividades realizadas por Paz y Esperanza</th>
@@ -176,6 +180,7 @@
                 <tbody>
                     {% for poli_mem in avances_politica_memoria %}
                     <tr>
+                        {% if current_user.role in ['admin', 'editor'] %}
                         <td>
                             <div class="btn-group">
                                 <a href="/editar_avances_politica_nacional_memoria/{{ poli_mem.id }}" class="btn btn-primary btn-icon">
@@ -188,6 +193,7 @@
                                 </form>
                             </div>
                         </td>
+                        {% endif %}
                         <td>{{ poli_mem.nombre_politica_memoria }}</td>
                         <td>{{ poli_mem.ocurrencias_periodo }}</td>
                         <td>{{ poli_mem.actividades_realizadas }}</td>
