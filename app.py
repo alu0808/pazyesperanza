@@ -76,11 +76,6 @@ def login():
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
 
-        new_user = User(username='axl', password_hash=generate_password_hash('axl'), role='admin')
-        db.session.add(new_user)
-        db.session.commit()
-
-
         if user and user.check_password(password):
             login_user(user)
             # flash('Sesión iniciada correctamente', 'success')
