@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <!-- Fuente moderna y atractiva -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <style>
+        /* Estilos globales con una tipografía más moderna */
+        
+
+        .company-name {
+            font-size: 1.5rem;
+        }
+        
+        .title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        /* Caja del login centrada */
+        .login-box {
+            background-color: #fff;
+            padding: 45px 60px;
+            border-radius: 15px;
+            box-shadow: 0 10px 8px rgba(0, 0, 0, 0.256);
+            max-width: 380px;
+            margin: 0 auto;
+            border: 1px solid #f0f0f0;
+        }
+
+        /* Centrado de la caja del login */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 55vh;
+        }
+
+        /* Estilos para los inputs */
+        .form-control {
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            background-color: #fff;
+            border-color: #1d7c3a;
+            box-shadow: 0 0 5px rgba(29, 124, 58, 0.4);
+        }
+
+        /* Botón de inicio de sesión moderno */
+        .btn-custom-login {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            background-color: #1d7c3a;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-custom-login:hover {
+            background-color: #155d2d;
+            color: white;
+        }
+
+        /* Barra superior con el logo */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1d7c3a;
+            color: white;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+        }
+
+        .title-bar-company img {
+            height: 40px;
+        }
+
+        /* Título del login */
+        .title-bar {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 7px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        /* Mensajes flash */
+        .alert-container {
+            margin-bottom: 20px;
+        }
+
+        .alert_mod {
+            font-size: 0.9rem;
+        }
+
+        @media (min-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                margin-bottom: 40px;
+            }
+            .title-bar-company img {
+                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
+            }
+        }
+
+        @media (max-width: 768px) {
+            /* Centrado de la caja del login */
+            .login-container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 45vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra superior con el nombre de la empresa y el logo -->
+    <div class="title-bar-company">
+        <a href="{{ url_for('index') }}">
+            <img src="/static/images/logo.png" alt="Logo de la empresa">
+        </a>
+    </div>
+
+    <!-- Barra de título del login -->
+    <div class="title-bar">
+        Login
+    </div>
+
+    <div class="container mt-5">
+        <!-- Mostrar mensajes flash -->
+        <div class="alert-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert alert_mod alert-{{ messages[0][0] }}">
+                        {{ messages[0][1] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <!-- Contenedor del login -->
+    <div class="login-container">
+        <div class="login-box label-principal">
+            <!-- Mostrar mensajes flash -->
+            <div class="text-center mb-4">
+                <h4 style="font-size: 1rem; color: #383838; font-weight: 700;">Inicio de sesion</h4>
+            </div>
+            <form method="POST" action="{{ url_for('login', next=request.args.get('next')) }}">
+                <div class="form-group">
+                    <div class="mb-2">
+                        <h4>Usuario:</h4>
+                    </div>
+                    <input type="text" class="form-control" name="username" required>
+                </div>
+                <div class="form-group">
+                    <div class="mb-2">
+                        <h4>Contraseña:</h4>
+                    </div>
+                    <input type="password" class="form-control" name="password" required>
+                </div>
+                <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+                <button type="submit" class="btn btn-custom-login label-principal">Iniciar sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

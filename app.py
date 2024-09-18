@@ -1,10 +1,14 @@
 import os
 from datetime import datetime
-from flask import Flask, jsonify, logging, render_template, request, redirect, url_for, flash
+from flask import Flask, jsonify, logging, render_template, request, redirect, url_for, flash, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import func
 import logging
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from functools import wraps
+from urllib.parse import urlparse, urljoin
 
 app = Flask(__name__)
 
@@ -17,24 +21,11 @@ if not app.debug:
 app.config['SECRET_KEY'] = 'fhg563235453663434576377355246362463634573t32erf'
 
 # Configuración de la conexión a la base de datos
-# Verifica si la aplicación está en el entorno de Heroku (usará DATABASE_URL)
-# o si está en tu entorno local (usará la base de datos local)
-# if os.getenv('DATABASE_URL'):
-#     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL').replace("mysql://", "mysql+pymysql://")
-# else:
-#     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Qsccsq.1221@localhost/pazyesperanza'
-# if os.getenv('DATABASE_URL'):
-#     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL').replace("postgres://", "postgresql+psycopg2://")
+
 if os.getenv('HEROKU_POSTGRESQL_CYAN_URL'):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('HEROKU_POSTGRESQL_CYAN_URL').replace("postgres://", "postgresql+psycopg2://")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres:Qsdxc.1221@localhost/pazyesperanza'
-
-
-# if os.getenv('DATABASE_URL'):
-#     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL').replace("mysql://", "postgresql+psycopg2://")
-# else:
-#     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres:Qsdxc.1221@localhost/pazyesperanza'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -43,9 +34,156 @@ db = SQLAlchemy(app)
 # Después de la configuración de la base de datos (db = SQLAlchemy(app))
 migrate = Migrate(app, db)
 
+# Inicializar el gestor de sesiones de Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # Redirige a la vista de login si no está autenticado
+
 # Crear las tablas en la base de datos
 with app.app_context():
     db.create_all()
+    
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(50), nullable=False)  # Rol: admin, editor, viewer
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Función para verificar que la URL sea segura
+def is_safe_url(target):
+    host_url = urlparse(request.host_url)
+    redirect_url = urlparse(urljoin(request.host_url, target))
+    return redirect_url.scheme in ('http', 'https') and host_url.netloc == redirect_url.netloc
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password):
+            login_user(user)
+            # flash('Sesión iniciada correctamente', 'success')
+
+            # Verificar si `next` está presente y es segura
+            next_page = request.args.get('next')
+            if next_page and is_safe_url(next_page):
+                return redirect(next_page)
+
+            # Si `next` no es válido o no existe, redirige a la página principal
+            return redirect(url_for('index'))
+
+        else:
+            flash('Nombre de usuario o contraseña incorrectos', 'danger')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Has cerrado sesión.', 'info')
+    return redirect(url_for('login'))
+
+def roles_required(*roles):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                flash("Debe iniciar sesión para acceder a esta página", "danger")
+                return redirect(url_for('login', next=request.url))  # Redirige al login si no está autenticado
+            # elif current_user.role not in roles:
+            #     flash("No tiene permisos para acceder a esta página", "danger")
+            #     return redirect(request.referrer or url_for('index')) 
+            elif current_user.role not in roles:
+                flash("No tiene permisos para acceder a esta página", "danger")
+                return redirect(url_for('index'))  # Redirige al index si no tiene permisos
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# Ruta para listar todos los usuarios
+@app.route('/admin', methods=['GET'])
+@login_required
+@roles_required('admin')
+def admin_dashboard():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login', next=request.url))
+    users = User.query.all()
+    return render_template('admin_dashboard.html', users=users)
+
+# Ruta para crear un nuevo usuario
+@app.route('/create_user', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def create_user():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        role = request.form['role']
+
+        new_user = User(username=username, role=role)
+        new_user.set_password(password)
+
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Usuario creado exitosamente.', 'success')
+        return redirect(url_for('admin_dashboard'))
+
+    return render_template('create_user.html')
+
+# Ruta para editar un usuario
+@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def edit_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        flash('Usuario no encontrado.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if request.method == 'POST':
+        user.username = request.form['username']
+        user.role = request.form['role']
+        if request.form['password']:
+            user.set_password(request.form['password'])
+
+        db.session.commit()
+        flash('Usuario actualizado exitosamente.', 'success')
+        return redirect(url_for('admin_dashboard'))
+
+    return render_template('edit_user.html', user=user)
+
+# Ruta para eliminar un usuario
+@app.route('/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+@roles_required('admin')
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        flash('Usuario no encontrado.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    db.session.delete(user)
+    db.session.commit()
+    flash('Usuario eliminado exitosamente.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
 
 ########################################################################################################################################
 ########################################################################################################################################
@@ -53,6 +191,8 @@ with app.app_context():
 ########################################################################################################################################
 ########################################################################################################################################
 @app.route('/', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor', 'viewer')  # Solo los usuarios con rol 'admin' pueden acceder
 def index():
     return render_template('index.html')  # Nuevo index.html con opciones para navegar
 
@@ -101,6 +241,8 @@ class Registro(db.Model):
     # iniciativas = db.relationship('Iniciativa', backref='registro', lazy=True)
 
 @app.route('/form_registro_inicial', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
 def form_registro_inicial():
     if request.method == 'POST':
         # Validación del DNI y eliminación de espacios en blanco
@@ -158,6 +300,8 @@ def form_registro_inicial():
 
 # LISTAR REGISTROS
 @app.route('/listar_registros', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor', 'viewer')
 def listar_registros():
     registros = Registro.query.all()  # Obtener todos los registros de la base de datos
     return render_template('listar_registros.html', registros=registros)
@@ -166,6 +310,8 @@ def listar_registros():
 ################################################################################################################################
 #EDITAR REGISTROS INICIALES
 @app.route('/editar_registro/<dni>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
 def editar_registro(dni):
     # Obtener el registro existente usando el DNI
     registro = Registro.query.filter_by(dni=dni).first()
@@ -220,6 +366,8 @@ def editar_registro(dni):
 
 #ELIMINAR REGISTROS INICIALES
 @app.route('/eliminar_registro/<dni>', methods=['POST'])
+@login_required
+@roles_required('admin')
 def eliminar_registro(dni):
     # Buscar el registro por DNI
     registro = Registro.query.filter_by(dni=dni).first()
@@ -329,6 +477,8 @@ class Iniciativa(db.Model):
     procesos = db.relationship('ProcesoIniciativa', backref='iniciativa', lazy=True, cascade="all, delete-orphan")
 
 @app.route('/form_iniciativas', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
 def form_iniciativas():
     if request.method == 'POST':
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
@@ -427,12 +577,16 @@ def form_iniciativas():
 
 # LISTAR INICIATIVAS
 @app.route('/listado_iniciativas', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor', 'viewer')
 def listar_iniciativas():
     iniciativas = Iniciativa.query.all()  # Obtener todas las iniciativas de la base de datos
     return render_template('listar_iniciativas.html', iniciativas=iniciativas)
 
 # EDITAR INICIATIVAS
 @app.route('/editar_iniciativa/<nombre_iniciativa>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
 def editar_iniciativa(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
 
@@ -527,6 +681,8 @@ def editar_iniciativa(nombre_iniciativa):
 
 # ELIMINAR INICIATIVA
 @app.route('/eliminar_iniciativa/<nombre_iniciativa>', methods=['POST'])
+@login_required
+@roles_required('admin')
 def eliminar_iniciativa(nombre_iniciativa):
     # Obtener la iniciativa usando el nombre_iniciativa
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
@@ -633,6 +789,8 @@ class ProcesoIniciativa(db.Model):
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
 
 @app.route('/form_registro_proceso_iniciativa', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
 def form_registro_proceso_iniciativa():
     if request.method == 'POST':
         # Crear un nuevo ProcesoIniciativa
@@ -703,6 +861,8 @@ def form_registro_proceso_iniciativa():
 
 # LISTAR PROCESO INICIATIVAS
 @app.route('/listar_proceso_iniciativa')
+@login_required
+@roles_required('admin', 'editor', 'viewer')
 def listar_proceso_iniciativa():
     # Obtener los registros en orden descendente por la fecha de registro
     procesos = ProcesoIniciativa.query.order_by(ProcesoIniciativa.fecha_registro.desc()).all()
@@ -710,6 +870,8 @@ def listar_proceso_iniciativa():
 
 # EDITAR PROCESO DE INICIATIVA
 @app.route('/editar_proceso_iniciativa/<int:id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
 def editar_proceso_iniciativa(id):
     # Buscar el proceso de iniciativa por id usando filter_by y first()
     proceso_iniciativas = ProcesoIniciativa.query.filter_by(id=id).first()
@@ -805,6 +967,8 @@ def editar_proceso_iniciativa(id):
 
 # ELIMINAR PROCESO INICIATIVAS
 @app.route('/eliminar_proceso_iniciativa/<int:id>', methods=['POST'])
+@login_required
+@roles_required('admin')
 def eliminar_proceso_iniciativa(id):
     # Buscar el proceso de iniciativa por su id
     proceso_iniciativa = ProcesoIniciativa.query.filter_by(id=id).first()
@@ -848,6 +1012,8 @@ class CasoEmblematico(db.Model):
 
 
 @app.route('/form_registro_casos_emblematicos', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
 def form_registro_casos_emblematicos():
     if request.method == 'POST':
         # Validar que el nombre genérico del caso no exista
@@ -883,12 +1049,16 @@ def form_registro_casos_emblematicos():
 
 # LISTAR CASOS EMBLEMÁTICOS
 @app.route('/listar_casos_emblematicos')
+@login_required
+@roles_required('admin', 'editor', 'viewer')
 def listar_casos_emblematicos():
     casos = CasoEmblematico.query.order_by(CasoEmblematico.fecha_registro.desc()).all()
     return render_template('listar_casos_emblematicos.html', casos=casos)
 
 # EDITAR CASO EMBLEMATICO
 @app.route('/editar_caso_emblematico/<nombre_caso>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
 def editar_caso_emblematico(nombre_caso):
     caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
 
@@ -921,6 +1091,8 @@ def editar_caso_emblematico(nombre_caso):
 
 # ELIMINAR CASO EMBLEMATICO
 @app.route('/eliminar_caso_emblematico/<nombre_caso>', methods=['POST'])
+@login_required
+@roles_required('admin')
 def eliminar_caso_emblematico(nombre_caso):
     # Buscar el caso emblemático por nombre_caso
     caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
@@ -962,6 +1134,8 @@ class AvanceCasoEmblematico(db.Model):
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
 
 @app.route('/form_avances_caso_emblematico', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
 def form_avances_caso_emblematico():
     if request.method == 'POST':
         # Crear un nuevo registro de avance del caso emblemático con todos los datos
@@ -989,6 +1163,8 @@ def form_avances_caso_emblematico():
 
 # LISTAR AVANCES CASO EMBLEMATICO
 @app.route('/listar_avances_caso_emblematico')
+@login_required
+@roles_required('admin', 'editor', 'viewer')
 def listar_avances_caso_emblematico():
     # Obtener los registros en orden descendente por la fecha de registro
     avances_caso_emblematico = AvanceCasoEmblematico.query.order_by(AvanceCasoEmblematico.fecha_registro.desc()).all()
@@ -996,6 +1172,8 @@ def listar_avances_caso_emblematico():
 
 # EDITAR AVANCES CASO EMBLEMATICO
 @app.route('/editar_avances_caso_emblematico/<int:id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
 def editar_avances_caso_emblematico(id):
     # Buscar el proceso de iniciativa por id usando filter_by y first()
     avance_caso_emblematico = AvanceCasoEmblematico.query.filter_by(id=id).first()
@@ -1031,6 +1209,8 @@ def editar_avances_caso_emblematico(id):
 
 # ELIMINAR AVANCES CASO EMBLEMATICO
 @app.route('/eliminar_avance_caso_emblematico/<int:id>', methods=['POST'])
+@login_required
+@roles_required('admin')
 def eliminar_avance_caso_emblematico(id):
     # Buscar el proceso de iniciativa por su id
     avances_caso_emblematico = AvanceCasoEmblematico.query.filter_by(id=id).first()
@@ -1077,6 +1257,8 @@ class PoliticaNacionalMemoria(db.Model):
     avances = db.relationship('AvancePoliticaMemoria', backref='politica', lazy=True, cascade="all, delete-orphan")
 
 @app.route('/form_registro_politica_nacional_memoria', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
 def form_registro_politica_nacional_memoria():
     if request.method == 'POST':
         # Validar que el nombre de la política o sitio de memoria no exista
@@ -1113,12 +1295,16 @@ def form_registro_politica_nacional_memoria():
 
 # LISTAR Politica nacional Memoria
 @app.route('/listar_politica_nacional_memoria')
+@login_required
+@roles_required('admin', 'editor', 'viewer')
 def listar_politica_nacional_memoria():
     politica_memoria = PoliticaNacionalMemoria.query.order_by(PoliticaNacionalMemoria.fecha_registro.desc()).all()
     return render_template('listar_politica_nacional_memoria.html', politica_memoria=politica_memoria)
 
 # EDITAR Politica nacional Memoria
 @app.route('/editar_politica_nacional_memoria/<nombre_politica_memoria>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
 def editar_politica_nacional_memoria(nombre_politica_memoria):
     politica_memoria = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
 
@@ -1153,6 +1339,8 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
 
 # ELIMINAR Politica nacional Memoria
 @app.route('/eliminar_politica_nacional_memoria/<nombre_politica_memoria>', methods=['POST'])
+@login_required
+@roles_required('admin')
 def eliminar_politica_nacional_memoria(nombre_politica_memoria):
     # Buscar el caso emblemático por nombre_politica_memoria
     politica_memoria = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
@@ -1194,6 +1382,8 @@ class AvancePoliticaMemoria(db.Model):
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
 
 @app.route('/form_avances_politica_nacional_memoria', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
 def form_avances_politica_nacional_memoria():
     if request.method == 'POST':
         # Crear un nuevo avance
@@ -1219,6 +1409,8 @@ def form_avances_politica_nacional_memoria():
 
 # LISTAR AVANCES POLITICA Y MEMORIA
 @app.route('/listar_avances_politica_nacional_memoria')
+@login_required
+@roles_required('admin', 'editor', 'viewer')
 def listar_avances_politica_nacional_memoria():
     # Obtener los registros en orden descendente por la fecha de registro
     avances_politica_memoria = AvancePoliticaMemoria.query.order_by(AvancePoliticaMemoria.fecha_registro.desc()).all()
@@ -1226,6 +1418,8 @@ def listar_avances_politica_nacional_memoria():
 
 # EDITAR AVANCES POLITICA Y MEMORIA
 @app.route('/editar_avances_politica_nacional_memoria/<int:id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
 def editar_avances_politica_nacional_memoria(id):
     # Buscar el proceso de iniciativa por id usando filter_by y first()
     avances_politica_memoria = AvancePoliticaMemoria.query.filter_by(id=id).first()
@@ -1260,6 +1454,8 @@ def editar_avances_politica_nacional_memoria(id):
 
 # ELIMINAR AVANCES POLITICA Y MEMORIA
 @app.route('/eliminar_avances_politica_nacional_memoria/<int:id>', methods=['POST'])
+@login_required
+@roles_required('admin')
 def eliminar_avances_politica_nacional_memoria(id):
     # Buscar el proceso de iniciativa por su id
     avances_caso_emblematico = AvancePoliticaMemoria.query.filter_by(id=id).first()
@@ -1296,6 +1492,8 @@ def eliminar_avances_politica_nacional_memoria(id):
 ########################################################################################################################################
 
 @app.route('/get_objetivo_especifico/<nombre_iniciativa>', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor')
 def get_objetivo_especifico(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
 
@@ -1319,6 +1517,8 @@ def get_objetivo_especifico(nombre_iniciativa):
 ########################################################################################################################################
 ########################################################################################################################################
 @app.route('/get_componentes/<nombre_iniciativa>', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor')
 def get_componentes(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
     if iniciativa:
@@ -1337,6 +1537,8 @@ def get_componentes(nombre_iniciativa):
 ########################################################################################################################################
 ########################################################################################################################################
 @app.route('/get_numero_formulario/<nombre_caso>', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor')
 def get_numero_formulario(nombre_caso):
     # Buscar el caso emblemático en la base de datos
     caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
@@ -1360,6 +1562,8 @@ def get_numero_formulario(nombre_caso):
 ########################################################################################################################################
 ########################################################################################################################################
 @app.route('/get_numero_formulario_politica/<nombre_politica_memoria>', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor')
 def get_numero_formulario_politica(nombre_politica_memoria):
     politica = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
 

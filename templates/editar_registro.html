@@ -47,8 +47,20 @@
     
 <body>
     <!-- Barra superior con el nombre de la empresa y el logo -->
+    <!-- Barra superior con el nombre de la empresa y el logo -->
     <div class="title-bar-company">
-        <img src="/static/images/logo.png" alt="Logo de la empresa">
+        <a href="{{ url_for('index') }}">
+            <img src="/static/images/logo.png" alt="Logo de la empresa">
+        </a>
+        
+        <!-- Verificar si el usuario está autenticado y mostrar el enlace adecuado -->
+        <div class="button-container">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('logout') }}" class="btn btn-light label-principal">Cerrar sesión</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-light label-principal">Iniciar sesión</a>
+            {% endif %}
+        </div>
     </div>
     <!-- Título Principal -->
     <div class="title-bar">

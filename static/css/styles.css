@@ -13,6 +13,12 @@ table th, table td {
     padding: 0.15rem;
     vertical-align: middle;
 }
+.button-container {
+    display: flex;
+    justify-content: flex-end;
+    /* margin-bottom: 15px; Añade un espacio entre el botón y la tabla */
+}
+
 .form-control {
     padding: 0.2rem;
     font-size: 0.8rem;

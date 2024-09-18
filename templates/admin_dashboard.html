@@ -1,19 +1,18 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Casos Emblemáticos</title>
+    <title>Admin Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/styles.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
+    <link href="/static/css/styles.css" rel="stylesheet">
     <style>
         .btn-group {
-            display: flex;
+            /* display: flex; */
             justify-content: center;
-            gap: 10px;
+            gap: 10px; /* Añade espacio entre los botones */
         }
 
         .btn-icon {
@@ -35,19 +34,67 @@
             border: none;
             color: white;
         }
-
-        .btn-success {
+        .btn-success{
             background-color: #e8e53e;
             border: none;
             color: rgb(40, 40, 40);
         }
-
         .btn-success:hover {
             color: #fff;
             background-color: #383838;
             border-color: #383838;
         }
 
+
+
+        .btn-icon:hover {
+            opacity: 0.9;
+        }
+
+        .table-responsive {
+            overflow-x: auto; /* Agrega scroll horizontal */
+        }
+
+        .table {
+            border-collapse: collapse; /* Asegura que los bordes se muestren correctamente */
+            width: 100%;
+        }
+
+        .table th, .table td {
+            white-space: nowrap; /* Evita que las celdas se rompan en varias líneas */
+            border: 1px solid #dee2e6; /* Agrega borde entre las celdas */
+            padding: 8px;
+            text-align: center; /* Centra el texto horizontalmente */
+            vertical-align: middle; /* Centra el texto verticalmente */
+        }
+
+        .table th {
+            background-color: #18834d; /* Fondo color verde oscuro para los encabezados */
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        /* Estilo para el botón superior derecho */
+        .button-container {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* Nueva barra con logo y nombre de la empresa */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1d7c3a;
+            color: white;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+        }
+
+        .title-bar-company img {
+            height: 40px; /* Ajusta la altura del logo */
+        }
         .title-bar {
             background-color: #343a40;
             color: white;
@@ -57,68 +104,19 @@
             width: 100%;
         }
 
-        .btn-icon:hover {
-            opacity: 0.9;
-        }
-
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        .table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        .table th, .table td {
-            white-space: nowrap;
-            border: 1px solid #dee2e6;
-            padding: 8px;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        .table th {
-            background-color: #18834d;
-            color: white;
-            font-size: 0.8rem;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .title-bar-company {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #1d7c3a;
-            color: white;
-            padding: 5px 20px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .title-bar-company img {
-            height: 40px;
-        }
-
         @media (min-width: 768px) {
             .title {
                 font-size: 2.5rem;
                 margin-bottom: 40px;
             }
-
             .title-bar-company img {
-                height: 50px;
+                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
             }
+            
         }
     </style>
 </head>
-
 <body>
-    <!-- Barra superior con el nombre de la empresa y el logo -->
     <!-- Barra superior con el nombre de la empresa y el logo -->
     <div class="title-bar-company">
         <a href="{{ url_for('index') }}">
@@ -135,9 +133,9 @@
         </div>
     </div>
 
-    <!-- Título Principal -->
+    <!-- Barra de menú principal -->
     <div class="title-bar">
-        Lista de Casos Emblemáticos
+        DASHBOARD ADMIN
     </div>
 
     <div class="container mt-5">
@@ -152,64 +150,46 @@
             {% endwith %}
         </div>
 
+        <h4>Gestión de Usuarios</h4>
+
         <!-- Botón en la parte superior derecha -->
-        <div class="button-container">
-            <a href="/form_registro_casos_emblematicos" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nuevo Caso Emblemático</a>
+        <div class="button-container mb-3">
+            <a href="{{ url_for('create_user') }}" class="btn btn-success label-principal">Crear Usuario</a>
         </div>
 
-        <!-- Tabla de registros -->
         <div class="table-responsive mb-5">
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Rol</th>
                         <th>Acciones</th>
-                        <th>Nombre Caso</th>
-                        <th>N° Expediente</th>
-                        <th>Sala</th>
-                        <th>Antecedentes</th>
-                        <th>Descripción Caso</th>
-                        <th>N° Afectados</th>
-                        <th>Objetivo Defensa</th>
-                        <th>Situación Caso</th>
-                        <th>Otro Dato</th>
-                        <th>Fecha Registro</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for caso in casos %}
+                    {% for user in users %}
                     <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.role }}</td>
                         <td>
                             <div class="btn-group">
-                                <a href="/editar_caso_emblematico/{{ caso.nombre_caso }}" class="btn btn-primary btn-icon">
+                                <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-primary btn-icon">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form method="POST" action="/eliminar_caso_emblematico/{{ caso.nombre_caso }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este caso?');" style="display:inline;">
+                                <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este registro?');" style="display:inline;">
                                     <button type="submit" class="btn btn-danger btn-icon">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
                             </div>
                         </td>
-                        <td>{{ caso.nombre_caso }}</td>
-                        <td>{{ caso.numero_expediente }}</td>
-                        <td>{{ caso.sala }}</td>
-                        <td>{{ caso.antecedentes }}</td>
-                        <td>{{ caso.descripcion_caso }}</td>
-                        <td>{{ caso.numero_afectados }}</td>
-                        <td>{{ caso.objetivo_defensa }}</td>
-                        <td>{{ caso.situacion_caso }}</td>
-                        <td>{{ caso.otro_dato }}</td>
-                        <td>{{ caso.fecha_registro.strftime('%d/%m/%Y') }}</td>
+                        
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-
-        <div class="row justify-content-end mt-3 mb-5">
-            <div class="col-md-3 d-flex justify-content-end">
-                <button type="button" class="btn btn-secondary btn-sm text-center" style="font-size: 1rem;" onclick="window.location.href='/'">Ir al menú</button>
-            </div>
         </div>
     </div>
 
