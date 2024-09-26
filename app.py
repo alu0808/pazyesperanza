@@ -49,7 +49,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(50), nullable=False)  # Rol: admin, editor, viewer
+    role = db.Column(db.String(100), nullable=False)  # Rol: admin, editor, viewer
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
