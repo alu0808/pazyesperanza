@@ -20,7 +20,7 @@ if not app.debug:
 
 app.config['SECRET_KEY'] = 'fhg563235453663434576377355246362463634573t32erf'
 
-# Configuración de la conexión a la base de datos
+# Configuración de la conexión a la base de datos ewn heroku y en PC local
 
 if os.getenv('HEROKU_POSTGRESQL_CYAN_URL'):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('HEROKU_POSTGRESQL_CYAN_URL').replace("postgres://", "postgresql+psycopg2://")
@@ -196,6 +196,13 @@ def delete_user(user_id):
 def index():
     return render_template('index.html')  # Nuevo index.html con opciones para navegar
 
+def validar_longitud(campo, valor, max_length):
+    if len(valor.strip()) > max_length:
+        flash(f'El campo "{campo}" no debe exceder los {max_length} caracteres.', 'danger')
+        return False
+    return True
+
+
 ########################################################################################################################################
 ########################################################################################################################################
 ##########                 REGISTRO INICIAL PARTICIPANTES              #################################################################
@@ -207,34 +214,34 @@ class Registro(db.Model):
     nombre = db.Column(db.String(100), nullable=False) 
     edad = db.Column(db.Integer, nullable=True)  # Permitir NULL
     sexo = db.Column(db.String(10), nullable=True)
-    lugar_nacimiento = db.Column(db.String(100), nullable=True)
-    calle = db.Column(db.String(100), nullable=True)
-    comunidad = db.Column(db.String(100), nullable=True)
-    distrito = db.Column(db.String(100), nullable=True)
-    provincia = db.Column(db.String(100), nullable=True)
-    departamento = db.Column(db.String(100), nullable=True)
-    poblacion_titular = db.Column(db.Text, nullable=True)
-    otro_poblacion = db.Column(db.String(100), nullable=True)
-    derecho_prioritario = db.Column(db.Text, nullable=True)
-    otro_derecho = db.Column(db.String(100), nullable=True)
-    oficina_regional = db.Column(db.String(100), nullable=True)
-    proyectos = db.Column(db.String(255), nullable=True)
-    tipo_servicios = db.Column(db.Text, nullable=True)
-    servicio_actividad = db.Column(db.String(255), nullable=True)
+    lugar_nacimiento = db.Column(db.String(60), nullable=True)
+    calle = db.Column(db.String(60), nullable=True)
+    comunidad = db.Column(db.String(60), nullable=True)
+    distrito = db.Column(db.String(60), nullable=True)
+    provincia = db.Column(db.String(60), nullable=True)
+    departamento = db.Column(db.String(60), nullable=True)
+    poblacion_titular = db.Column(db.String(300), nullable=True)
+    otro_poblacion = db.Column(db.String(60), nullable=True)
+    derecho_prioritario = db.Column(db.String(300), nullable=True)
+    otro_derecho = db.Column(db.String(60), nullable=True)
+    oficina_regional = db.Column(db.String(60), nullable=True)
+    proyectos = db.Column(db.String(100), nullable=True)
+    tipo_servicios = db.Column(db.String(300), nullable=True)
+    servicio_actividad = db.Column(db.String(150), nullable=True)
     fecha_participacion = db.Column(db.Date, nullable=True)  # Permitir NULL
-    propuesta_agenda = db.Column(db.String(255), nullable=True)
-    agenda_detalle = db.Column(db.String(255), nullable=True)
-    red_colectivo = db.Column(db.String(255), nullable=True)
-    red_detalle = db.Column(db.String(255), nullable=True)
-    comunidad_fe = db.Column(db.String(255), nullable=True)
-    fe_detalle = db.Column(db.String(255), nullable=True)
-    tipo_participacion_fe = db.Column(db.String(255), nullable=True)
+    propuesta_agenda = db.Column(db.String(50), nullable=True)
+    agenda_detalle = db.Column(db.String(80), nullable=True)
+    red_colectivo = db.Column(db.String(50), nullable=True)
+    red_detalle = db.Column(db.String(80), nullable=True)
+    comunidad_fe = db.Column(db.String(50), nullable=True)
+    fe_detalle = db.Column(db.String(80), nullable=True)
+    tipo_participacion_fe = db.Column(db.String(80), nullable=True)
     capacidad_1 = db.Column(db.Integer, nullable=True)  # Permitir NULL
     capacidad_2 = db.Column(db.Integer, nullable=True)  # Permitir NULL
     capacidad_3 = db.Column(db.Integer, nullable=True)  # Permitir NULL
     capacidad_4 = db.Column(db.Integer, nullable=True)  # Permitir NULL
     capacidad_5 = db.Column(db.Integer, nullable=True)  # Permitir NULL
-    otra_capacidad = db.Column(db.String(255), nullable=True)
+    otra_capacidad = db.Column(db.String(100), nullable=True)
     calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
     # Relación con la tabla Iniciativa
@@ -252,6 +259,39 @@ def form_registro_inicial():
         if Registro.query.filter_by(dni=dni).first():
             flash('Este DNI ya ha sido registrado.', 'danger')
             return redirect(url_for('listar_registros'))
+        
+        # Lista de campos a validar con su longitud máxima permitida
+        campos_a_validar = [
+            ('nombre', request.form['nombre'], 100),
+            ('sexo', request.form.get('sexo', ''), 10),
+            ('lugar_nacimiento', request.form.get('lugar_nacimiento', ''), 60),
+            ('calle', request.form.get('calle', ''), 60),
+            ('comunidad', request.form.get('comunidad', ''), 60),
+            ('distrito', request.form.get('distrito', ''), 60),
+            ('provincia', request.form.get('provincia', ''), 60),
+            ('departamento', request.form.get('departamento', ''), 60),
+            ('poblacion_titular', ", ".join(request.form.getlist('poblacion_titular')), 300),
+            ('otro_poblacion', request.form.get('otro_poblacion', ''), 60),
+            ('derecho_prioritario', ", ".join(request.form.getlist('derecho_prioritario')), 300),
+            ('otro_derecho', request.form.get('otro_derecho', ''), 60),
+            ('oficina_regional', request.form.get('oficina_regional', ''), 60),
+            ('proyectos', request.form.get('proyectos', ''), 100),
+            ('tipo_servicios', ", ".join(request.form.getlist('tipo_servicios')), 300),
+            ('servicio_actividad', request.form.get('servicio_actividad', ''), 150),
+            ('propuesta_agenda', request.form.get('propuesta_agenda', ''), 50),
+            ('agenda_detalle', request.form.get('agenda_detalle', ''), 80),
+            ('red_colectivo', request.form.get('red_colectivo', ''), 50),
+            ('red_detalle', request.form.get('red_detalle', ''), 80),
+            ('comunidad_fe', request.form.get('comunidad_fe', ''), 50),
+            ('fe_detalle', request.form.get('fe_detalle', ''), 80),
+            ('tipo_participacion_fe', request.form.get('tipo_participacion_fe', ''), 80),
+            ('otra_capacidad', request.form.get('otra_capacidad', ''), 100)
+        ]
+
+        # Validar todos los campos en una iteración
+        for campo, valor, max_length in campos_a_validar:
+            if not validar_longitud(campo, valor, max_length):
+                return redirect(url_for('form_registro_inicial'))
         
         # Crear una nueva instancia de Registro con los datos del formulario
         nuevo_registro = Registro(
