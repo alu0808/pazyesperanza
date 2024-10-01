@@ -91,7 +91,7 @@
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="nombre">Nombre y Apellido:</label>
-                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                            <input type="text" maxlength="100" class="form-control" id="nombre" name="nombre" required>
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="edad">Edad:</label>
@@ -107,7 +107,7 @@
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="lugar_nacimiento">Lugar de Nacimiento:</label>
-                            <input type="text" class="form-control" id="lugar_nacimiento" name="lugar_nacimiento" >
+                            <input type="text" class="form-control" id="lugar_nacimiento" name="lugar_nacimiento" maxlength="60">
                         </div>
                     </div>
                 </div>
@@ -135,11 +135,11 @@
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="calle">Calle / Jr:</label>
-                            <input type="text" class="form-control" id="calle" name="calle" >
+                            <input type="text" class="form-control" id="calle" name="calle" maxlength="60">
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="comunidad">Comunidad:</label>
-                            <input type="text" class="form-control" id="comunidad" name="comunidad" >
+                            <input type="text" class="form-control" id="comunidad" name="comunidad" maxlength="60">
                         </div>
                     </div>
                 </div>
@@ -190,7 +190,7 @@
                             <input class="form-check-input" type="checkbox" value="Otro" id="poblacion10" name="poblacion_titular" onclick="toggleOther('poblacion10', 'otro_poblacion')">
                             <label class="form-check-label" for="poblacion10">Otro (especificar):</label>
                         </div>
-                        <input type="text" class="form-control mt-2" id="otro_poblacion" name="otro_poblacion" style="display:none;">
+                        <input type="text" class="form-control mt-2" id="otro_poblacion" maxlength="60" name="otro_poblacion" style="display:none;">
                     </div>
                 </div>
 
@@ -221,14 +221,14 @@
                             <input class="form-check-input" type="checkbox" value="Otro" id="derecho6" name="derecho_prioritario" onclick="toggleOther('derecho6', 'otro_derecho')">
                             <label class="form-check-label" for="derecho6">Otro (especificar):</label>
                         </div>
-                        <input type="text" class="form-control mt-2" id="otro_derecho" name="otro_derecho" style="display:none;">
+                        <input type="text" class="form-control mt-2" id="otro_derecho" maxlength="60" name="otro_derecho" style="display:none;">
                     </div>
 
                     <div class="section-box flex-grow-1">
                         <h4>Servicio o Actividad</h4>
                         <div class="form-group">
                             <label class="label-principal" for="servicio_actividad">Servicio o Actividad:</label>
-                            <input type="text" class="form-control" id="servicio_actividad" name="servicio_actividad" >
+                            <input type="text" class="form-control" id="servicio_actividad" maxlength="150" name="servicio_actividad" >
                         </div>
                     </div>
                 </div>
@@ -241,11 +241,11 @@
                         <h4>Referente de Trabajo Institucional</h4>
                         <div class="form-group">
                             <label class="label-principal" for="oficina_regional">Oficina Regional de referencia:</label>
-                            <input type="text" class="form-control" id="oficina_regional" name="oficina_regional" >
+                            <input type="text" class="form-control" id="oficina_regional" name="oficina_regional" maxlength="60">
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="proyectos">Proyecto/s en el/los que participa:</label>
-                            <input type="text" class="form-control" id="proyectos" name="proyectos" >
+                            <input type="text" class="form-control" id="proyectos" name="proyectos" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="tipo_servicios">Tipo de servicios o actividades institucionales en el que participa:</label>
@@ -303,7 +303,7 @@
                                 <input class="form-check-input" type="radio" value="Sí se vincula" id="agenda_si" name="propuesta_agenda" onclick="toggleOtherRadio('propuesta_agenda', 'agenda_detalle')">
                                 <label class="form-check-label" for="agenda_si">Sí se vincula. ¿A cuál?:</label>
                             </div>
-                            <input type="text" class="form-control mt-2" id="agenda_detalle" name="agenda_detalle" style="display:none;">
+                            <input type="text" class="form-control mt-2" id="agenda_detalle" name="agenda_detalle" style="display:none;" maxlength="80">
                         </div>
 
                         <!-- Red / Colectivo -->
@@ -317,7 +317,7 @@
                                 <input class="form-check-input" type="radio" value="Sí está vinculado" id="red_si" name="red_colectivo" onclick="toggleOtherRadio('red_colectivo', 'red_detalle')">
                                 <label class="form-check-label" for="red_si">Sí está vinculado. ¿A cuál?:</label>
                             </div>
-                            <input type="text" class="form-control mt-2" id="red_detalle" name="red_detalle" style="display:none;">
+                            <input type="text" class="form-control mt-2" id="red_detalle" name="red_detalle" style="display:none;" maxlength="80">
                         </div>
 
                         <!-- Participación en comunidad de fe -->
@@ -331,11 +331,11 @@
                                 <input class="form-check-input" type="radio" value="Sí participa" id="fe_si" name="comunidad_fe" onclick="toggleOtherRadio('comunidad_fe', 'fe_detalle')">
                                 <label class="form-check-label" for="fe_si">Sí participa. ¿En cuál?:</label>
                             </div>
-                            <input type="text" class="form-control mt-2" id="fe_detalle" name="fe_detalle" style="display:none;">
+                            <input type="text" class="form-control mt-2" id="fe_detalle" name="fe_detalle" style="display:none;" maxlength="80">
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="tipo_participacion_fe">Tipo de participación en la comunidad de fe:</label>
-                            <input type="text" class="form-control" id="tipo_participacion_fe" name="tipo_participacion_fe">
+                            <input type="text" class="form-control" id="tipo_participacion_fe" name="tipo_participacion_fe" maxlength="80">
                         </div>
                     </div>
                 </div>
@@ -415,7 +415,7 @@
                         <!-- Otra Capacidad -->
                         <div class="form-group label-principal">
                             <label for="otra_capacidad">Dominio de otra capacidad (especificar):</label>
-                            <input type="text" class="form-control" id="otra_capacidad" name="otra_capacidad">
+                            <input type="text" class="form-control" id="otra_capacidad" name="otra_capacidad" maxlength="100">
                             <label class="mt-2" for="calificacion_otra_capacidad">Calificación Otros:</label>
                             <select class="form-control mt-1" id="calificacion_otra_capacidad" name="calificacion_otra_capacidad">
                                 <option value="" selected>Seleccione una calificación</option>
