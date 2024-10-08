@@ -86,7 +86,7 @@
                         <!-- Selección de la Política Nacional o Sitio de Memoria -->
                         <div class="form-group">
                             <label for="nombre_politica_memoria">Política Nacional o Memoria Seleccionado:</label>
-                            <input type="text" class="form-control" id="nombre_politica_memoria" name="nombre_politica_memoria" value="{{ avances_politica_memoria.nombre_politica_memoria }}" readonly>
+                            <input type="text" class="form-control" maxlength="200" id="nombre_politica_memoria" name="nombre_politica_memoria" value="{{ avances_politica_memoria.nombre_politica_memoria }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -107,11 +107,11 @@
                         <h4>Principales ocurrencias y actividades en el período</h4>
                         <div class="form-group">
                             <label for="ocurrencias_periodo">Principales ocurrencias en el período (contexto):</label>
-                            <textarea id="ocurrencias_periodo" name="ocurrencias_periodo" class="form-control" rows="5">{{ avances_politica_memoria.ocurrencias_periodo }}</textarea>
+                            <textarea id="ocurrencias_periodo" maxlength="400" name="ocurrencias_periodo" class="form-control" rows="5">{{ avances_politica_memoria.ocurrencias_periodo }}</textarea>
                         </div>
                         <div class="form-group">
                             <label for="actividades_realizadas">Actividades realizadas por Paz y Esperanza en el período:</label>
-                            <textarea id="actividades_realizadas" name="actividades_realizadas" class="form-control" rows="5">{{ avances_politica_memoria.actividades_realizadas }}</textarea>
+                            <textarea id="actividades_realizadas" maxlength="400" name="actividades_realizadas" class="form-control" rows="5">{{ avances_politica_memoria.actividades_realizadas }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -121,11 +121,11 @@
                         <h4>Estado actual de la gestión</h4>
                         <div class="form-group">
                             <label for="estado_actual_gestion">Estado actual de la gestión referido a la Política Nacional y/o Sitio de Memoria. Avances con relación al reporte anterior:</label>
-                            <textarea id="estado_actual_gestion" name="estado_actual_gestion" class="form-control" rows="5">{{ avances_politica_memoria.estado_actual_gestion }}</textarea>
+                            <textarea id="estado_actual_gestion" maxlength="400" name="estado_actual_gestion" class="form-control" rows="5">{{ avances_politica_memoria.estado_actual_gestion }}</textarea>
                         </div>
                         <div class="form-group">
                             <label for="recomendaciones">Recomendaciones y/o próximas tareas:</label>
-                            <textarea id="recomendaciones" name="recomendaciones" class="form-control" rows="5">{{ avances_politica_memoria.recomendaciones }}</textarea>
+                            <textarea id="recomendaciones" maxlength="350" name="recomendaciones" class="form-control" rows="5">{{ avances_politica_memoria.recomendaciones }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -138,12 +138,12 @@
                         <h4>Otros asuntos que reportar y Responsable del registro</h4>
                         <div class="form-group">
                             <label for="otro_asunto">Otro asunto:</label>
-                            <textarea id="otro_asunto" name="otro_asunto" class="form-control" rows="3">{{ avances_politica_memoria.otro_asunto }}</textarea>
+                            <textarea id="otro_asunto" maxlength="255" name="otro_asunto" class="form-control" rows="3">{{ avances_politica_memoria.otro_asunto }}</textarea>
                         </div>
 
                         <div class="form-group">
                             <label for="responsable_registro">Responsable del registro:</label>
-                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro" placeholder="Nombre del responsable" value="{{ avances_politica_memoria.responsable_registro }}">
+                            <input type="text" class="form-control" maxlength="100" id="responsable_registro" name="responsable_registro" placeholder="Nombre del responsable" value="{{ avances_politica_memoria.responsable_registro }}">
                         </div>
                     </div>
                 </div>

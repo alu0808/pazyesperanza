@@ -85,13 +85,13 @@
                         <!-- Nombre genérico de la Política Nacional y/o Sitio de Memoria (PK) -->
                         <div class="form-group">
                             <label for="nombre_politica_memoria">Nombre genérico de la Política Nacional y/o Sitio de Memoria:</label>
-                            <input type="text" id="nombre_politica_memoria" name="nombre_politica_memoria" class="form-control" value="{{ politica_memoria.nombre_politica_memoria }}" readonly>
+                            <input type="text" id="nombre_politica_memoria" maxlength="200" name="nombre_politica_memoria" class="form-control" value="{{ politica_memoria.nombre_politica_memoria }}" readonly>
                         </div>
 
                         <!-- Localización -->
                         <div class="form-group">
                             <label for="localizacion">Localización:</label>
-                            <input type="text" id="localizacion" name="localizacion" class="form-control" value="{{ politica_memoria.localizacion }}">
+                            <input type="text" id="localizacion" name="localizacion" maxlength="200" class="form-control" value="{{ politica_memoria.localizacion }}">
                         </div>
                     </div>
 
@@ -100,7 +100,7 @@
                         <!-- Breve descripción del caso -->
                         <div class="form-group">
                             <label for="descripcion_propuesta" >Breve descripción propuesta que promueve Paz y Esperanza y del estado actual:</label>
-                            <textarea id="descripcion_propuesta" name="descripcion_propuesta" class="form-control" rows="3">{{ politica_memoria.descripcion_propuesta }}</textarea>
+                            <textarea id="descripcion_propuesta" maxlength="300" name="descripcion_propuesta" class="form-control" rows="3">{{ politica_memoria.descripcion_propuesta }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -121,16 +121,16 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><input type="text" name="institucion_1" class="form-control" value="{{ politica_memoria.institucion_1 }}"></td>
-                                        <td><input type="text" name="asunto_1" class="form-control" value="{{ politica_memoria.asunto_1 }}"></td>
+                                        <td><input type="text" maxlength="200" name="institucion_1" class="form-control" value="{{ politica_memoria.institucion_1 }}"></td>
+                                        <td><input type="text" maxlength="255" name="asunto_1" class="form-control" value="{{ politica_memoria.asunto_1 }}"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="text" name="institucion_2" class="form-control" value="{{ politica_memoria.institucion_2 }}"></td>
-                                        <td><input type="text" name="asunto_2" class="form-control" value="{{ politica_memoria.asunto_2 }}"></td>
+                                        <td><input type="text" maxlength="200" name="institucion_2" class="form-control" value="{{ politica_memoria.institucion_2 }}"></td>
+                                        <td><input type="text" maxlength="255" name="asunto_2" class="form-control" value="{{ politica_memoria.asunto_2 }}"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="text" name="institucion_3" class="form-control" value="{{ politica_memoria.institucion_3 }}"></td>
-                                        <td><input type="text" name="asunto_3" class="form-control" value="{{ politica_memoria.asunto_3 }}"></td>
+                                        <td><input type="text" maxlength="200" name="institucion_3" class="form-control" value="{{ politica_memoria.institucion_3 }}"></td>
+                                        <td><input type="text" maxlength="255" name="asunto_3" class="form-control" value="{{ politica_memoria.asunto_3 }}"></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -147,7 +147,7 @@
                         <h4>Organización/es o colectivo/s aliado/s en la gestión</h4>
                         <div class="form-group">
                             <label for="organizaciones_aliadas">Organización/es o colectivo/s aliado/s en la gestión:</label>
-                            <textarea id="organizaciones_aliadas" name="organizaciones_aliadas" class="form-control" rows="3">{{ politica_memoria.organizaciones_aliadas }}</textarea>
+                            <textarea id="organizaciones_aliadas" name="organizaciones_aliadas" maxlength="300" class="form-control" rows="3">{{ politica_memoria.organizaciones_aliadas }}</textarea>
                         </div>
                     </div>
                 </div> 
@@ -156,7 +156,7 @@
                         <h4>Otro dato relevante</h4>
                         <div class="form-group">
                             <label for="otro_dato">Otro dato relevante:</label>
-                            <textarea id="otro_dato" name="otro_dato" class="form-control" rows="3">{{ politica_memoria.otro_dato }}</textarea>
+                            <textarea id="otro_dato" name="otro_dato" maxlength="255" class="form-control" rows="3">{{ politica_memoria.otro_dato }}</textarea>
                         </div>
                     </div>
                 </div>

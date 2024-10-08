@@ -95,7 +95,7 @@
                         <h4>Nombre de la Iniciativa o Propuesta</h4>
                         <div class="form-group">
                             <label class="label-principal" for="nombre_iniciativa">Nombre de la iniciativa:</label>
-                            <input type="text" class="form-control" id="nombre_iniciativa" name="nombre_iniciativa" value="{{ iniciativa.nombre_iniciativa }}" readonly>
+                            <input type="text" class="form-control" id="nombre_iniciativa" name="nombre_iniciativa" maxlength="150" value="{{ iniciativa.nombre_iniciativa }}" readonly>
                         </div>
                     </div>
 
@@ -126,7 +126,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" id="otro_derecho_checkbox" name="derecho_generico" value="Otro" {% if iniciativa.derecho_generico == 'Otro' %}checked{% endif %} onchange="toggleOther('otro_derecho_checkbox', 'otro_derecho_detalle')">
                                 <label class="form-check-label" for="otro_derecho_checkbox">Otro derecho (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2 {% if iniciativa.derecho_generico == 'Otro' %}mostrar{% else %}ocultar{% endif %}" id="otro_derecho_detalle" name="otro_derecho_detalle" value="{{ iniciativa.otro_derecho_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if iniciativa.derecho_generico == 'Otro' %}mostrar{% else %}ocultar{% endif %}" id="otro_derecho_detalle" maxlength="60" name="otro_derecho_detalle" value="{{ iniciativa.otro_derecho_detalle }}">
                             </div>
                         </div>
                     </div>
@@ -136,7 +136,7 @@
                         <h4>Colectivo u Organización Asociada</h4>
                         <div class="form-group">
                             <label class="label-principal" for="colectivo_organizacion">Colectivo u organización:</label>
-                            <input type="text" class="form-control" id="colectivo_organizacion" name="colectivo_organizacion" value="{{ iniciativa.colectivo_organizacion }}">
+                            <input type="text" class="form-control" maxlength="80" id="colectivo_organizacion" name="colectivo_organizacion" value="{{ iniciativa.colectivo_organizacion }}">
                         </div>
                     </div>
                 </div>
@@ -204,7 +204,7 @@
                                     <tr>
                                         <td>
                                             <input type="checkbox" id="otra_poblacion_checkbox" name="poblacion[]" value="Otra población" {% if 'Otra población' in iniciativa.poblacion %}checked{% endif %} onchange="toggleOther('otra_poblacion_checkbox', 'otra_poblacion_detalle')"> Otra población o colectivo de referencia:
-                                            <input type="text" class="form-control mt-2 {% if 'Otra población' in iniciativa.poblacion %}mostrar{% else %}ocultar{% endif %}" id="otra_poblacion_detalle" name="otra_poblacion_detalle" value="{{ iniciativa.otra_poblacion_detalle }}">
+                                            <input type="text" class="form-control mt-2 {% if 'Otra población' in iniciativa.poblacion %}mostrar{% else %}ocultar{% endif %}" id="otra_poblacion_detalle" name="otra_poblacion_detalle" maxlength="80" value="{{ iniciativa.otra_poblacion_detalle }}">
                                         </td>
                                         <td><input type="number" class="form-control" name="total_hombres_otra" value="{{ iniciativa.total_hombres_otra }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_otra" value="{{ iniciativa.total_mujeres_otra }}" min="0"></td>
@@ -226,28 +226,28 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="cambio_politica_checkbox" name="tipo_naturaleza[]" value="Cambios en la política pública nacional" {% if 'Cambios en la política pública nacional' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('cambio_politica_checkbox', 'cambio_politica_detalle')">
                                 <label class="form-check-label" for="cambio_politica_checkbox">Cambios en la política pública nacional</label>
-                                <input type="text" class="form-control mt-2 {% if 'Cambios en la política pública nacional' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_politica_detalle"  placeholder="¿Cuál en particular?" name="cambio_politica_detalle" value="{{ iniciativa.cambio_politica_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Cambios en la política pública nacional' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_politica_detalle"  placeholder="¿Cuál en particular?" name="cambio_politica_detalle" maxlength="100" value="{{ iniciativa.cambio_politica_detalle }}">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="cambio_marcos_checkbox" name="tipo_naturaleza[]" value="Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos" {% if 'Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('cambio_marcos_checkbox', 'cambio_marcos_detalle')">
                                 <label class="form-check-label" for="cambio_marcos_checkbox">Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos</label>
-                                <input type="text" class="form-control mt-2 {% if 'Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_marcos_detalle" placeholder="¿Cuál en particular?" name="cambio_marcos_detalle" value="{{ iniciativa.cambio_marcos_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_marcos_detalle" maxlength="100" placeholder="¿Cuál en particular?" name="cambio_marcos_detalle" value="{{ iniciativa.cambio_marcos_detalle }}">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="cambio_practicas_checkbox" name="tipo_naturaleza[]" value="Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos" {% if 'Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('cambio_practicas_checkbox', 'cambio_practicas_detalle')">
                                 <label class="form-check-label" for="cambio_practicas_checkbox">Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos</label>
-                                <input type="text" class="form-control mt-2 {% if 'Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_practicas_detalle" placeholder="¿Cuál en particular?" name="cambio_practicas_detalle" value="{{ iniciativa.cambio_practicas_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_practicas_detalle" maxlength="100" placeholder="¿Cuál en particular?" name="cambio_practicas_detalle" value="{{ iniciativa.cambio_practicas_detalle }}">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="cambio_sensibilidad_checkbox" name="tipo_naturaleza[]" value="Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos" {% if 'Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('cambio_sensibilidad_checkbox', 'cambio_sensibilidad_detalle')">
                                 <label class="form-check-label" for="cambio_sensibilidad_checkbox">Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos</label>
-                                <input type="text" class="form-control mt-2 {% if 'Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_sensibilidad_detalle" placeholder="¿Cuál en particular?" name="cambio_sensibilidad_detalle" value="{{ iniciativa.cambio_sensibilidad_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="cambio_sensibilidad_detalle" maxlength="100" placeholder="¿Cuál en particular?" name="cambio_sensibilidad_detalle" value="{{ iniciativa.cambio_sensibilidad_detalle }}">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="otro_naturaleza_checkbox" name="tipo_naturaleza[]" value="Otro" {% if 'Otro' in iniciativa.tipo_naturaleza %}checked{% endif %} onchange="toggleOther('otro_naturaleza_checkbox', 'otro_naturaleza_detalle', 'otro_naturaleza_particular')">
                                 <label class="form-check-label" for="otro_naturaleza_checkbox">Otro (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="otro_naturaleza_detalle" placeholder="Otro Tipo o Naturaleza" name="otro_naturaleza_detalle" value="{{ iniciativa.otro_naturaleza_detalle }}">
-                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="otro_naturaleza_particular" placeholder="¿Cuál en particular?" name="otro_naturaleza_particular" value="{{ iniciativa.otro_naturaleza_particular }}">
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="otro_naturaleza_detalle" placeholder="Otro Tipo o Naturaleza" name="otro_naturaleza_detalle" maxlength="100" value="{{ iniciativa.otro_naturaleza_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.tipo_naturaleza %}mostrar{% else %}ocultar{% endif %}" id="otro_naturaleza_particular" placeholder="¿Cuál en particular?" name="otro_naturaleza_particular" maxlength="100" value="{{ iniciativa.otro_naturaleza_particular }}">
                             </div>
                         </div>
                     </div>
@@ -267,8 +267,8 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="sector_publico_competente_1" value="{{ iniciativa.sector_publico_competente_1 }}"></td>
-                                    <td><input type="text" class="form-control" name="dependencia_instancia_1" value="{{ iniciativa.dependencia_instancia_1 }}"></td>
+                                    <td><input type="text" class="form-control" name="sector_publico_competente_1" maxlength="70" value="{{ iniciativa.sector_publico_competente_1 }}"></td>
+                                    <td><input type="text" class="form-control" name="dependencia_instancia_1" maxlength="70" value="{{ iniciativa.dependencia_instancia_1 }}"></td>
                                     <td>
                                         <select class="form-control" name="alcance_escala_1">
                                             <option value="" {% if not iniciativa.alcance_escala_1 %}selected{% endif %}>Seleccionar</option>
@@ -279,8 +279,8 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="sector_publico_competente_2" value="{{ iniciativa.sector_publico_competente_2 }}"></td>
-                                    <td><input type="text" class="form-control" name="dependencia_instancia_2" value="{{ iniciativa.dependencia_instancia_2 }}"></td>
+                                    <td><input type="text" class="form-control" name="sector_publico_competente_2" maxlength="70" value="{{ iniciativa.sector_publico_competente_2 }}"></td>
+                                    <td><input type="text" class="form-control" name="dependencia_instancia_2" maxlength="70" value="{{ iniciativa.dependencia_instancia_2 }}"></td>
                                     <td>
                                         <select class="form-control" name="alcance_escala_2">
                                             <option value="" {% if not iniciativa.alcance_escala_2 %}selected{% endif %}>Seleccionar</option>
@@ -304,13 +304,13 @@
                         <table class="table">
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Localidad 1" name="localidad_1" value="{{ iniciativa.localidad_1 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="60" placeholder="Localidad 1" name="localidad_1" value="{{ iniciativa.localidad_1 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Localidad 2" name="localidad_2" value="{{ iniciativa.localidad_2 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="60" placeholder="Localidad 2" name="localidad_2" value="{{ iniciativa.localidad_2 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Localidad 3" name="localidad_3" value="{{ iniciativa.localidad_3 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="60" placeholder="Localidad 3" name="localidad_3" value="{{ iniciativa.localidad_3 }}"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -322,7 +322,7 @@
                     <div class="section-box mt-3">
                         <h4>Breve descripción de la situación</h4>
                         <div class="form-group">
-                            <textarea class="form-control" rows="3" placeholder="Indique aquí..." name="descripcion_situacion">{{ iniciativa.descripcion_situacion }}</textarea>
+                            <textarea class="form-control" rows="3" placeholder="Indique aquí..." maxlength="255" name="descripcion_situacion">{{ iniciativa.descripcion_situacion }}</textarea>
                         </div>
                     </div>
 
@@ -330,7 +330,7 @@
                     <div class="section-box mt-3">
                         <h4>Objetivo específico</h4>
                         <div class="form-group">
-                            <textarea class="form-control" rows="3" placeholder="Indique aquí..." name="objetivo_especifico">{{ iniciativa.objetivo_especifico }}</textarea>
+                            <textarea class="form-control" rows="3" placeholder="Indique aquí..." maxlength="255" name="objetivo_especifico">{{ iniciativa.objetivo_especifico }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -370,7 +370,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="campo_otro_checkbox" name="campos[]" value="Otro" {% if 'Otro' in iniciativa.campos %}checked{% endif %} onchange="toggleOther('campo_otro_checkbox', 'campo_otro_detalle')">
                                 <label class="form-check-label" for="campo_otro_checkbox">Otro (indicar cuál):</label>                                                     
-                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.campos %}mostrar{% else %}ocultar{% endif %}" id="campo_otro_detalle" name="campo_otro_detalle" value="{{ iniciativa.campo_otro_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.campos %}mostrar{% else %}ocultar{% endif %}" id="campo_otro_detalle" maxlength="80" name="campo_otro_detalle" value="{{ iniciativa.campo_otro_detalle }}">
                             </div>
                         </div>
                     </div>
@@ -383,13 +383,13 @@
                         <table class="table">
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="componente_1" value="{{ iniciativa.componente_1 }}" placeholder="1."></td>
+                                    <td><input type="text" class="form-control" name="componente_1" value="{{ iniciativa.componente_1 }}" maxlength="100" placeholder="1."></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="componente_2" value="{{ iniciativa.componente_2 }}" placeholder="2."></td>
+                                    <td><input type="text" class="form-control" name="componente_2" value="{{ iniciativa.componente_2 }}" maxlength="100" placeholder="2."></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="componente_3" value="{{ iniciativa.componente_3 }}" placeholder="3."></td>
+                                    <td><input type="text" class="form-control" name="componente_3" value="{{ iniciativa.componente_3 }}" maxlength="100" placeholder="3."></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -409,8 +409,8 @@
                                 <option value="" {% if not iniciativa.contenido_1 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if iniciativa.contenido_1 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
                                 <option value="1" {% if iniciativa.contenido_1 == 1 %}selected{% endif %}>1 - Inicial</option>
-                                <option value="3" {% if iniciativa.contenido_1 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
-                                <option value="4" {% if iniciativa.contenido_1 == 4 %}selected{% endif %}>4 - Concluido</option>
+                                <option value="2" {% if iniciativa.contenido_1 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if iniciativa.contenido_1 == 3 %}selected{% endif %}>3 - Concluido</option>
                             </select>
                         </div>
                         <!-- Contenido 2 -->
@@ -420,8 +420,8 @@
                                 <option value="" {% if not iniciativa.contenido_2 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if iniciativa.contenido_2 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
                                 <option value="1" {% if iniciativa.contenido_2 == 1 %}selected{% endif %}>1 - Inicial</option>
-                                <option value="3" {% if iniciativa.contenido_2 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
-                                <option value="4" {% if iniciativa.contenido_2 == 4 %}selected{% endif %}>4 - Concluido</option>
+                                <option value="2" {% if iniciativa.contenido_2 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if iniciativa.contenido_2 == 3 %}selected{% endif %}>3 - Concluido</option>
                             </select>
                         </div>
                         <!-- Contenido 3 -->
@@ -431,8 +431,8 @@
                                 <option value="" {% if not iniciativa.contenido_3 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if iniciativa.contenido_3 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
                                 <option value="1" {% if iniciativa.contenido_3 == 1 %}selected{% endif %}>1 - Inicial</option>
-                                <option value="3" {% if iniciativa.contenido_3 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
-                                <option value="4" {% if iniciativa.contenido_3 == 4 %}selected{% endif %}>4 - Concluido</option>
+                                <option value="2" {% if iniciativa.contenido_3 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if iniciativa.contenido_3 == 3 %}selected{% endif %}>3 - Concluido</option>
                             </select>
                         </div>
                         <!-- Contenido 4 -->
@@ -442,8 +442,8 @@
                                 <option value="" {% if not iniciativa.contenido_4 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if iniciativa.contenido_4 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
                                 <option value="1" {% if iniciativa.contenido_4 == 1 %}selected{% endif %}>1 - Inicial</option>
-                                <option value="3" {% if iniciativa.contenido_4 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
-                                <option value="4" {% if iniciativa.contenido_4 == 4 %}selected{% endif %}>4 - Concluido</option>
+                                <option value="2" {% if iniciativa.contenido_4 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if iniciativa.contenido_4 == 3 %}selected{% endif %}>3 - Concluido</option>
                             </select>
                         </div>
                         <!-- Contenido 5 -->
@@ -453,8 +453,8 @@
                                 <option value="" {% if not iniciativa.contenido_5 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if iniciativa.contenido_5 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
                                 <option value="1" {% if iniciativa.contenido_5 == 1 %}selected{% endif %}>1 - Inicial</option>
-                                <option value="3" {% if iniciativa.contenido_5 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
-                                <option value="4" {% if iniciativa.contenido_5 == 4 %}selected{% endif %}>4 - Concluido</option>
+                                <option value="2" {% if iniciativa.contenido_5 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if iniciativa.contenido_5 == 3 %}selected{% endif %}>3 - Concluido</option>
                             </select>
                         </div>
                         <!-- Contenido 6 -->
@@ -464,8 +464,8 @@
                                 <option value="" {% if not iniciativa.contenido_6 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if iniciativa.contenido_6 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
                                 <option value="1" {% if iniciativa.contenido_6 == 1 %}selected{% endif %}>1 - Inicial</option>
-                                <option value="3" {% if iniciativa.contenido_6 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
-                                <option value="4" {% if iniciativa.contenido_6 == 4 %}selected{% endif %}>4 - Concluido</option>
+                                <option value="2" {% if iniciativa.contenido_6 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if iniciativa.contenido_6 == 3 %}selected{% endif %}>3 - Concluido</option>
                             </select>
                         </div>
                         <!-- Contenido 7 -->
@@ -475,21 +475,21 @@
                                 <option value="" {% if not iniciativa.contenido_7 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if iniciativa.contenido_7 == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
                                 <option value="1" {% if iniciativa.contenido_7 == 1 %}selected{% endif %}>1 - Inicial</option>
-                                <option value="3" {% if iniciativa.contenido_7 == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
-                                <option value="4" {% if iniciativa.contenido_7 == 4 %}selected{% endif %}>4 - Concluido</option>
+                                <option value="2" {% if iniciativa.contenido_7 == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if iniciativa.contenido_7 == 3 %}selected{% endif %}>3 - Concluido</option>
                             </select>
                         </div>
                         <!-- Contenido Otro -->
                         <div class="form-group label-principal">
                             <label for="contenido_otro">Otros elementos que consideren pertinente valorar (especificar):</label>
-                            <input type="text" class="form-control" id="contenido_otro" name="contenido_otro" value="{{ iniciativa.contenido_otro }}">
+                            <input type="text" class="form-control" id="contenido_otro" name="contenido_otro" maxlength="80" value="{{ iniciativa.contenido_otro }}">
                             <label class="label-principal mt-2" for="calificacion_otro_contenido">Calificación de Otros:</label>
                             <select class="form-control mt-1" id="calificacion_otro_contenido" name="calificacion_otro_contenido">
                                 <option value="" {% if not iniciativa.calificacion_otro_contenido %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if iniciativa.calificacion_otro_contenido == 0 %}selected{% endif %}>0 - No se ha iniciado</option>
                                 <option value="1" {% if iniciativa.calificacion_otro_contenido == 1 %}selected{% endif %}>1 - Inicial</option>
-                                <option value="3" {% if iniciativa.calificacion_otro_contenido == 3 %}selected{% endif %}>3 - En proceso de formulación</option>
-                                <option value="4" {% if iniciativa.calificacion_otro_contenido == 4 %}selected{% endif %}>4 - Concluido</option>
+                                <option value="2" {% if iniciativa.calificacion_otro_contenido == 2 %}selected{% endif %}>2 - En proceso de formulación</option>
+                                <option value="3" {% if iniciativa.calificacion_otro_contenido == 3 %}selected{% endif %}>3 - Concluido</option>
                             </select>
                         </div>
                     </div>
@@ -531,12 +531,12 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_normas_checkbox" name="fase_implementacion[]" value="Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente" {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_normas_checkbox', 'fase_normas_detalle')">
                                 <label class="form-check-label" for="fase_normas_checkbox">Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente (en cuál):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_normas_detalle" placeholder="¿En cuál?" name="fase_normas_detalle" value="{{ iniciativa.fase_normas_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_normas_detalle" maxlength="100" placeholder="¿En cuál?" name="fase_normas_detalle" value="{{ iniciativa.fase_normas_detalle }}">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_institucionalizacion_checkbox" name="fase_implementacion[]" value="Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión" {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_institucionalizacion_checkbox', 'fase_institucionalizacion_detalle')">
                                 <label class="form-check-label" for="fase_institucionalizacion_checkbox">Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión (qué entidad):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" name="fase_institucionalizacion_detalle" value="{{ iniciativa.fase_institucionalizacion_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_institucionalizacion_detalle" maxlength="100" placeholder="¿Qué entidad?" name="fase_institucionalizacion_detalle" value="{{ iniciativa.fase_institucionalizacion_detalle }}">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_monitoreo_checkbox" name="fase_implementacion[]" value="Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente" {% if 'Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente' in iniciativa.fase_implementacion %}checked{% endif %}>
@@ -545,7 +545,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_otro_checkbox" name="fase_implementacion[]" value="Otro" {% if 'Otro' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_otro_checkbox', 'fase_otro_detalle')">
                                 <label class="form-check-label" for="fase_otro_checkbox">Otra fase (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_otro_detalle" placeholder="Indicar cual..." name="fase_otro_detalle" value="{{ iniciativa.fase_otro_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_otro_detalle" maxlength="100" placeholder="Indicar cual..." name="fase_otro_detalle" value="{{ iniciativa.fase_otro_detalle }}">
                             </div>
                         </div>
                     </div>
@@ -556,19 +556,19 @@
                         <table class="table">
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 1" name="actividad_1" value="{{ iniciativa.actividad_1 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 1" name="actividad_1" value="{{ iniciativa.actividad_1 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 2" name="actividad_2" value="{{ iniciativa.actividad_2 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 2" name="actividad_2" value="{{ iniciativa.actividad_2 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 3" name="actividad_3" value="{{ iniciativa.actividad_3 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 3" name="actividad_3" value="{{ iniciativa.actividad_3 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 4" name="actividad_4" value="{{ iniciativa.actividad_4 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 4" name="actividad_4" value="{{ iniciativa.actividad_4 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 5" name="actividad_5" value="{{ iniciativa.actividad_5 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 5" name="actividad_5" value="{{ iniciativa.actividad_5 }}"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -592,16 +592,16 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="proyecto_1" value="{{ iniciativa.proyecto_1 }}"></td>
-                                    <td><input type="text" class="form-control" name="fuente_financiamiento_1" value="{{ iniciativa.fuente_financiamiento_1 }}"></td>
-                                    <td><input type="text" class="form-control" name="financiamiento_1" value="{{ iniciativa.financiamiento_1 }}"></td>
-                                    <td><input type="text" class="form-control" name="periodo_financiamiento_1" value="{{ iniciativa.periodo_financiamiento_1 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" name="proyecto_1" value="{{ iniciativa.proyecto_1 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="fuente_financiamiento_1" value="{{ iniciativa.fuente_financiamiento_1 }}"></td>
+                                    <td><input type="number" class="form-control" name="financiamiento_1" value="{{ iniciativa.financiamiento_1 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="periodo_financiamiento_1" value="{{ iniciativa.periodo_financiamiento_1 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="proyecto_2" value="{{ iniciativa.proyecto_2 }}"></td>
-                                    <td><input type="text" class="form-control" name="fuente_financiamiento_2" value="{{ iniciativa.fuente_financiamiento_2 }}"></td>
-                                    <td><input type="text" class="form-control" name="financiamiento_2" value="{{ iniciativa.financiamiento_2 }}"></td>
-                                    <td><input type="text" class="form-control" name="periodo_financiamiento_2" value="{{ iniciativa.periodo_financiamiento_2 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" name="proyecto_2" value="{{ iniciativa.proyecto_2 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="fuente_financiamiento_2" value="{{ iniciativa.fuente_financiamiento_2 }}"></td>
+                                    <td><input type="number" class="form-control" name="financiamiento_2" value="{{ iniciativa.financiamiento_2 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="periodo_financiamiento_2" value="{{ iniciativa.periodo_financiamiento_2 }}"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -612,14 +612,14 @@
                     <!-- Observaciones -->
                     <div class="section-box mt-3 label-principal">
                         <h4>Observaciones / comentarios / sugerencias</h4>
-                        <textarea placeholder="Ingresar información aquí y utilice todo el espacio necesario" class="form-control" rows="4" name="observaciones">{{ iniciativa.observaciones }}</textarea>
+                        <textarea placeholder="Ingresar información aquí y utilice todo el espacio necesario" class="form-control" rows="4" maxlength="255" name="observaciones">{{ iniciativa.observaciones }}</textarea>
                     </div>
                     <!-- Responsable del registro -->
                     <div class="section-box label-principal">
                         <h4>Responsable del registro:</h4>
                         <div class="form-group">
                             <label for="responsable_registro">Responsable del registro:</label>
-                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro" value="{{ iniciativa.responsable_registro }}">
+                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro" maxlength="100" value="{{ iniciativa.responsable_registro }}">
                         </div>
                     </div>
                 </div>

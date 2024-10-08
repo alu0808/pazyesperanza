@@ -86,25 +86,25 @@
                         <div class="form-group">
                             <label for="nombre_caso" class="label-principal">Nombre genérico del Caso:</label>
                             <!-- El campo de nombre debe ser "readonly" porque es la llave primaria y no debería modificarse -->
-                            <input type="text" id="nombre_caso" name="nombre_caso" class="form-control" value="{{ caso.nombre_caso }}" readonly>
+                            <input type="text" id="nombre_caso" maxlength="200" name="nombre_caso" class="form-control" value="{{ caso.nombre_caso }}" readonly>
                         </div>
                         
                         <!-- Número de Expediente -->
                         <div class="form-group">
                             <label for="numero_expediente" class="label-principal">N° de Expediente:</label>
-                            <input type="text" id="numero_expediente" name="numero_expediente" class="form-control" value="{{ caso.numero_expediente }}">
+                            <input type="text" id="numero_expediente" maxlength="100" name="numero_expediente" class="form-control" value="{{ caso.numero_expediente }}">
                         </div>
                     
                         <!-- Sala -->
                         <div class="form-group">
                             <label for="sala" class="label-principal">Sala:</label>
-                            <input type="text" id="sala" name="sala" class="form-control" value="{{ caso.sala }}">
+                            <input type="text" id="sala" maxlength="100" name="sala" class="form-control" value="{{ caso.sala }}">
                         </div>
                     
                         <!-- Antecedentes -->
                         <div class="form-group">
                             <label for="antecedentes" class="label-principal">Antecedentes:</label>
-                            <textarea id="antecedentes" name="antecedentes" class="form-control" rows="3">{{ caso.antecedentes }}</textarea>
+                            <textarea id="antecedentes" maxlength="300" name="antecedentes" class="form-control" rows="3">{{ caso.antecedentes }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -117,7 +117,7 @@
                         <!-- Breve descripción del caso -->
                         <div class="form-group">
                             <label for="descripcion_caso">Breve descripción del Caso que se sigue:</label>
-                            <textarea id="descripcion_caso" name="descripcion_caso" class="form-control" rows="5">{{ caso.descripcion_caso }}</textarea>
+                            <textarea id="descripcion_caso" maxlength="300" name="descripcion_caso" class="form-control" rows="5">{{ caso.descripcion_caso }}</textarea>
                         </div>
 
                         <!-- Número de personas/familias afectadas -->
@@ -129,7 +129,7 @@
                         <!-- Objetivo que se persigue con/desde la defensa -->
                         <div class="form-group">
                             <label for="objetivo_defensa">Objetivo que se persigue con/desde la defensa de Paz y Esperanza:</label>
-                            <textarea id="objetivo_defensa" name="objetivo_defensa" class="form-control" rows="5">{{ caso.objetivo_defensa }}</textarea>
+                            <textarea id="objetivo_defensa" maxlength="300" name="objetivo_defensa" class="form-control" rows="5">{{ caso.objetivo_defensa }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -142,13 +142,13 @@
                         <!-- Situación actual del Caso -->
                         <div class="form-group">
                             <label for="situacion_caso">Situación actual del Caso:</label>
-                            <textarea id="situacion_caso" name="situacion_caso" class="form-control" rows="3">{{ caso.situacion_caso }}</textarea>
+                            <textarea id="situacion_caso" maxlength="300" name="situacion_caso" class="form-control" rows="3">{{ caso.situacion_caso }}</textarea>
                         </div>
                         
                         <!-- Otro dato relevante -->
                         <div class="form-group">
                             <label for="otro_dato">Otro dato relevante:</label>
-                            <textarea id="otro_dato" name="otro_dato" class="form-control" rows="3">{{ caso.otro_dato }}</textarea>
+                            <textarea id="otro_dato" maxlength="300" name="otro_dato" class="form-control" rows="3">{{ caso.otro_dato }}</textarea>
                         </div>
                     </div>
                 </div>

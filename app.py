@@ -258,40 +258,7 @@ def form_registro_inicial():
         # Verificar si el DNI ya existe
         if Registro.query.filter_by(dni=dni).first():
             flash('Este DNI ya ha sido registrado.', 'danger')
-            return redirect(url_for('listar_registros'))
-        
-        # Lista de campos a validar con su longitud máxima permitida
-        campos_a_validar = [
-            ('nombre', request.form['nombre'], 100),
-            ('sexo', request.form.get('sexo', ''), 10),
-            ('lugar_nacimiento', request.form.get('lugar_nacimiento', ''), 60),
-            ('calle', request.form.get('calle', ''), 60),
-            ('comunidad', request.form.get('comunidad', ''), 60),
-            ('distrito', request.form.get('distrito', ''), 60),
-            ('provincia', request.form.get('provincia', ''), 60),
-            ('departamento', request.form.get('departamento', ''), 60),
-            ('poblacion_titular', ", ".join(request.form.getlist('poblacion_titular')), 300),
-            ('otro_poblacion', request.form.get('otro_poblacion', ''), 60),
-            ('derecho_prioritario', ", ".join(request.form.getlist('derecho_prioritario')), 300),
-            ('otro_derecho', request.form.get('otro_derecho', ''), 60),
-            ('oficina_regional', request.form.get('oficina_regional', ''), 60),
-            ('proyectos', request.form.get('proyectos', ''), 100),
-            ('tipo_servicios', ", ".join(request.form.getlist('tipo_servicios')), 300),
-            ('servicio_actividad', request.form.get('servicio_actividad', ''), 150),
-            ('propuesta_agenda', request.form.get('propuesta_agenda', ''), 50),
-            ('agenda_detalle', request.form.get('agenda_detalle', ''), 80),
-            ('red_colectivo', request.form.get('red_colectivo', ''), 50),
-            ('red_detalle', request.form.get('red_detalle', ''), 80),
-            ('comunidad_fe', request.form.get('comunidad_fe', ''), 50),
-            ('fe_detalle', request.form.get('fe_detalle', ''), 80),
-            ('tipo_participacion_fe', request.form.get('tipo_participacion_fe', ''), 80),
-            ('otra_capacidad', request.form.get('otra_capacidad', ''), 100)
-        ]
-
-        # Validar todos los campos en una iteración
-        for campo, valor, max_length in campos_a_validar:
-            if not validar_longitud(campo, valor, max_length):
-                return redirect(url_for('form_registro_inicial'))
+            return redirect(url_for('form_registro_inicial'))
         
         # Crear una nueva instancia de Registro con los datos del formulario
         nuevo_registro = Registro(
@@ -435,11 +402,11 @@ def eliminar_registro(dni):
 ########################################################################################################################################
 # Definición del modelo de datos para Iniciativa
 class Iniciativa(db.Model):
-    nombre_iniciativa = db.Column(db.String(255), primary_key=True)
-    derecho_generico = db.Column(db.String(255), nullable=True)
-    otro_derecho_detalle = db.Column(db.String(255), nullable=True)
-    colectivo_organizacion = db.Column(db.String(255), nullable=True)
-    poblacion = db.Column(db.Text, nullable=True)
+    nombre_iniciativa = db.Column(db.String(150), primary_key=True)
+    derecho_generico = db.Column(db.String(80), nullable=True)
+    otro_derecho_detalle = db.Column(db.String(60), nullable=True)
+    colectivo_organizacion = db.Column(db.String(80), nullable=True)
+    poblacion = db.Column(db.String(300), nullable=True)
     total_hombres_ninos = db.Column(db.Integer, nullable=True)
     total_mujeres_ninos = db.Column(db.Integer, nullable=True)
     total_hombres_adolescentes = db.Column(db.Integer, nullable=True)
@@ -458,32 +425,32 @@ class Iniciativa(db.Model):
     total_mujeres_periurbanas = db.Column(db.Integer, nullable=True)
     total_hombres_conflicto = db.Column(db.Integer, nullable=True)
     total_mujeres_conflicto = db.Column(db.Integer, nullable=True)
-    otra_poblacion_detalle = db.Column(db.String(255), nullable=True)
+    otra_poblacion_detalle = db.Column(db.String(80), nullable=True)
     total_hombres_otra = db.Column(db.Integer, nullable=True)
     total_mujeres_otra = db.Column(db.Integer, nullable=True)
-    tipo_naturaleza = db.Column(db.Text, nullable=True)
-    cambio_politica_detalle = db.Column(db.String(255), nullable=True)  # Detalles del cambio en política pública
-    cambio_marcos_detalle = db.Column(db.String(255), nullable=True)  # Detalles del cambio en marcos normativos
-    cambio_practicas_detalle = db.Column(db.String(255), nullable=True)  # Detalles del cambio en prácticas de entidades privadas
-    cambio_sensibilidad_detalle = db.Column(db.String(255), nullable=True)  # Detalles del cambio en prácticas sociales
-    otro_naturaleza_detalle = db.Column(db.String(255), nullable=True)
-    otro_naturaleza_particular = db.Column(db.String(255), nullable=True)
-    sector_publico_competente_1 = db.Column(db.String(255), nullable=True)
-    dependencia_instancia_1 = db.Column(db.String(255), nullable=True)
+    tipo_naturaleza = db.Column(db.String(350), nullable=True)
+    cambio_politica_detalle = db.Column(db.String(100), nullable=True)  # Detalles del cambio en política pública
+    cambio_marcos_detalle = db.Column(db.String(100), nullable=True)  # Detalles del cambio en marcos normativos
+    cambio_practicas_detalle = db.Column(db.String(100), nullable=True)  # Detalles del cambio en prácticas de entidades privadas
+    cambio_sensibilidad_detalle = db.Column(db.String(100), nullable=True)  # Detalles del cambio en prácticas sociales
+    otro_naturaleza_detalle = db.Column(db.String(100), nullable=True)
+    otro_naturaleza_particular = db.Column(db.String(100), nullable=True)
+    sector_publico_competente_1 = db.Column(db.String(70), nullable=True)
+    dependencia_instancia_1 = db.Column(db.String(70), nullable=True)
     alcance_escala_1 = db.Column(db.String(50), nullable=True)
-    sector_publico_competente_2 = db.Column(db.String(255), nullable=True)
-    dependencia_instancia_2 = db.Column(db.String(255), nullable=True)
+    sector_publico_competente_2 = db.Column(db.String(70), nullable=True)
+    dependencia_instancia_2 = db.Column(db.String(70), nullable=True)
     alcance_escala_2 = db.Column(db.String(50), nullable=True)
-    localidad_1 = db.Column(db.String(255), nullable=True)
-    localidad_2 = db.Column(db.String(255), nullable=True)
-    localidad_3 = db.Column(db.String(255), nullable=True)
-    descripcion_situacion = db.Column(db.Text, nullable=True)
-    objetivo_especifico = db.Column(db.Text, nullable=True)
-    campos = db.Column(db.Text, nullable=True)
-    campo_otro_detalle = db.Column(db.String(255), nullable=True)
-    componente_1 = db.Column(db.Text, nullable=True)
-    componente_2 = db.Column(db.Text, nullable=True)
-    componente_3 = db.Column(db.Text, nullable=True)
+    localidad_1 = db.Column(db.String(60), nullable=True)
+    localidad_2 = db.Column(db.String(60), nullable=True)
+    localidad_3 = db.Column(db.String(60), nullable=True)
+    descripcion_situacion = db.Column(db.String(255), nullable=True)
+    objetivo_especifico = db.Column(db.String(255), nullable=True)
+    campos = db.Column(db.String(500), nullable=True)
+    campo_otro_detalle = db.Column(db.String(80), nullable=True)
+    componente_1 = db.Column(db.String(100), nullable=True)
+    componente_2 = db.Column(db.String(100), nullable=True)
+    componente_3 = db.Column(db.String(100), nullable=True)
     contenido_1 = db.Column(db.Integer, nullable=True)
     contenido_2 = db.Column(db.Integer, nullable=True)
     contenido_3 = db.Column(db.Integer, nullable=True)
@@ -491,27 +458,27 @@ class Iniciativa(db.Model):
     contenido_5 = db.Column(db.Integer, nullable=True)
     contenido_6 = db.Column(db.Integer, nullable=True)
     contenido_7 = db.Column(db.Integer, nullable=True)
-    contenido_otro = db.Column(db.String(255), nullable=True)
+    contenido_otro = db.Column(db.String(80), nullable=True)
     calificacion_otro_contenido = db.Column(db.Integer, nullable=True)
     fase_implementacion = db.Column(db.Text, nullable=True)
-    fase_normas_detalle = db.Column(db.String(255), nullable=True)
-    fase_institucionalizacion_detalle = db.Column(db.String(255), nullable=True)
-    fase_otro_detalle = db.Column(db.String(255), nullable=True)
-    actividad_1 = db.Column(db.String(255), nullable=True)
-    actividad_2 = db.Column(db.String(255), nullable=True)
-    actividad_3 = db.Column(db.String(255), nullable=True)
-    actividad_4 = db.Column(db.String(255), nullable=True)
-    actividad_5 = db.Column(db.String(255), nullable=True)
-    proyecto_1 = db.Column(db.String(255), nullable=True)
-    fuente_financiamiento_1 = db.Column(db.String(255), nullable=True)
-    financiamiento_1 = db.Column(db.String(255), nullable=True)
-    periodo_financiamiento_1 = db.Column(db.String(255), nullable=True)
-    proyecto_2 = db.Column(db.String(255), nullable=True)
-    fuente_financiamiento_2 = db.Column(db.String(255), nullable=True)
-    financiamiento_2 = db.Column(db.String(255), nullable=True)
-    periodo_financiamiento_2 = db.Column(db.String(255), nullable=True)
-    observaciones = db.Column(db.Text, nullable=True)
-    responsable_registro = db.Column(db.String(255), nullable=True)
+    fase_normas_detalle = db.Column(db.String(100), nullable=True)
+    fase_institucionalizacion_detalle = db.Column(db.String(100), nullable=True)
+    fase_otro_detalle = db.Column(db.String(100), nullable=True)
+    actividad_1 = db.Column(db.String(150), nullable=True)
+    actividad_2 = db.Column(db.String(150), nullable=True)
+    actividad_3 = db.Column(db.String(150), nullable=True)
+    actividad_4 = db.Column(db.String(150), nullable=True)
+    actividad_5 = db.Column(db.String(150), nullable=True)
+    proyecto_1 = db.Column(db.String(150), nullable=True)
+    fuente_financiamiento_1 = db.Column(db.String(100), nullable=True)
+    financiamiento_1 = db.Column(db.Integer, nullable=True)
+    periodo_financiamiento_1 = db.Column(db.String(100), nullable=True)
+    proyecto_2 = db.Column(db.String(150), nullable=True)
+    fuente_financiamiento_2 = db.Column(db.String(100), nullable=True)
+    financiamiento_2 = db.Column(db.Integer, nullable=True)
+    periodo_financiamiento_2 = db.Column(db.String(100), nullable=True)
+    observaciones = db.Column(db.String(255), nullable=True)
+    responsable_registro = db.Column(db.String(100), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
     # Relación con ProcesoIniciativa
     procesos = db.relationship('ProcesoIniciativa', backref='iniciativa', lazy=True, cascade="all, delete-orphan")
@@ -597,11 +564,11 @@ def form_iniciativas():
             actividad_5=request.form.get('actividad_5', ''),
             proyecto_1=request.form.get('proyecto_1', ''),
             fuente_financiamiento_1=request.form.get('fuente_financiamiento_1', ''),
-            financiamiento_1=request.form.get('financiamiento_1', ''),
+            financiamiento_1=request.form.get('financiamiento_1', None) or None,
             periodo_financiamiento_1=request.form.get('periodo_financiamiento_1', ''),
             proyecto_2=request.form.get('proyecto_2', ''),
             fuente_financiamiento_2=request.form.get('fuente_financiamiento_2', ''),
-            financiamiento_2=request.form.get('financiamiento_2', ''),
+            financiamiento_2=request.form.get('financiamiento_2', None) or None,
             periodo_financiamiento_2=request.form.get('periodo_financiamiento_2', ''),
             observaciones=request.form.get('observaciones', ''),
             responsable_registro=request.form.get('responsable_registro', '')
@@ -703,11 +670,11 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.actividad_5 = request.form.get('actividad_5', '')
         iniciativa.proyecto_1 = request.form.get('proyecto_1', '')
         iniciativa.fuente_financiamiento_1 = request.form.get('fuente_financiamiento_1', '')
-        iniciativa.financiamiento_1 = request.form.get('financiamiento_1', '')
+        iniciativa.financiamiento_1 = request.form.get('financiamiento_1', None) or None
         iniciativa.periodo_financiamiento_1 = request.form.get('periodo_financiamiento_1', '')
         iniciativa.proyecto_2 = request.form.get('proyecto_2', '')
         iniciativa.fuente_financiamiento_2 = request.form.get('fuente_financiamiento_2', '')
-        iniciativa.financiamiento_2 = request.form.get('financiamiento_2', '')
+        iniciativa.financiamiento_2 = request.form.get('financiamiento_2', None) or None
         iniciativa.periodo_financiamiento_2 = request.form.get('periodo_financiamiento_2', '')
         iniciativa.observaciones = request.form.get('observaciones', '')
         iniciativa.responsable_registro = request.form.get('responsable_registro', '')
@@ -754,12 +721,12 @@ def eliminar_iniciativa(nombre_iniciativa):
 class ProcesoIniciativa(db.Model):
     __tablename__ = 'proceso_iniciativa'
     id = db.Column(db.Integer, primary_key=True)
-    nombre_iniciativa = db.Column(db.String(255), db.ForeignKey('iniciativa.nombre_iniciativa'), nullable=False)
-    objetivo_especifico = db.Column(db.Text, nullable=False)
+    nombre_iniciativa = db.Column(db.String(150), db.ForeignKey('iniciativa.nombre_iniciativa'), nullable=False)
+    objetivo_especifico = db.Column(db.String(255), nullable=False)
 
     # Logros
-    logros = db.Column(db.Text, nullable=True)
-    sustento_logros = db.Column(db.Text, nullable=True)
+    logros = db.Column(db.String(80), nullable=True)
+    sustento_logros = db.Column(db.String(255), nullable=True)
 
     # Contenidos
     contenido_1 = db.Column(db.Integer, nullable=True)  # 0 - 4 calificaciones
@@ -769,26 +736,26 @@ class ProcesoIniciativa(db.Model):
     contenido_5 = db.Column(db.Integer, nullable=True)
     contenido_6 = db.Column(db.Integer, nullable=True)
     contenido_7 = db.Column(db.Integer, nullable=True)
-    contenido_otro = db.Column(db.Text, nullable=True)
+    contenido_otro = db.Column(db.String(80), nullable=True)
     calificacion_otro_contenido = db.Column(db.Integer, nullable=True)
 
     # Fase de implementación
     fase_implementacion = db.Column(db.Text, nullable=True)
-    fase_normas_detalle = db.Column(db.Text, nullable=True)
-    fase_institucionalizacion_detalle = db.Column(db.Text, nullable=True)
-    fase_otro_detalle = db.Column(db.Text, nullable=True)
+    fase_normas_detalle = db.Column(db.String(100), nullable=True)
+    fase_institucionalizacion_detalle = db.Column(db.String(100), nullable=True)
+    fase_otro_detalle = db.Column(db.String(100), nullable=True)
 
     # Nivel de avance de implementación
-    nivel_avance_comentarios = db.Column(db.Text, nullable=True)
+    nivel_avance_comentarios = db.Column(db.String(255), nullable=True)
 
     # Componentes
-    componente_1 = db.Column(db.Text, nullable=True)
+    componente_1 = db.Column(db.String(100), nullable=True)
     calificacion_componente_1 = db.Column(db.Integer, nullable=True)
-    componente_2 = db.Column(db.Text, nullable=True)
+    componente_2 = db.Column(db.String(100), nullable=True)
     calificacion_componente_2 = db.Column(db.Integer, nullable=True)
-    componente_3 = db.Column(db.Text, nullable=True)
+    componente_3 = db.Column(db.String(100), nullable=True)
     calificacion_componente_3 = db.Column(db.Integer, nullable=True)
-    sustento_valoracion = db.Column(db.Text, nullable=True)
+    sustento_valoracion = db.Column(db.String(255), nullable=True)
 
     # Desempeño de representantes y líderes
     capacidad_1 = db.Column(db.Integer, nullable=True)
@@ -796,34 +763,34 @@ class ProcesoIniciativa(db.Model):
     capacidad_3 = db.Column(db.Integer, nullable=True)
     capacidad_4 = db.Column(db.Integer, nullable=True)
     capacidad_5 = db.Column(db.Integer, nullable=True)
-    otra_capacidad = db.Column(db.String(255), nullable=True)
+    otra_capacidad = db.Column(db.String(80), nullable=True)
     calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
 
     # Competencias y participación
-    reforzar_competencias = db.Column(db.Text, nullable=True)
+    reforzar_competencias = db.Column(db.String(255), nullable=True)
     participacion_comportamiento = db.Column(db.Integer, nullable=True)
-    comentario_valoracion = db.Column(db.Text, nullable=True)
+    comentario_valoracion = db.Column(db.String(255), nullable=True)
 
     # Factores clave
-    factores_favorecido = db.Column(db.Text, nullable=True)
-    factores_obstaculizado = db.Column(db.Text, nullable=True)
+    factores_favorecido = db.Column(db.String(255), nullable=True)
+    factores_obstaculizado = db.Column(db.String(255), nullable=True)
 
     # Actividades implementadas
-    actividad_1 = db.Column(db.Text, nullable=True)
-    aporte_1 = db.Column(db.Text, nullable=True)
-    actividad_2 = db.Column(db.Text, nullable=True)
-    aporte_2 = db.Column(db.Text, nullable=True)
-    actividad_3 = db.Column(db.Text, nullable=True)
-    aporte_3 = db.Column(db.Text, nullable=True)
-    actividad_4 = db.Column(db.Text, nullable=True)
-    aporte_4 = db.Column(db.Text, nullable=True)
-    actividad_5 = db.Column(db.Text, nullable=True)
-    aporte_5 = db.Column(db.Text, nullable=True)
+    actividad_1 = db.Column(db.String(100), nullable=True)
+    aporte_1 = db.Column(db.String(255), nullable=True)
+    actividad_2 = db.Column(db.String(100), nullable=True)
+    aporte_2 = db.Column(db.String(255), nullable=True)
+    actividad_3 = db.Column(db.String(100), nullable=True)
+    aporte_3 = db.Column(db.String(255), nullable=True)
+    actividad_4 = db.Column(db.String(100), nullable=True)
+    aporte_4 = db.Column(db.String(255), nullable=True)
+    actividad_5 = db.Column(db.String(100), nullable=True)
+    aporte_5 = db.Column(db.String(255), nullable=True)
 
     # Cambios en la estrategia
-    cambios_estrategia = db.Column(db.Text, nullable=True)
-    comentario_relevante = db.Column(db.Text, nullable=True)
-    responsable_registro = db.Column(db.String(255), nullable=True)
+    cambios_estrategia = db.Column(db.String(400), nullable=True)
+    comentario_relevante = db.Column(db.String(255), nullable=True)
+    responsable_registro = db.Column(db.String(100), nullable=True)
 
     # Timestamp
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
@@ -1037,15 +1004,15 @@ def eliminar_proceso_iniciativa(id):
 ########################################################################################################################################
 ########################################################################################################################################
 class CasoEmblematico(db.Model):
-    nombre_caso = db.Column(db.String(255), primary_key=True)
-    numero_expediente = db.Column(db.String(255), nullable=False)
-    sala = db.Column(db.String(255), nullable=True)
-    antecedentes = db.Column(db.Text, nullable=True)
-    descripcion_caso = db.Column(db.Text, nullable=True)
+    nombre_caso = db.Column(db.String(200), primary_key=True)
+    numero_expediente = db.Column(db.String(100), nullable=False)
+    sala = db.Column(db.String(100), nullable=True)
+    antecedentes = db.Column(db.String(300), nullable=True)
+    descripcion_caso = db.Column(db.String(300), nullable=True)
     numero_afectados = db.Column(db.Integer, nullable=True)
-    objetivo_defensa = db.Column(db.Text, nullable=True)
-    situacion_caso = db.Column(db.Text, nullable=True)
-    otro_dato = db.Column(db.Text, nullable=True)
+    objetivo_defensa = db.Column(db.String(300), nullable=True)
+    situacion_caso = db.Column(db.String(300), nullable=True)
+    otro_dato = db.Column(db.String(300), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
     # Relación con AvanceCasoEmblematico
     avances = db.relationship('AvanceCasoEmblematico', backref='caso', lazy=True, cascade="all, delete-orphan")
@@ -1163,14 +1130,14 @@ def eliminar_caso_emblematico(nombre_caso):
 class AvanceCasoEmblematico(db.Model):
     __tablename__ = 'avance_caso_emblematico'
     id = db.Column(db.Integer, primary_key=True)
-    nombre_caso = db.Column(db.String(255), db.ForeignKey('caso_emblematico.nombre_caso'), nullable=False)
-    ocurrencias_periodo = db.Column(db.Text, nullable=True)
-    actividades_realizadas = db.Column(db.Text, nullable=True)
-    presencia_participacion = db.Column(db.Text, nullable=True)
-    estado_actual = db.Column(db.Text, nullable=True)
-    recomendaciones = db.Column(db.Text, nullable=True)
-    otro_asunto = db.Column(db.Text, nullable=True)
-    responsable_registro = db.Column(db.String(255), nullable=True)
+    nombre_caso = db.Column(db.String(200), db.ForeignKey('caso_emblematico.nombre_caso'), nullable=False)
+    ocurrencias_periodo = db.Column(db.String(350), nullable=True)
+    actividades_realizadas = db.Column(db.String(350), nullable=True)
+    presencia_participacion = db.Column(db.String(350), nullable=True)
+    estado_actual = db.Column(db.String(350), nullable=True)
+    recomendaciones = db.Column(db.String(350), nullable=True)
+    otro_asunto = db.Column(db.String(350), nullable=True)
+    responsable_registro = db.Column(db.String(100), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
 
 @app.route('/form_avances_caso_emblematico', methods=['GET', 'POST'])
@@ -1281,17 +1248,17 @@ def eliminar_avance_caso_emblematico(id):
 
 class PoliticaNacionalMemoria(db.Model):
     __tablename__ = 'politica_nacional_memoria'
-    nombre_politica_memoria = db.Column(db.String(255), primary_key=True)  # Nombre como PK
-    localizacion = db.Column(db.String(255), nullable=True)
-    descripcion_propuesta = db.Column(db.Text, nullable=True)
-    institucion_1 = db.Column(db.String(255), nullable=True)
+    nombre_politica_memoria = db.Column(db.String(200), primary_key=True)  # Nombre como PK
+    localizacion = db.Column(db.String(200), nullable=True)
+    descripcion_propuesta = db.Column(db.String(300), nullable=True)
+    institucion_1 = db.Column(db.String(200), nullable=True)
     asunto_1 = db.Column(db.String(255), nullable=True)
-    institucion_2 = db.Column(db.String(255), nullable=True)
+    institucion_2 = db.Column(db.String(200), nullable=True)
     asunto_2 = db.Column(db.String(255), nullable=True)
-    institucion_3 = db.Column(db.String(255), nullable=True)
+    institucion_3 = db.Column(db.String(200), nullable=True)
     asunto_3 = db.Column(db.String(255), nullable=True)
-    organizaciones_aliadas = db.Column(db.Text, nullable=True)
-    otro_dato = db.Column(db.Text, nullable=True)
+    organizaciones_aliadas = db.Column(db.String(300), nullable=True)
+    otro_dato = db.Column(db.String(255), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
     # Relación con AvancePoliticaMemoria
     avances = db.relationship('AvancePoliticaMemoria', backref='politica', lazy=True, cascade="all, delete-orphan")
@@ -1412,13 +1379,13 @@ def eliminar_politica_nacional_memoria(nombre_politica_memoria):
 class AvancePoliticaMemoria(db.Model):
     __tablename__ = 'avance_politica_memoria'
     id = db.Column(db.Integer, primary_key=True)
-    nombre_politica_memoria = db.Column(db.String(255), db.ForeignKey('politica_nacional_memoria.nombre_politica_memoria'), nullable=False)
-    ocurrencias_periodo = db.Column(db.Text, nullable=True)
-    actividades_realizadas = db.Column(db.Text, nullable=True)
-    estado_actual_gestion = db.Column(db.Text, nullable=True)
-    recomendaciones = db.Column(db.Text, nullable=True)
-    otro_asunto = db.Column(db.Text, nullable=True)
-    responsable_registro = db.Column(db.String(255), nullable=True)
+    nombre_politica_memoria = db.Column(db.String(200), db.ForeignKey('politica_nacional_memoria.nombre_politica_memoria'), nullable=False)
+    ocurrencias_periodo = db.Column(db.String(400), nullable=True)
+    actividades_realizadas = db.Column(db.String(400), nullable=True)
+    estado_actual_gestion = db.Column(db.String(400), nullable=True)
+    recomendaciones = db.Column(db.String(350), nullable=True)
+    otro_asunto = db.Column(db.String(255), nullable=True)
+    responsable_registro = db.Column(db.String(100), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
 
 @app.route('/form_avances_politica_nacional_memoria', methods=['GET', 'POST'])

@@ -87,7 +87,7 @@
                         <h4>Nombre de la Iniciativa o Propuesta</h4>
                         <div class="form-group">
                             <label class="label-principal" for="nombre_iniciativa">Nombre de la iniciativa:</label>
-                            <input type="text" class="form-control" id="nombre_iniciativa" name="nombre_iniciativa" required>
+                            <input type="text" class="form-control" id="nombre_iniciativa" name="nombre_iniciativa" maxlength="150" required>
                         </div>
                     </div>
 
@@ -118,7 +118,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" id="otro_derecho_checkbox" name="derecho_generico" value="Otro" onchange="toggleOther('otro_derecho_checkbox', 'otro_derecho_detalle')">
                                 <label class="form-check-label" for="otro_derecho_checkbox">Otro derecho (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2" id="otro_derecho_detalle" name="otro_derecho_detalle" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="otro_derecho_detalle" maxlength="60" name="otro_derecho_detalle" style="display:none;">
                             </div>
                         </div>
                     </div>
@@ -128,7 +128,7 @@
                         <h4>Colectivo u Organización Asociada</h4>
                         <div class="form-group">
                             <label class="label-principal" for="colectivo_organizacion">Colectivo u organización:</label>
-                            <input type="text" class="form-control" id="colectivo_organizacion" name="colectivo_organizacion">
+                            <input type="text" class="form-control" id="colectivo_organizacion" maxlength="80" name="colectivo_organizacion">
                         </div>
                     </div>
                 </div>
@@ -196,7 +196,7 @@
                                     <tr>
                                         <td>
                                             <input type="checkbox" id="otra_poblacion_checkbox" name="poblacion[]" value="Otra población" onchange="toggleOther('otra_poblacion_checkbox', 'otra_poblacion_detalle')"> Otra población o colectivo de referencia:
-                                            <input type="text" class="form-control mt-2" id="otra_poblacion_detalle" name="otra_poblacion_detalle" style="display:none;">
+                                            <input type="text" class="form-control mt-2" id="otra_poblacion_detalle" maxlength="80" name="otra_poblacion_detalle" style="display:none;">
                                         </td>
                                         <td><input type="number" class="form-control" name="total_hombres_otra" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_otra" min="0"></td>
@@ -218,28 +218,28 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="cambio_politica_checkbox" name="tipo_naturaleza[]" value="Cambios en la política pública nacional" onchange="toggleOther('cambio_politica_checkbox', 'cambio_politica_detalle')">
                                 <label class="form-check-label" for="cambio_politica_checkbox">Cambios en la política pública nacional</label>
-                                <input type="text" class="form-control mt-2" id="cambio_politica_detalle" name="cambio_politica_detalle" placeholder="¿Cuál en particular?" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="cambio_politica_detalle" name="cambio_politica_detalle" maxlength="100" placeholder="¿Cuál en particular?" style="display:none;">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="cambio_marcos_checkbox" name="tipo_naturaleza[]" value="Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos" onchange="toggleOther('cambio_marcos_checkbox', 'cambio_marcos_detalle')">
                                 <label class="form-check-label" for="cambio_marcos_checkbox">Cambios en marcos normativos o procedimientos de entidades u organismos encargados de servicios públicos</label>
-                                <input type="text" class="form-control mt-2" id="cambio_marcos_detalle" name="cambio_marcos_detalle" placeholder="¿Cuál en particular?" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="cambio_marcos_detalle" name="cambio_marcos_detalle" maxlength="100" placeholder="¿Cuál en particular?" style="display:none;">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="cambio_practicas_checkbox" name="tipo_naturaleza[]" value="Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos" onchange="toggleOther('cambio_practicas_checkbox', 'cambio_practicas_detalle')">
                                 <label class="form-check-label" for="cambio_practicas_checkbox">Cambios en las prácticas de entidades privadas respecto al ejercicio de derechos</label>
-                                <input type="text" class="form-control mt-2" id="cambio_practicas_detalle" name="cambio_practicas_detalle" placeholder="¿Cuál en particular?" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="cambio_practicas_detalle" name="cambio_practicas_detalle" maxlength="100" placeholder="¿Cuál en particular?" style="display:none;">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="cambio_sensibilidad_checkbox" name="tipo_naturaleza[]" value="Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos" onchange="toggleOther('cambio_sensibilidad_checkbox', 'cambio_sensibilidad_detalle')">
                                 <label class="form-check-label" for="cambio_sensibilidad_checkbox">Cambios en la sensibilidad o prácticas sociales o de colectivos respecto al ejercicio de derechos</label>
-                                <input type="text" class="form-control mt-2" id="cambio_sensibilidad_detalle" name="cambio_sensibilidad_detalle" placeholder="¿Cuál en particular?" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="cambio_sensibilidad_detalle" name="cambio_sensibilidad_detalle" maxlength="100" placeholder="¿Cuál en particular?" style="display:none;">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="otro_naturaleza_checkbox" name="tipo_naturaleza[]" value="Otro" onchange="toggleOther('otro_naturaleza_checkbox', 'otro_naturaleza_detalle', 'otro_naturaleza_particular')">
                                 <label class="form-check-label" for="otro_naturaleza_checkbox">Otro (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2" id="otro_naturaleza_detalle" name="otro_naturaleza_detalle" placeholder="Indica el tipo o naturaleza" style="display:none;">
-                                <input type="text" class="form-control mt-2" id="otro_naturaleza_particular" name="otro_naturaleza_particular" placeholder="¿Cuál en particular?" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="otro_naturaleza_detalle" name="otro_naturaleza_detalle" maxlength="100" placeholder="Indica el tipo o naturaleza" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="otro_naturaleza_particular" name="otro_naturaleza_particular" maxlength="100" placeholder="¿Cuál en particular?" style="display:none;">
                             </div>
                         </div>
                     </div>
@@ -259,8 +259,8 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="sector_publico_competente_1"></td>
-                                    <td><input type="text" class="form-control" name="dependencia_instancia_1"></td>
+                                    <td><input type="text" class="form-control" maxlength="70" name="sector_publico_competente_1"></td>
+                                    <td><input type="text" class="form-control" maxlength="70" name="dependencia_instancia_1"></td>
                                     <td>
                                         <select class="form-control" name="alcance_escala_1">
                                             <option value="" selected>Seleccionar</option>
@@ -271,8 +271,8 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="sector_publico_competente_2"></td>
-                                    <td><input type="text" class="form-control" name="dependencia_instancia_2"></td>
+                                    <td><input type="text" class="form-control" maxlength="70" name="sector_publico_competente_2"></td>
+                                    <td><input type="text" class="form-control" maxlength="70" name="dependencia_instancia_2"></td>
                                     <td>
                                         <select class="form-control" name="alcance_escala_2">
                                             <option value="" selected>Seleccionar</option>
@@ -299,13 +299,13 @@
                         <table class="table">
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Localidad 1" name="localidad_1"></td>
+                                    <td><input type="text" class="form-control" maxlength="60" placeholder="Localidad 1" name="localidad_1"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Localidad 2" name="localidad_2"></td>
+                                    <td><input type="text" class="form-control" maxlength="60" placeholder="Localidad 2" name="localidad_2"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Localidad 3" name="localidad_3"></td>
+                                    <td><input type="text" class="form-control" maxlength="60" placeholder="Localidad 3" name="localidad_3"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -317,7 +317,7 @@
                     <div class="section-box mt-3">
                         <h4>Breve descripción de la situación</h4>
                         <div class="form-group">
-                            <textarea class="form-control" rows="" name="descripcion_situacion" placeholder="Ingresar aquí la información y utilice todo el espacio que considere necesario"></textarea>
+                            <textarea class="form-control" rows="" maxlength="255" name="descripcion_situacion" placeholder="Ingresar aquí la información y utilice todo el espacio que considere necesario"></textarea>
                         </div>
                     </div>
             
@@ -325,7 +325,7 @@
                     <div class="section-box mt-3">
                         <h4>Objetivo específico</h4>
                         <div class="form-group">
-                            <textarea class="form-control" rows="3" name="objetivo_especifico" placeholder="Ingrese el objetivo específico, concreto y directo que se persigue con la iniciativa o propuesta"></textarea>
+                            <textarea class="form-control" rows="3" maxlength="255" name="objetivo_especifico" placeholder="Ingrese el objetivo específico, concreto y directo que se persigue con la iniciativa o propuesta"></textarea>
                         </div>
                     </div>
                 </div>
@@ -367,7 +367,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="campo_otro_checkbox" name="campos[]" value="Otro" onchange="toggleOther('campo_otro_checkbox', 'campo_otro_detalle')">
                                 <label class="form-check-label" for="campo_otro_checkbox">Otro (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2" id="campo_otro_detalle" name="campo_otro_detalle" placeholder="Indica otro campo" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="campo_otro_detalle" maxlength="80" name="campo_otro_detalle" placeholder="Indica otro campo" style="display:none;">
                             </div>
                         </div>
                     </div>
@@ -381,13 +381,13 @@
                         <table class="table">
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="componente_1" placeholder="1."></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="componente_1" placeholder="1."></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="componente_2" placeholder="2."></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="componente_2" placeholder="2."></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="componente_3" placeholder="3."></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="componente_3" placeholder="3."></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -488,7 +488,7 @@
                         <!-- Contenido Otro -->
                         <div class="form-group label-principal">
                             <label for="contenido_otro">Otros elementos que consideren pertinente valorar (especificar):</label>
-                            <input type="text" class="form-control" id="contenido_otro" name="contenido_otro">
+                            <input type="text" class="form-control" id="contenido_otro" maxlength="80" name="contenido_otro">
                             <label class="label-principal mt-2" for="calificacion_otro_contenido">Calificación de Otros:</label>
                             <select class="form-control mt-1" id="calificacion_otro_contenido" name="calificacion_otro_contenido">
                                 <option value="" selected>Seleccione una calificación</option>
@@ -538,12 +538,12 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_normas_checkbox" name="fase_implementacion[]" value="Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente" onchange="toggleOther('fase_normas_checkbox', 'fase_normas_detalle')">
                                 <label class="form-check-label" for="fase_normas_checkbox">Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente (en cuál):</label>
-                                <input type="text" class="form-control mt-2" id="fase_normas_detalle" name="fase_normas_detalle" placeholder="¿En cuál?" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="fase_normas_detalle" maxlength="100" name="fase_normas_detalle" placeholder="¿En cuál?" style="display:none;">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_institucionalizacion_checkbox" name="fase_implementacion[]" value="Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión" onchange="toggleOther('fase_institucionalizacion_checkbox', 'fase_institucionalizacion_detalle')">
                                 <label class="form-check-label" for="fase_institucionalizacion_checkbox">Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión (qué entidad):</label>
-                                <input type="text" class="form-control mt-2" id="fase_institucionalizacion_detalle" name="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="fase_institucionalizacion_detalle" maxlength="100" name="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" style="display:none;">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_monitoreo_checkbox" name="fase_implementacion[]" value="Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente">
@@ -552,7 +552,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_otro_checkbox" name="fase_implementacion[]" value="Otro" onchange="toggleOther('fase_otro_checkbox', 'fase_otro_detalle')">
                                 <label class="form-check-label" for="fase_otro_checkbox">Otra fase (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2" id="fase_otro_detalle" name="fase_otro_detalle" placeholder="Indica cuál" style="display:none;">
+                                <input type="text" class="form-control mt-2" id="fase_otro_detalle" maxlength="100" name="fase_otro_detalle" placeholder="Indica cuál" style="display:none;">
                             </div>
                         </div>
                     </div>
@@ -562,19 +562,19 @@
                         <table class="table">
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 1" name="actividad_1"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 1" name="actividad_1"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 2" name="actividad_2"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 2" name="actividad_2"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 3" name="actividad_3"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 3" name="actividad_3"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 4" name="actividad_4"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 4" name="actividad_4"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" placeholder="Actividad 5" name="actividad_5"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" placeholder="Actividad 5" name="actividad_5"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -602,16 +602,16 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="proyecto_1"></td>
-                                    <td><input type="text" class="form-control" name="fuente_financiamiento_1"></td>
-                                    <td><input type="text" class="form-control" name="financiamiento_1"></td>
-                                    <td><input type="text" class="form-control" name="periodo_financiamiento_1"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" name="proyecto_1"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="fuente_financiamiento_1"></td>
+                                    <td><input type="number" class="form-control" name="financiamiento_1"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="periodo_financiamiento_1"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="proyecto_2"></td>
-                                    <td><input type="text" class="form-control" name="fuente_financiamiento_2"></td>
-                                    <td><input type="text" class="form-control" name="financiamiento_2"></td>
-                                    <td><input type="text" class="form-control" name="periodo_financiamiento_2"></td>
+                                    <td><input type="text" class="form-control" maxlength="150" name="proyecto_2"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="fuente_financiamiento_2"></td>
+                                    <td><input type="number" class="form-control" name="financiamiento_2"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="periodo_financiamiento_2"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -621,14 +621,14 @@
                     <!-- Sección 16: Observaciones / comentarios / sugerencias -->
                     <div class="section-box mt-3">
                         <h4>Observaciones / comentarios / sugerencias</h4>
-                        <textarea placeholder="Ingresar información aquí y utilice todo el espacio necesario" class="form-control" rows="4" name="observaciones"></textarea>
+                        <textarea placeholder="Ingresar información aquí y utilice todo el espacio necesario" class="form-control" rows="4" name="observaciones" maxlength="255"></textarea>
                     </div>
                     <!-- Responsable del registro -->
                     <div class="section-box flex-grow-1">
                         <h4>Responsable del registro:</h4>
                         <div class="form-group">
                             <label class="label-principal" for="responsable_registro">Responsable del registro:</label>
-                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro">
+                            <input type="text" class="form-control" id="responsable_registro" maxlength="100" name="responsable_registro">
                         </div>
                     </div>
                 </div>       

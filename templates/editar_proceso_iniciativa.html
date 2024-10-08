@@ -144,7 +144,7 @@
                     <div class="section-box mt-3">
                         <h4>Sustente la valoración de logros adicionales al reporte anterior</h4>
                         <div class="form-group mt-3">
-                            <textarea class="form-control" id="sustento_logros" name="sustento_logros" rows="5">{{ proceso_iniciativas.sustento_logros }}</textarea>
+                            <textarea class="form-control" id="sustento_logros" name="sustento_logros" maxlength="255"  rows="5">{{ proceso_iniciativas.sustento_logros }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -242,7 +242,7 @@
                         <!-- Contenido Otro -->
                         <div class="form-group label-principal">
                             <label for="contenido_otro">Otros elementos que consideren pertinente valorar (especificar):</label>
-                            <input type="text" class="form-control" id="contenido_otro" name="contenido_otro" value="{{ proceso_iniciativas.contenido_otro }}">
+                            <input type="text" class="form-control" id="contenido_otro" name="contenido_otro" maxlength="80" value="{{ proceso_iniciativas.contenido_otro }}">
                             <label class="label-principal mt-2" for="calificacion_otro_contenido">Calificación de Otros:</label>
                             <select class="form-control mt-1" id="calificacion_otro_contenido" name="calificacion_otro_contenido">
                                 <option value="" {% if not proceso_iniciativas.calificacion_otro_contenido %}selected{% endif %}>Seleccione una calificación</option>
@@ -293,12 +293,12 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_normas_checkbox" name="fase_implementacion[]" value="Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente" {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in proceso_iniciativas.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_normas_checkbox', 'fase_normas_detalle')">
                                 <label class="form-check-label" for="fase_normas_checkbox">Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente (en cuál):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_normas_detalle" placeholder="¿En cuál?" name="fase_normas_detalle" value="{{ proceso_iniciativas.fase_normas_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_normas_detalle" placeholder="¿En cuál?" maxlength="100" name="fase_normas_detalle" value="{{ proceso_iniciativas.fase_normas_detalle }}">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_institucionalizacion_checkbox" name="fase_implementacion[]" value="Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión" {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in proceso_iniciativas.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_institucionalizacion_checkbox', 'fase_institucionalizacion_detalle')">
                                 <label class="form-check-label" for="fase_institucionalizacion_checkbox">Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión (qué entidad):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" name="fase_institucionalizacion_detalle" value="{{ proceso_iniciativas.fase_institucionalizacion_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_institucionalizacion_detalle" maxlength="100" placeholder="¿Qué entidad?" name="fase_institucionalizacion_detalle" value="{{ proceso_iniciativas.fase_institucionalizacion_detalle }}">
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_monitoreo_checkbox" name="fase_implementacion[]" value="Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente" {% if 'Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente' in proceso_iniciativas.fase_implementacion %}checked{% endif %}>
@@ -307,7 +307,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="fase_otro_checkbox" name="fase_implementacion[]" value="Otro" {% if 'Otro' in proceso_iniciativas.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_otro_checkbox', 'fase_otro_detalle')">
                                 <label class="form-check-label" for="fase_otro_checkbox">Otra fase (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Otro' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_otro_detalle" placeholder="Indicar cual..." name="fase_otro_detalle" value="{{ proceso_iniciativas.fase_otro_detalle }}">
+                                <input type="text" class="form-control mt-2 {% if 'Otro' in proceso_iniciativas.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_otro_detalle" maxlength="100" placeholder="Indicar cual..." name="fase_otro_detalle" value="{{ proceso_iniciativas.fase_otro_detalle }}">
                             </div>
                         </div>
                     </div>
@@ -316,7 +316,7 @@
                     <div class="section-box mt-3">
                         <h4>Comente / argumente / valore el nivel de avance</h4>
                         <div class="form-group mt-3">
-                            <textarea class="form-control" id="nivel_avance_comentarios" name="nivel_avance_comentarios" rows="8" placeholder="Ingresar comentarios aquí...">{{ proceso_iniciativas.nivel_avance_comentarios }}</textarea>
+                            <textarea class="form-control" id="nivel_avance_comentarios"  maxlength="255" name="nivel_avance_comentarios" rows="8" placeholder="Ingresar comentarios aquí...">{{ proceso_iniciativas.nivel_avance_comentarios }}</textarea>
                         </div>
                     </div>
                     
@@ -332,7 +332,7 @@
                         <!-- Componente 1 -->
                         <div class="form-group label-principal">
                             <label for="componente_1">Componente 1:</label>
-                            <input type="text" class="form-control" id="componente_1" name="componente_1" value="{{ proceso_iniciativas.componente_1 }}" readonly>
+                            <input type="text" class="form-control" id="componente_1" name="componente_1" maxlength="100" value="{{ proceso_iniciativas.componente_1 }}" readonly>
                             <select class="form-control mt-1" id="calificacion_componente_1" name="calificacion_componente_1">
                                 <option value="" {% if not proceso_iniciativas.calificacion_componente_1 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if proceso_iniciativas.calificacion_componente_1 == 0 %}selected{% endif %}>0 - No se ha tomado en cuenta</option>
@@ -346,7 +346,7 @@
                         <!-- Componente 2 -->
                         <div class="form-group label-principal">
                             <label for="componente_2">Componente 2:</label>
-                            <input type="text" class="form-control" id="componente_2" name="componente_2" value="{{ proceso_iniciativas.componente_2 }}" readonly>
+                            <input type="text" class="form-control" id="componente_2" name="componente_2" maxlength="100" value="{{ proceso_iniciativas.componente_2 }}" readonly>
                             <select class="form-control mt-1" id="calificacion_componente_2" name="calificacion_componente_2">
                                 <option value="" {% if not proceso_iniciativas.calificacion_componente_2 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if proceso_iniciativas.calificacion_componente_2 == 0 %}selected{% endif %}>0 - No se ha tomado en cuenta</option>
@@ -360,7 +360,7 @@
                         <!-- Componente 3 -->
                         <div class="form-group label-principal">
                             <label for="componente_3">Componente 3:</label>
-                            <input type="text" class="form-control" id="componente_3" name="componente_3" value="{{ proceso_iniciativas.componente_3 }}" readonly>
+                            <input type="text" class="form-control" id="componente_3" name="componente_3" maxlength="100" value="{{ proceso_iniciativas.componente_3 }}" readonly>
                             <select class="form-control mt-1" id="calificacion_componente_3" name="calificacion_componente_3">
                                 <option value="" {% if not proceso_iniciativas.calificacion_componente_3 %}selected{% endif %}>Seleccione una calificación</option>
                                 <option value="0" {% if proceso_iniciativas.calificacion_componente_3 == 0 %}selected{% endif %}>0 - No se ha tomado en cuenta</option>
@@ -376,7 +376,7 @@
                     <div class="section-box ">
                         <h4>Sustente la valoración que ha realizado en la tabla anterior</h4>
                         <div class="form-group mt-3">
-                            <textarea class="form-control" id="sustento_valoracion" name="sustento_valoracion" rows="8" placeholder="Ingresar comentarios aquí...">{{ proceso_iniciativas.sustento_valoracion }}</textarea>
+                            <textarea class="form-control" id="sustento_valoracion" maxlength="255" name="sustento_valoracion" rows="8" placeholder="Ingresar comentarios aquí...">{{ proceso_iniciativas.sustento_valoracion }}</textarea>
                         </div>
                     </div>
                     
@@ -450,7 +450,7 @@
                         <!-- Otra Capacidad -->
                         <div class="form-group label-principal">
                             <label for="otra_capacidad">Dominio de otra capacidad (especificar):</label>
-                            <input type="text" class="form-control" id="otra_capacidad" name="otra_capacidad" value="{{ proceso_iniciativas.otra_capacidad }}">
+                            <input type="text" class="form-control" id="otra_capacidad" maxlength="80" name="otra_capacidad" value="{{ proceso_iniciativas.otra_capacidad }}">
                             <label class="mt-2" for="calificacion_otra_capacidad">Calificación Otros:</label>
                             <select class="form-control mt-1" id="calificacion_otra_capacidad" name="calificacion_otra_capacidad">
                                 <option value="" {% if not proceso_iniciativas.calificacion_otra_capacidad %}selected{% endif %}>Seleccione una calificación</option>
@@ -470,7 +470,7 @@
                     <div class="section-box mt-3">
                         <h4>6. ¿En qué aspectos específicos se tiene que reforzar el desarrollo de competencias de los representantes y/o líderes de la población titular de derecho?</h4>
                         <div class="form-group mt-3">
-                            <textarea class="form-control" id="reforzar_competencias" name="reforzar_competencias" rows="7" placeholder="Especifique los aspectos a reforzar aquí...">{{ proceso_iniciativas.reforzar_competencias }}</textarea>
+                            <textarea class="form-control" id="reforzar_competencias" maxlength="255" name="reforzar_competencias" rows="7" placeholder="Especifique los aspectos a reforzar aquí...">{{ proceso_iniciativas.reforzar_competencias }}</textarea>
                         </div>
                     </div>
                 </div>      
@@ -490,7 +490,7 @@
                         <div class="form-group mt-2 label-principal">
                             <label for="comentario_valoracion">2. Comente / argumente la valoración que ha realizado en la tabla anterior:</label>
                             <div class="form-group">
-                                <textarea class="form-control" id="comentario_valoracion" name="comentario_valoracion" rows="3" placeholder="Ingrese sus comentarios aquí...">{{ proceso_iniciativas.comentario_valoracion }}</textarea>
+                                <textarea class="form-control" id="comentario_valoracion" maxlength="255" name="comentario_valoracion" rows="3" placeholder="Ingrese sus comentarios aquí...">{{ proceso_iniciativas.comentario_valoracion }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -505,14 +505,14 @@
                     <div class="section-box mt-3">
                         <h4>¿Qué factores claves han favorecido el avance de la iniciativa o propuesta?</h4>
                         <div class="form-group mt-3">
-                            <textarea class="form-control" id="factores_favorecido" name="factores_favorecido" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.factores_favorecido }}</textarea>
+                            <textarea class="form-control" id="factores_favorecido" maxlength="255" name="factores_favorecido" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.factores_favorecido }}</textarea>
                         </div>
                     </div>
                     <!-- Factores claves que han obstaculizado -->
                     <div class="section-box mt-3">
                         <h4>¿Qué factores claves han obstaculizado el avance de la iniciativa o propuesta?</h4>
                         <div class="form-group mt-3">
-                            <textarea class="form-control" id="factores_obstaculizado" name="factores_obstaculizado" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.factores_obstaculizado }}</textarea>
+                            <textarea class="form-control" id="factores_obstaculizado" maxlength="255" name="factores_obstaculizado" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.factores_obstaculizado }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -530,24 +530,24 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="actividad_1" placeholder="Actividad 1" value="{{ proceso_iniciativas.actividad_1 }}"></td>
-                                    <td><input type="text" class="form-control" name="aporte_1" placeholder="Aporte 1" value="{{ proceso_iniciativas.aporte_1 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="actividad_1" placeholder="Actividad 1" value="{{ proceso_iniciativas.actividad_1 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="255" name="aporte_1" placeholder="Aporte 1" value="{{ proceso_iniciativas.aporte_1 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="actividad_2" placeholder="Actividad 2" value="{{ proceso_iniciativas.actividad_2 }}"></td>
-                                    <td><input type="text" class="form-control" name="aporte_2" placeholder="Aporte 2" value="{{ proceso_iniciativas.aporte_2 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="actividad_2" placeholder="Actividad 2" value="{{ proceso_iniciativas.actividad_2 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="255" name="aporte_2" placeholder="Aporte 2" value="{{ proceso_iniciativas.aporte_2 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="actividad_3" placeholder="Actividad 3" value="{{ proceso_iniciativas.actividad_3 }}"></td>
-                                    <td><input type="text" class="form-control" name="aporte_3" placeholder="Aporte 3" value="{{ proceso_iniciativas.aporte_3 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="actividad_3" placeholder="Actividad 3" value="{{ proceso_iniciativas.actividad_3 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="255" name="aporte_3" placeholder="Aporte 3" value="{{ proceso_iniciativas.aporte_3 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="actividad_4" placeholder="Actividad 4" value="{{ proceso_iniciativas.actividad_4 }}"></td>
-                                    <td><input type="text" class="form-control" name="aporte_4" placeholder="Aporte 4" value="{{ proceso_iniciativas.aporte_4 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="actividad_4" placeholder="Actividad 4" value="{{ proceso_iniciativas.actividad_4 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="255" name="aporte_4" placeholder="Aporte 4" value="{{ proceso_iniciativas.aporte_4 }}"></td>
                                 </tr>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="actividad_5" placeholder="Actividad 5" value="{{ proceso_iniciativas.actividad_5 }}"></td>
-                                    <td><input type="text" class="form-control" name="aporte_5" placeholder="Aporte 5" value="{{ proceso_iniciativas.aporte_5 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="100" name="actividad_5" placeholder="Actividad 5" value="{{ proceso_iniciativas.actividad_5 }}"></td>
+                                    <td><input type="text" class="form-control" maxlength="255" name="aporte_5" placeholder="Aporte 5" value="{{ proceso_iniciativas.aporte_5 }}"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -563,19 +563,19 @@
                         <!-- Sección 12 -->
                         <div class="form-group">
                             <label for="cambios_estrategia">1. ¿Qué cambios en la estrategia institucional respecto a la promoción de iniciativas o propuestas sugiere como resultado de la evaluación de este período? ¿Qué innovaciones habría que realizar? ¿Por qué razón?</label>
-                            <textarea class="form-control" id="cambios_estrategia" name="cambios_estrategia" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.cambios_estrategia }}</textarea>
+                            <textarea class="form-control" maxlength="400" id="cambios_estrategia" name="cambios_estrategia" rows="5" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.cambios_estrategia }}</textarea>
                         </div>
             
                         <!-- Sección 13 -->
                         <div class="form-group">
                             <label for="comentario_relevante">2. Otro comentario / observación relevante respecto al período:</label>
-                            <textarea class="form-control" id="comentario_relevante" name="comentario_relevante" rows="4" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.comentario_relevante }}</textarea>
+                            <textarea class="form-control" maxlength="255" id="comentario_relevante" name="comentario_relevante" rows="4" placeholder="Ingresar información aquí...">{{ proceso_iniciativas.comentario_relevante }}</textarea>
                         </div>
             
                         <!-- Responsable del registro -->
                         <div class="form-group">
                             <label for="responsable_registro">3. Responsable del registro:</label>
-                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro" placeholder="Nombre del responsable" value="{{ proceso_iniciativas.responsable_registro }}">
+                            <input type="text" class="form-control" maxlength="100" id="responsable_registro" name="responsable_registro" placeholder="Nombre del responsable" value="{{ proceso_iniciativas.responsable_registro }}">
                         </div>
                     </div>
                 </div>

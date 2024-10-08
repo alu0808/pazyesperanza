@@ -87,7 +87,7 @@
                         <!-- Selección del Caso Emblemático -->
                         <div class="form-group">
                             <label for="nombre_caso">Seleccione el Caso Emblemático:</label>
-                            <select class="form-control" id="nombre_caso" name="nombre_caso" required onchange="fetchCasoEmblematicoData(this.value)">
+                            <select class="form-control" id="nombre_caso" maxlength="200" name="nombre_caso" required onchange="fetchCasoEmblematicoData(this.value)">
                                 <option value="">Seleccione un caso</option>
                                 {% for caso in casos %}
                                     <option value="{{ caso.nombre_caso }}">{{ caso.nombre_caso }}</option>
@@ -115,12 +115,12 @@
                         <h4>Principales Actividades y Ocurrencias</h4>
                         <div class="form-group">
                             <label for="ocurrencias_periodo">Principales ocurrencias en el período:</label>
-                            <textarea id="ocurrencias_periodo" name="ocurrencias_periodo" class="form-control" rows="5"></textarea>
+                            <textarea id="ocurrencias_periodo" maxlength="350" name="ocurrencias_periodo" class="form-control" rows="5"></textarea>
                         </div>
                         <!-- SEGUNDA PRINCIPAL ACTIVIDAD       -->
                         <div class="form-group">
                             <label for="actividades_realizadas">Principales Actividades realizadas por Paz y Esperanza:</label>
-                            <textarea id="actividades_realizadas" name="actividades_realizadas" class="form-control" rows="5"></textarea>
+                            <textarea id="actividades_realizadas" maxlength="350" name="actividades_realizadas" class="form-control" rows="5"></textarea>
                         </div>
                     </div>
                     
@@ -132,7 +132,7 @@
                         <h4>Presencia/participación de las familias/víctimas</h4>
                         <div class="form-group">
                             <label for="presencia_participacion">Presencia/participación de las familias/víctimas:</label>
-                            <textarea id="presencia_participacion" name="presencia_participacion" class="form-control" rows="3"></textarea>
+                            <textarea id="presencia_participacion" maxlength="350" name="presencia_participacion" class="form-control" rows="3"></textarea>
                         </div>
                     </div>
                     <!-- SEGUNDA SECTION -->
@@ -140,7 +140,7 @@
                         <h4>Estado actual del Caso</h4>
                         <div class="form-group">
                             <label for="estado_actual">Estado actual del Caso. Avances con relación al reporte anterior:</label>
-                            <textarea id="estado_actual" name="estado_actual" class="form-control" rows="3"></textarea>
+                            <textarea id="estado_actual" maxlength="350" name="estado_actual" class="form-control" rows="3"></textarea>
                         </div>
                     </div>
                 </div>  
@@ -154,7 +154,7 @@
                         <h4>Recomendaciones y/o próximas tareas</h4>
                         <div class="form-group">
                             <label for="recomendaciones">Recomendaciones:</label>
-                            <textarea id="recomendaciones" name="recomendaciones" class="form-control" rows="5"></textarea>
+                            <textarea id="recomendaciones" maxlength="350" name="recomendaciones" class="form-control" rows="5"></textarea>
                         </div>
                     </div>
                 </div>
@@ -165,12 +165,12 @@
                         <h4>Otros asuntos que reportar y Responsable del registro</h4>
                         <div class="form-group">
                             <label for="otro_asunto">Otro asunto:</label>
-                            <textarea id="otro_asunto" name="otro_asunto" class="form-control" rows="3"></textarea>
+                            <textarea id="otro_asunto" maxlength="350" name="otro_asunto" class="form-control" rows="3"></textarea>
                         </div>
 
                         <div class="form-group">
                             <label for="responsable_registro">Responsable del registro:</label>
-                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro" placeholder="Nombre del responsable">
+                            <input type="text" class="form-control" maxlength="100" id="responsable_registro" name="responsable_registro" placeholder="Nombre del responsable">
                         </div>
                     </div>
                 </div>
