@@ -178,53 +178,53 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Niños y niñas" {% if 'Niños y niñas' in iniciativa.poblacion %}checked{% endif %}> Niños y niñas</td>
+                                        <td><input type="radio" name="poblacion" value="Niños y niñas" {% if 'Niños y niñas' in iniciativa.poblacion %}checked{% endif %}> Niños y niñas</td>
                                         <td><input type="number" class="form-control" name="total_hombres_ninos" value="{{ iniciativa.total_hombres_ninos }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_ninos" value="{{ iniciativa.total_mujeres_ninos }}" min="0"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Adolescentes" {% if 'Adolescentes' in iniciativa.poblacion %}checked{% endif %}> Adolescentes</td>
+                                        <td><input type="radio" name="poblacion" value="Adolescentes" {% if 'Adolescentes' in iniciativa.poblacion %}checked{% endif %}> Adolescentes</td>
                                         <td><input type="number" class="form-control" name="total_hombres_adolescentes" value="{{ iniciativa.total_hombres_adolescentes }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_adolescentes" value="{{ iniciativa.total_mujeres_adolescentes }}" min="0"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Jóvenes" {% if 'Jóvenes' in iniciativa.poblacion %}checked{% endif %}> Jóvenes</td>
+                                        <td><input type="radio" name="poblacion" value="Jóvenes" {% if 'Jóvenes' in iniciativa.poblacion %}checked{% endif %}> Jóvenes</td>
                                         <td><input type="number" class="form-control" name="total_hombres_jovenes" value="{{ iniciativa.total_hombres_jovenes }}"  min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_jovenes" value="{{ iniciativa.total_mujeres_jovenes }}" min="0"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Mujeres" {% if 'Mujeres' in iniciativa.poblacion %}checked{% endif %}> Mujeres</td>
+                                        <td><input type="radio" name="poblacion" value="Mujeres" {% if 'Mujeres' in iniciativa.poblacion %}checked{% endif %}> Mujeres</td>
                                         <td><input type="number" class="form-control" name="total_hombres_mujeres" value="{{ iniciativa.total_hombres_mujeres }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_mujeres" value="{{ iniciativa.total_mujeres_mujeres }}" min="0"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Personas con discapacidad" {% if 'Personas con discapacidad' in iniciativa.poblacion %}checked{% endif %}> Personas con discapacidad</td>
+                                        <td><input type="radio" name="poblacion" value="Personas con discapacidad" {% if 'Personas con discapacidad' in iniciativa.poblacion %}checked{% endif %}> Personas con discapacidad</td>
                                         <td><input type="number" class="form-control" name="total_hombres_discapacidad" value="{{ iniciativa.total_hombres_discapacidad }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_discapacidad" value="{{ iniciativa.total_mujeres_discapacidad }}" min="0"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Migrantes y desplazados internos" {% if 'Migrantes y desplazados internos' in iniciativa.poblacion %}checked{% endif %}> Migrantes y desplazados internos</td>
+                                        <td><input type="radio" name="poblacion" value="Migrantes y desplazados internos" {% if 'Migrantes y desplazados internos' in iniciativa.poblacion %}checked{% endif %}> Migrantes y desplazados internos</td>
                                         <td><input type="number" class="form-control" name="total_hombres_migrantes" value="{{ iniciativa.total_hombres_migrantes }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_migrantes" value="{{ iniciativa.total_mujeres_migrantes }}" min="0"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Poblaciones amazónicas indígenas y de comunidades campesinas de los andes" {% if 'Poblaciones amazónicas indígenas y de comunidades campesinas de los andes' in iniciativa.poblacion %}checked{% endif %}> Poblaciones amazónicas indígenas y de comunidades campesinas de los andes</td>
+                                        <td><input type="radio" name="poblacion" value="Poblaciones amazónicas indígenas y de comunidades campesinas de los andes" {% if 'Poblaciones amazónicas indígenas y de comunidades campesinas de los andes' in iniciativa.poblacion %}checked{% endif %}> Poblaciones amazónicas indígenas y de comunidades campesinas de los andes</td>
                                         <td><input type="number" class="form-control" name="total_hombres_amazonicas" value="{{ iniciativa.total_hombres_amazonicas }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_amazonicas" value="{{ iniciativa.total_mujeres_amazonicas }}" min="0"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Poblaciones de comunidades periurbanas" {% if 'Poblaciones de comunidades periurbanas' in iniciativa.poblacion %}checked{% endif %}> Poblaciones de comunidades periurbanas</td>
+                                        <td><input type="radio" name="poblacion" value="Poblaciones de comunidades periurbanas" {% if 'Poblaciones de comunidades periurbanas' in iniciativa.poblacion %}checked{% endif %}> Poblaciones de comunidades periurbanas</td>
                                         <td><input type="number" class="form-control" name="total_hombres_periurbanas" value="{{ iniciativa.total_hombres_periurbanas }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_periurbanas" value="{{ iniciativa.total_mujeres_periurbanas }}" min="0"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="checkbox" name="poblacion[]" value="Poblaciones afectadas por el conflicto armado interno" {% if 'Poblaciones afectadas por el conflicto armado interno' in iniciativa.poblacion %}checked{% endif %}> Poblaciones afectadas por el conflicto armado interno</td>
+                                        <td><input type="radio" name="poblacion" value="Poblaciones afectadas por el conflicto armado interno" {% if 'Poblaciones afectadas por el conflicto armado interno' in iniciativa.poblacion %}checked{% endif %}> Poblaciones afectadas por el conflicto armado interno</td>
                                         <td><input type="number" class="form-control" name="total_hombres_conflicto" value="{{ iniciativa.total_hombres_conflicto }}" min="0"></td>
                                         <td><input type="number" class="form-control" name="total_mujeres_conflicto" value="{{ iniciativa.total_mujeres_conflicto }}" min="0"></td>
                                     </tr>
                                     <tr>
                                         <td>
-                                            <input type="checkbox" id="otra_poblacion_checkbox" name="poblacion[]" value="Otra población" {% if 'Otra población' in iniciativa.poblacion %}checked{% endif %} onchange="toggleOther('otra_poblacion_checkbox', 'otra_poblacion_detalle')"> Otra población o colectivo de referencia:
+                                            <input type="radio" id="otra_poblacion_checkbox" name="poblacion" value="Otra población" {% if 'Otra población' in iniciativa.poblacion %}checked{% endif %} onchange="toggleOther('otra_poblacion_checkbox', 'otra_poblacion_detalle')"> Otra población o colectivo de referencia:
                                             <input type="text" class="form-control mt-2 {% if 'Otra población' in iniciativa.poblacion %}mostrar{% else %}ocultar{% endif %}" id="otra_poblacion_detalle" name="otra_poblacion_detalle" maxlength="80" value="{{ iniciativa.otra_poblacion_detalle }}">
                                         </td>
                                         <td><input type="number" class="form-control" name="total_hombres_otra" value="{{ iniciativa.total_hombres_otra }}" min="0"></td>

@@ -516,7 +516,7 @@ def form_iniciativas():
             derecho_generico=request.form.get('derecho_generico', ''),
             otro_derecho_detalle=request.form.get('otro_derecho_detalle', ''),
             colectivo_organizacion=request.form.get('colectivo_organizacion', ''),
-            poblacion="|".join(request.form.getlist('poblacion[]')),
+            poblacion=request.form.get('poblacion', ''),
             total_hombres_ninos=request.form.get('total_hombres_ninos', None) or None,
             total_mujeres_ninos=request.form.get('total_mujeres_ninos', None) or None,
             total_hombres_adolescentes=request.form.get('total_hombres_adolescentes', None) or None,
@@ -683,7 +683,7 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.derecho_generico = request.form.get('derecho_generico', '')
         iniciativa.otro_derecho_detalle = request.form.get('otro_derecho_detalle', '')
         iniciativa.colectivo_organizacion = request.form.get('colectivo_organizacion', '')
-        iniciativa.poblacion = "|".join(request.form.getlist('poblacion[]'))
+        iniciativa.poblacion = request.form.get('poblacion', '')
         iniciativa.total_hombres_ninos = request.form.get('total_hombres_ninos', None) or None
         iniciativa.total_mujeres_ninos = request.form.get('total_mujeres_ninos', None) or None
         iniciativa.total_hombres_adolescentes = request.form.get('total_hombres_adolescentes', None) or None
