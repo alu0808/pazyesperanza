@@ -10,6 +10,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <style>
+        .estado-act {
+        background-color: #2dab4a; /* Verde claro */
+        color: #ffffff; /* Verde oscuro para el texto */
+        font-weight: bold;
+        }
+
+        .estado-ina {
+            background-color: #d03c3c; /* Rojo claro */
+            color: #ffffff; /* Rojo oscuro para el texto */
+            font-weight: bold;
+        }
+
         .btn-group {
             display: flex;
             justify-content: center;
@@ -226,7 +238,9 @@
                         {% endif %}
                         <td>{{ registro.dni }}</td>
                         <td>{{ registro.nombre }}</td>
-                        <td>{{ registro.estado }}</td>
+                        <td class="{% if registro.estado == 'ACT' %}estado-act{% elif registro.estado == 'INA' %}estado-ina{% endif %}">
+                            {{ registro.estado }}
+                        </td>                        
                         <td>{{ registro.edad }}</td>
                         <td>{{ registro.sexo }}</td>
                         <td>{{ registro.lugar_nacimiento }}</td>
