@@ -240,6 +240,9 @@
                         <th>Financiamiento 2</th>
                         <th>Periodo Financiamiento 2</th>
                         <th>Observaciones</th>
+                        <th>Tipo Participacion de Fe</th>
+                        <th>Oficina Regional</th>
+                        <th>Proyectos</th>
                         <th>Responsable Registro</th>
                         <th>Fecha Registro</th>
                     </tr>
@@ -337,8 +340,11 @@
                         <td>{{ iniciativa.financiamiento_2 }}</td>
                         <td>{{ iniciativa.periodo_financiamiento_2 }}</td>
                         <td>{{ iniciativa.observaciones }}</td>
+                        <td>{{ iniciativa.tipo_participacion_fe }}</td>
+                        <td>{{ iniciativa.oficina_regional }}</td>
+                        <td>{{ iniciativa.proyectos }}</td>
                         <td>{{ iniciativa.responsable_registro }}</td>
-                        <td>{{ iniciativa.fecha_registro.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ iniciativa.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

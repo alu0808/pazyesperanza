@@ -8,6 +8,9 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/styles.css" rel="stylesheet">
     <style>
+        /* Estilo base para el botón */
+        
+
         /* Nueva barra con logo y nombre de la empresa */
         .title-bar-company {
             display: flex;
@@ -91,9 +94,28 @@
                         </div>
                     </div>
 
+                    <div class="section-box mt-3">
+                        <h4>Agregar Participantes</h4>
+                        <div class="form-group">
+                            <label class="label-principal" for="search-participants">Buscar participante por nombre o DNI:</label>
+                            <input type="text" id="search-participants" class="form-control" placeholder="Escribe para buscar y selecciona de la lista desplegable.">
+                            <ul id="participants-list" class="list-group mt-2 label-principal"></ul>
+                        </div>
+                        <div class="form-group mt-4">
+                            <h3 class="label-principal">Participantes seleccionados:</h3>
+                            <ul id="selected-participants" class="list-group label-principal"></ul>
+                        </div>
+                        <!-- Input oculto para enviar los seleccionados -->
+                        <input type="hidden" id="selected-dnis" name="registros">
+                    </div>
+                    
+                    
+
                     <!-- Sección 3: Derecho Genérico en el que se Inscribe -->
                     <div class="section-box ">
                         <h4>Derecho Genérico en el que se Inscribe</h4>
+                        <!-- <label class="label-principal" for="derecho_prioritario_display">Derecho Prioritario:</label>
+                        <input type="text" id="derecho_prioritario_display" class="form-control" readonly> -->
                         <div class="form-group">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="derecho_generico" value="Vida libre de violencia y discriminación">
@@ -125,7 +147,7 @@
 
                     <!-- Sección 4: Colectivo u Organización Asociada -->
                     <div class="section-box ">
-                        <h4>Colectivo u Organización Asociada</h4>
+                        <h4>Organización / colectivo que conduce la Iniciativa</h4>
                         <div class="form-group">
                             <label class="label-principal" for="colectivo_organizacion">Colectivo u organización:</label>
                             <input type="text" class="form-control" id="colectivo_organizacion" maxlength="80" name="colectivo_organizacion">
@@ -137,7 +159,7 @@
                 <div class="col-md-6">
                     <!-- Sección 2: Población / Colectivo / Grupos Social Titular de Derecho -->
                     <div class="section-box flex-grow-1">
-                        <h4>Población / Colectivo / Grupos Social Titular de Derecho</h4>
+                        <h4>Cobertura de atención</h4>
                         <div class="table-responsive">
                             <table class="table">
                                 <thead>
@@ -394,6 +416,32 @@
                     </div>
                 </div>
             </div>    
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Referente de Trabajo Institucional</h4>
+                        <div class="form-group">
+                            <label class="label-principal" for="oficina_regional">Oficina Regional de referencia:</label>
+                            <input type="text" class="form-control" id="oficina_regional" name="oficina_regional" maxlength="60">
+                        </div>
+                        <div class="form-group">
+                            <label class="label-principal" for="proyectos">Proyecto/s en el/los que participa:</label>
+                            <input type="text" class="form-control" id="proyectos" name="proyectos" maxlength="100">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Participación en Iniciativa de incidencia o exigibilidad de derecho</h4>
+                        <div class="form-group">
+                            <label class="label-principal" for="tipo_participacion_fe">Tipo de participación en la comunidad de fe:</label>
+                            <input type="text" class="form-control" id="tipo_participacion_fe" name="tipo_participacion_fe" maxlength="80">
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Fila 5 Contenido de la iniciativa o propuesta -->
             <div class="row mt-4">
@@ -653,5 +701,88 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Elementos del DOM
+            const searchInput = document.getElementById('search-participants');
+            const participantsList = document.getElementById('participants-list');
+            const selectedParticipants = document.getElementById('selected-participants');
+            const selectedDnis = document.getElementById('selected-dnis');
+            
+            let participants = []; // Almacenar participantes obtenidos del backend
+            // Obtener datos del backend
+            fetch('/get_registros')
+                .then(response => response.json())
+                .then(data => {
+                    participants = data; // Almacenar participantes
+                    // Escuchar eventos de búsqueda
+                    searchInput.addEventListener('input', function () {
+                        const searchTerm = this.value.toLowerCase().trim();
+                        participantsList.innerHTML = ''; // Limpiar la lista
+    
+                        // No hacer nada si el input está vacío
+                        if (searchTerm === '') {
+                            return;
+                        }
+    
+                        // Filtrar participantes que coincidan con la búsqueda
+                        const filtered = participants.filter(participant => 
+                            participant.nombre.toLowerCase().includes(searchTerm) ||
+                            participant.dni.includes(searchTerm)
+                        );
+    
+                        // Mostrar resultados
+                        filtered.forEach(participant => {
+                            const li = document.createElement('li');
+                            li.textContent = `${participant.nombre} (DNI: ${participant.dni})`;
+                            li.classList.add('list-group-item');
+                            li.dataset.dni = participant.dni;
+                            // Agregar evento para seleccionar
+                            li.addEventListener('click', function () {
+                                const dni = this.dataset.dni;
+    
+                                // Evitar duplicados
+                                if (![...selectedParticipants.children].some(item => item.dataset.dni === dni)) {
+                                    const selectedLi = document.createElement('li');
+                                    selectedLi.textContent = `${this.textContent}`;
+                                    selectedLi.classList.add('list-group-item');
+                                    selectedLi.dataset.dni = dni;
+    
+                                    // Botón para eliminar
+                                    const removeBtn = document.createElement('button');
+                                    removeBtn.textContent = 'x';
+                                    removeBtn.classList.add('btn', 'btn-danger', 'btn-sm', 'ml-2', 'remove-btn'); // Agregando la clase personalizada
+                                    removeBtn.addEventListener('click', function () {
+                                        selectedLi.remove();
+                                        updateHiddenInput();
+                                    });
+    
+                                    selectedLi.appendChild(removeBtn);
+                                    selectedParticipants.appendChild(selectedLi);
+                                    updateHiddenInput();
+                                }
+                                // Limpiar la lista de resultados para cerrar las sugerencias
+                                participantsList.innerHTML = '';
+
+                                // Limpiar el campo de búsqueda
+                                searchInput.value = '';
+                            });
+    
+                            participantsList.appendChild(li);
+                        });
+                    });
+    
+                    // Actualizar input oculto con los DNIs seleccionados
+                    function updateHiddenInput() {
+                        const dnis = [...selectedParticipants.children].map(item => item.dataset.dni);
+                        selectedDnis.value = dnis.join(',');
+                    }
+                })
+                .catch(error => console.error('Error al obtener los datos:', error));
+        });
+    </script>
+    
+    
+    
 </body>
 </html>

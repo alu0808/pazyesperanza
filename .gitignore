@@ -1,0 +1,25 @@
+# Entornos virtuales
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Archivos de configuración del entorno de desarrollo
+.vscode/
+*.env
+.env.*
+
+
+# Archivos de dependencia local
+*.log
+*.sqlite3
+
+# Archivos temporales del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos específicos de sistemas de control de versiones
+*.swp
+*.swo
+.idea/
+

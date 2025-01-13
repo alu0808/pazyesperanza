@@ -371,97 +371,22 @@
                             </select>
                         </div>
                     </div>
-                    
 
-                    <div class="section-box ">
+
+
+                </div>
+
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
                         <h4>Sustente la valoración que ha realizado en la tabla anterior</h4>
                         <div class="form-group mt-3">
                             <textarea class="form-control" id="sustento_valoracion" maxlength="255" name="sustento_valoracion" rows="8" placeholder="Ingresar comentarios aquí...">{{ proceso_iniciativas.sustento_valoracion }}</textarea>
                         </div>
-                    </div>
-                    
+                    </div>     
+
                 </div>
 
                 <!-- Columna derecha: Sustentar la valoración -->
-                <div class="col-md-6">
-                    <div class="section-box mt-3">
-                        <h4>Nivel de Desempeño de los representantes y/o líderes</h4>
-                    
-                        <!-- Capacidad 1 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_1">Conocimiento de la problemática del derecho vulnerado:</label>
-                            <select class="form-control mt-1" id="capacidad_1" name="capacidad_1">
-                                <option value="" {% if not proceso_iniciativas.capacidad_1 %}selected{% endif %}>Seleccione una calificación</option>
-                                <option value="0" {% if proceso_iniciativas.capacidad_1 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
-                                <option value="1" {% if proceso_iniciativas.capacidad_1 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
-                                <option value="2" {% if proceso_iniciativas.capacidad_1 == 2 %}selected{% endif %}>2 - Buena presencia</option>
-                                <option value="3" {% if proceso_iniciativas.capacidad_1 == 3 %}selected{% endif %}>3 - Alto dominio</option>
-                            </select>
-                        </div>
-                    
-                        <!-- Capacidad 2 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_2">Manejo de las rutas, mecanismos e instrumentos:</label>
-                            <select class="form-control mt-1" id="capacidad_2" name="capacidad_2">
-                                <option value="" {% if not proceso_iniciativas.capacidad_2 %}selected{% endif %}>Seleccione una calificación</option>
-                                <option value="0" {% if proceso_iniciativas.capacidad_2 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
-                                <option value="1" {% if proceso_iniciativas.capacidad_2 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
-                                <option value="2" {% if proceso_iniciativas.capacidad_2 == 2 %}selected{% endif %}>2 - Buena presencia</option>
-                                <option value="3" {% if proceso_iniciativas.capacidad_2 == 3 %}selected{% endif %}>3 - Alto dominio</option>
-                            </select>
-                        </div>
-                    
-                        <!-- Capacidad 3 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_3">Organización y movilización a sus pares:</label>
-                            <select class="form-control mt-1" id="capacidad_3" name="capacidad_3">
-                                <option value="" {% if not proceso_iniciativas.capacidad_3 %}selected{% endif %}>Seleccione una calificación</option>
-                                <option value="0" {% if proceso_iniciativas.capacidad_3 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
-                                <option value="1" {% if proceso_iniciativas.capacidad_3 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
-                                <option value="2" {% if proceso_iniciativas.capacidad_3 == 2 %}selected{% endif %}>2 - Buena presencia</option>
-                                <option value="3" {% if proceso_iniciativas.capacidad_3 == 3 %}selected{% endif %}>3 - Alto dominio</option>
-                            </select>
-                        </div>
-                    
-                        <!-- Capacidad 4 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_4">Argumentación y vocería de la propuesta:</label>
-                            <select class="form-control mt-1" id="capacidad_4" name="capacidad_4">
-                                <option value="" {% if not proceso_iniciativas.capacidad_4 %}selected{% endif %}>Seleccione una calificación</option>
-                                <option value="0" {% if proceso_iniciativas.capacidad_4 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
-                                <option value="1" {% if proceso_iniciativas.capacidad_4 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
-                                <option value="2" {% if proceso_iniciativas.capacidad_4 == 2 %}selected{% endif %}>2 - Buena presencia</option>
-                                <option value="3" {% if proceso_iniciativas.capacidad_4 == 3 %}selected{% endif %}>3 - Alto dominio</option>
-                            </select>
-                        </div>
-                    
-                        <!-- Capacidad 5 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_5">Participación en colectivos y movimientos de defensa de Agenda por los DDHH:</label>
-                            <select class="form-control mt-1" id="capacidad_5" name="capacidad_5">
-                                <option value="" {% if not proceso_iniciativas.capacidad_5 %}selected{% endif %}>Seleccione una calificación</option>
-                                <option value="0" {% if proceso_iniciativas.capacidad_5 == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
-                                <option value="1" {% if proceso_iniciativas.capacidad_5 == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
-                                <option value="2" {% if proceso_iniciativas.capacidad_5 == 2 %}selected{% endif %}>2 - Buena presencia</option>
-                                <option value="3" {% if proceso_iniciativas.capacidad_5 == 3 %}selected{% endif %}>3 - Alto dominio</option>
-                            </select>
-                        </div>
-                    
-                        <!-- Otra Capacidad -->
-                        <div class="form-group label-principal">
-                            <label for="otra_capacidad">Dominio de otra capacidad (especificar):</label>
-                            <input type="text" class="form-control" id="otra_capacidad" maxlength="80" name="otra_capacidad" value="{{ proceso_iniciativas.otra_capacidad }}">
-                            <label class="mt-2" for="calificacion_otra_capacidad">Calificación Otros:</label>
-                            <select class="form-control mt-1" id="calificacion_otra_capacidad" name="calificacion_otra_capacidad">
-                                <option value="" {% if not proceso_iniciativas.calificacion_otra_capacidad %}selected{% endif %}>Seleccione una calificación</option>
-                                <option value="0" {% if proceso_iniciativas.calificacion_otra_capacidad == 0 %}selected{% endif %}>0 - No se observa / irrelevante / incipiente</option>
-                                <option value="1" {% if proceso_iniciativas.calificacion_otra_capacidad == 1 %}selected{% endif %}>1 - Regular pero aún insuficiente</option>
-                                <option value="2" {% if proceso_iniciativas.calificacion_otra_capacidad == 2 %}selected{% endif %}>2 - Buena presencia</option>
-                                <option value="3" {% if proceso_iniciativas.calificacion_otra_capacidad == 3 %}selected{% endif %}>3 - Alto dominio</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
             </div>
 
 

@@ -170,15 +170,18 @@
                         {% endif %}
                         <th>DNI</th>
                         <th>Nombre</th>
+                        <th>Estado</th>
                         <th>Edad</th>
                         <th>Sexo</th>
                         <th>Lugar de Nacimiento</th>
+                        <th>Departamento</th>
+                        <th>Provincia</th>
+                        <th>Distrito</th>
                         <th>Calle</th>
                         <th>Comunidad</th>
-                        <th>Distrito</th>
-                        <th>Provincia</th>
-                        <th>Departamento</th>
-                        <th>Población Titular</th>
+                        
+                        
+                        <!-- <th>Población Titular</th>
                         <th>Otro Población</th>
                         <th>Derecho Prioritario</th>
                         <th>Otro Derecho</th>
@@ -192,15 +195,15 @@
                         <th>Red Colectivo</th>
                         <th>Detalle de Red</th>
                         <th>Comunidad de Fe</th>
-                        <th>Detalle de Fe</th>
-                        <th>Tipo de Participación Fe</th>
-                        <th>Capacidad 1</th>
+                        <th>Detalle de Fe</th> -->
+                        <!-- <th>Tipo de Participación Fe</th> -->
+                        <!-- <th>Capacidad 1</th>
                         <th>Capacidad 2</th>
                         <th>Capacidad 3</th>
                         <th>Capacidad 4</th>
                         <th>Capacidad 5</th>
                         <th>Otra Capacidad</th>
-                        <th>Calificación Otra Capacidad</th>
+                        <th>Calificación Otra Capacidad</th> -->
                         <th>Fecha Registro</th>
                     </tr>
                 </thead>
@@ -223,15 +226,19 @@
                         {% endif %}
                         <td>{{ registro.dni }}</td>
                         <td>{{ registro.nombre }}</td>
+                        <td>{{ registro.estado }}</td>
                         <td>{{ registro.edad }}</td>
                         <td>{{ registro.sexo }}</td>
                         <td>{{ registro.lugar_nacimiento }}</td>
+                        <td>{{ registro.departamento }}</td>
+                        <td>{{ registro.provincia }}</td>
+                        <td>{{ registro.distrito }}</td>
                         <td>{{ registro.calle }}</td>
                         <td>{{ registro.comunidad }}</td>
-                        <td>{{ registro.distrito }}</td>
-                        <td>{{ registro.provincia }}</td>
-                        <td>{{ registro.departamento }}</td>
-                        <td>{{ registro.poblacion_titular }}</td>
+                        
+                        
+                        
+                        <!-- <td>{{ registro.poblacion_titular }}</td>
                         <td>{{ registro.otro_poblacion }}</td>
                         <td>{{ registro.derecho_prioritario }}</td>
                         <td>{{ registro.otro_derecho }}</td>
@@ -245,16 +252,16 @@
                         <td>{{ registro.red_colectivo }}</td>
                         <td>{{ registro.red_detalle }}</td>
                         <td>{{ registro.comunidad_fe }}</td>
-                        <td>{{ registro.fe_detalle }}</td>
-                        <td>{{ registro.tipo_participacion_fe }}</td>
-                        <td>{{ registro.capacidad_1 }}</td>
+                        <td>{{ registro.fe_detalle }}</td> -->
+                        <!-- <td>{{ registro.tipo_participacion_fe }}</td> -->
+                        <!-- <td>{{ registro.capacidad_1 }}</td>
                         <td>{{ registro.capacidad_2 }}</td>
                         <td>{{ registro.capacidad_3 }}</td>
                         <td>{{ registro.capacidad_4 }}</td>
                         <td>{{ registro.capacidad_5 }}</td>
                         <td>{{ registro.otra_capacidad }}</td>
-                        <td>{{ registro.calificacion_otra_capacidad }}</td>
-                        <td>{{ registro.fecha_registro.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ registro.calificacion_otra_capacidad }}</td> -->
+                        <td>{{ registro.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

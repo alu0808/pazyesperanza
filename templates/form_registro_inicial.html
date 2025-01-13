@@ -94,6 +94,14 @@
                             <input type="text" maxlength="100" class="form-control" id="nombre" name="nombre" required>
                         </div>
                         <div class="form-group">
+                            <label class="label-principal" for="estado">Estado:</label>
+                            <select class="form-control" id="estado" name="estado">
+                                <option value="" selected>Seleccionar</option>
+                                <option value="ACT">Activo</option>
+                                <option value="INA">Inactivo</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label class="label-principal" for="edad">Edad:</label>
                             <input type="number" class="form-control" id="edad" name="edad" >
                         </div>
@@ -118,19 +126,19 @@
                         <div class="form-group">
                             <label class="label-principal" for="departamento">Departamento:</label>
                             <select class="form-control" id="departamento" name="departamento"  onchange="cargarProvincias()">
-                                <option value="">Seleccionar Departamento</option>
+                                <option value="" selected>Seleccionar Departamento</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="provincia">Provincia:</label>
                             <select class="form-control" id="provincia" name="provincia"  onchange="cargarDistritos()">
-                                <option value="">Seleccionar Provincia</option>
+                                <option value="" selected>Seleccionar Provincia</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="label-principal" for="distrito">Distrito:</label>
                             <select class="form-control" id="distrito" name="distrito" >
-                                <option value="">Seleccionar Distrito</option>
+                                <option value="" selected>Seleccionar Distrito</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -146,96 +154,92 @@
             </div>
 
             <!-- Fila 2: Población Titular de Derecho y Derecho Prioritario -->
-            <div class="row mt-4">
+            <!-- <div class="row mt-4">
                 <div class="col-md-6">
                     <div class="section-box mt-3">
                         <h4>Población / Colectivo / Grupos Social Titular de Derecho</h4>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Niños y niñas" id="poblacion1" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion1">Niños y niñas</label>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Niños y niñas" id="poblacion1" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion1">Niños y niñas</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Adolescentes" id="poblacion2" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion2">Adolescentes</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Jóvenes" id="poblacion3" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion3">Jóvenes</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Mujeres" id="poblacion4" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion4">Mujeres</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Personas con discapacidad" id="poblacion5" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion5">Personas con discapacidad</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Migrantes y desplazados internos" id="poblacion6" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion6">Migrantes y desplazados internos</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Poblaciones amazónicas indígenas y de comunidades campesinas de los andes" id="poblacion7" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion7">Poblaciones amazónicas indígenas y de comunidades campesinas de los andes</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Poblaciones de comunidades periurbanas" id="poblacion8" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion8">Poblaciones de comunidades periurbanas</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Poblaciones afectadas por el conflicto armado interno" id="poblacion9" name="poblacion_titular">
+                                <label class="form-check-label" for="poblacion9">Poblaciones afectadas por el conflicto armado interno</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Otro" id="poblacion10" name="poblacion_titular" onclick="toggleOther('poblacion10', 'otro_poblacion')">
+                                <label class="form-check-label" for="poblacion10">Otro (especificar):</label>
+                            </div>
+                            <input type="text" class="form-control mt-2" id="otro_poblacion" maxlength="60" name="otro_poblacion" style="display:none;">
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Adolescentes" id="poblacion2" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion2">Adolescentes</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Jóvenes" id="poblacion3" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion3">Jóvenes</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Mujeres" id="poblacion4" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion4">Mujeres</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Personas con discapacidad" id="poblacion5" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion5">Personas con discapacidad</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Migrantes y desplazados internos" id="poblacion6" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion6">Migrantes y desplazados internos</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Poblaciones amazónicas indígenas y de comunidades campesinas de los andes" id="poblacion7" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion7">Poblaciones amazónicas indígenas y de comunidades campesinas de los andes</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Poblaciones de comunidades periurbanas" id="poblacion8" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion8">Poblaciones de comunidades periurbanas</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Poblaciones afectadas por el conflicto armado interno" id="poblacion9" name="poblacion_titular">
-                            <label class="form-check-label" for="poblacion9">Poblaciones afectadas por el conflicto armado interno</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Otro" id="poblacion10" name="poblacion_titular" onclick="toggleOther('poblacion10', 'otro_poblacion')">
-                            <label class="form-check-label" for="poblacion10">Otro (especificar):</label>
-                        </div>
-                        <input type="text" class="form-control mt-2" id="otro_poblacion" maxlength="60" name="otro_poblacion" style="display:none;">
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <div class="section-box mt-3 flex-grow-1">
-                        <h4>Derecho Prioritario</h4>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Vida libre de violencia y discriminación" id="derecho1" name="derecho_prioritario">
-                            <label class="form-check-label" for="derecho1">Vida libre de violencia y discriminación</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Calidad e igualdad de oportunidades en la educación" id="derecho2" name="derecho_prioritario">
-                            <label class="form-check-label" for="derecho2">Calidad e igualdad de oportunidades en la educación</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Seguridad jurídica de los territorios y justicia ambiental" id="derecho3" name="derecho_prioritario">
-                            <label class="form-check-label" for="derecho3">Seguridad jurídica de los territorios y justicia ambiental</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Entornos seguros y libres de riesgos de desastres" id="derecho4" name="derecho_prioritario">
-                            <label class="form-check-label" for="derecho4">Entornos seguros y libres de riesgos de desastres</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Justicia y reparación" id="derecho5" name="derecho_prioritario">
-                            <label class="form-check-label" for="derecho5">Justicia y reparación</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="Otro" id="derecho6" name="derecho_prioritario" onclick="toggleOther('derecho6', 'otro_derecho')">
-                            <label class="form-check-label" for="derecho6">Otro (especificar):</label>
-                        </div>
-                        <input type="text" class="form-control mt-2" id="otro_derecho" maxlength="60" name="otro_derecho" style="display:none;">
-                    </div>
-
-                    <div class="section-box flex-grow-1">
-                        <h4>Servicio o Actividad</h4>
+                        <h4>Derecho prioritario que se promueve</h4>
                         <div class="form-group">
-                            <label class="label-principal" for="servicio_actividad">Servicio o Actividad:</label>
-                            <input type="text" class="form-control" id="servicio_actividad" maxlength="150" name="servicio_actividad" >
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Vida libre de violencia y discriminación" id="derecho1" name="derecho_prioritario">
+                                <label class="form-check-label" for="derecho1">Vida libre de violencia y discriminación</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Calidad e igualdad de oportunidades en la educación" id="derecho2" name="derecho_prioritario">
+                                <label class="form-check-label" for="derecho2">Calidad e igualdad de oportunidades en la educación</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Seguridad jurídica de los territorios y justicia ambiental" id="derecho3" name="derecho_prioritario">
+                                <label class="form-check-label" for="derecho3">Seguridad jurídica de los territorios y justicia ambiental</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Entornos seguros y libres de riesgos de desastres" id="derecho4" name="derecho_prioritario">
+                                <label class="form-check-label" for="derecho4">Entornos seguros y libres de riesgos de desastres</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Justicia y reparación" id="derecho5" name="derecho_prioritario">
+                                <label class="form-check-label" for="derecho5">Justicia y reparación</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="Otro" id="derecho6" name="derecho_prioritario" onclick="toggleOther('derecho6', 'otro_derecho')">
+                                <label class="form-check-label" for="derecho6">Otro (especificar):</label>
+                            </div>
+                            <input type="text" class="form-control mt-2" id="otro_derecho" maxlength="60" name="otro_derecho" style="display:none;">
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Fila 3: Referente de Trabajo Institucional y Servicio o Actividad -->
-            <div class="row mt-4">
+            <!-- <div class="row mt-4">
                 <div class="col-md-6">
                     <div class="section-box mt-3">
                         <h4>Referente de Trabajo Institucional</h4>
@@ -246,8 +250,8 @@
                         <div class="form-group">
                             <label class="label-principal" for="proyectos">Proyecto/s en el/los que participa:</label>
                             <input type="text" class="form-control" id="proyectos" name="proyectos" maxlength="100">
-                        </div>
-                        <div class="form-group">
+                        </div> -->
+                        <!-- <div class="form-group">
                             <label class="label-principal" for="tipo_servicios">Tipo de servicios o actividades institucionales en el que participa:</label>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" value="Capacitación / formación" id="servicio1" name="tipo_servicios">
@@ -283,17 +287,14 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
-                <div class="col-md-6">
+                <!-- <div class="col-md-6">
                     <div class="section-box mt-3">
-                        <h4>Fecha de Participación en el Servicio o Actividad</h4>
-                        <div class="form-group">
-                            <label class="label-principal" for="fecha_participacion">Fecha de participación en el servicio o actividad:</label>
-                            <input type="date" class="form-control" id="fecha_participacion" name="fecha_participacion" >
-                        </div>
+                        <h4>Participación en Iniciativa de incidencia o exigibilidad de derecho</h4> -->
+                        
 
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label class="label-principal" for="propuesta_agenda">Propuesta de Agenda / Iniciativa de Incidencia Social y/o Política a la que se vincula:</label>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" value="No se vincula a ninguna iniciativa" id="agenda_no" name="propuesta_agenda" onclick="toggleOtherRadio('propuesta_agenda', 'agenda_detalle')">
@@ -304,10 +305,10 @@
                                 <label class="form-check-label" for="agenda_si">Sí se vincula. ¿A cuál?:</label>
                             </div>
                             <input type="text" class="form-control mt-2" id="agenda_detalle" name="agenda_detalle" style="display:none;" maxlength="80">
-                        </div>
+                        </div> -->
 
                         <!-- Red / Colectivo -->
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label class="label-principal" for="red_colectivo">Red / Colectivo al que se vincula para la propuesta / iniciativa:</label>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" value="No se vincula a ninguna Red o Colectivo" id="red_no" name="red_colectivo" onclick="toggleOtherRadio('red_colectivo', 'red_detalle')">
@@ -318,10 +319,10 @@
                                 <label class="form-check-label" for="red_si">Sí está vinculado. ¿A cuál?:</label>
                             </div>
                             <input type="text" class="form-control mt-2" id="red_detalle" name="red_detalle" style="display:none;" maxlength="80">
-                        </div>
+                        </div> -->
 
                         <!-- Participación en comunidad de fe -->
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label class="label-principal" for="comunidad_fe">Participación en comunidad de fe:</label>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" value="No participa en ninguna comunidad de fe" id="fe_no" name="comunidad_fe" onclick="toggleOtherRadio('comunidad_fe', 'fe_detalle')">
@@ -336,100 +337,12 @@
                         <div class="form-group">
                             <label class="label-principal" for="tipo_participacion_fe">Tipo de participación en la comunidad de fe:</label>
                             <input type="text" class="form-control" id="tipo_participacion_fe" name="tipo_participacion_fe" maxlength="80">
-                        </div>
-                    </div>
+                        </div> -->
+                    <!-- </div>
                 </div>
-            </div>
+            </div> -->
 
-            <!-- Fila 4: Desarrollo de Capacidades de Exigibilidad e Incidencia -->
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="section-box mt-3">
-                        <h4>Desarrollo de Capacidades de Exigibilidad e Incidencia</h4>
             
-                        <!-- Capacidad 1 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_1">Conocimiento de la problemática del derecho vulnerado:</label>
-                            <select class="form-control mt-1" id="capacidad_1" name="capacidad_1">
-                                <option value="" selected>Seleccione una calificación</option>
-                                <option value="0">0 - No se observa el atributo</option>
-                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
-                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
-                                <option value="3">3 - Se observa una buena presencia del atributo</option>
-                                <option value="4">4 - Se observa un alto dominio del atributo</option>
-                            </select>
-                        </div>
-            
-                        <!-- Capacidad 2 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_2">Manejo de las rutas, mecanismos e instrumentos:</label>
-                            <select class="form-control mt-1" id="capacidad_2" name="capacidad_2">
-                                <option value="" selected>Seleccione una calificación</option>
-                                <option value="0">0 - No se observa el atributo</option>
-                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
-                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
-                                <option value="3">3 - Se observa una buena presencia del atributo</option>
-                                <option value="4">4 - Se observa un alto dominio del atributo</option>
-                            </select>
-                        </div>
-            
-                        <!-- Capacidad 3 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_3">Organización y movilización a sus pares:</label>
-                            <select class="form-control mt-1" id="capacidad_3" name="capacidad_3">
-                                <option value="" selected>Seleccione una calificación</option>
-                                <option value="0">0 - No se observa el atributo</option>
-                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
-                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
-                                <option value="3">3 - Se observa una buena presencia del atributo</option>
-                                <option value="4">4 - Se observa un alto dominio del atributo</option>
-                            </select>
-                        </div>
-            
-                        <!-- Capacidad 4 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_4">Argumentación y vocería de la propuesta:</label>
-                            <select class="form-control mt-1" id="capacidad_4" name="capacidad_4">
-                                <option value="" selected>Seleccione una calificación</option>
-                                <option value="0">0 - No se observa el atributo</option>
-                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
-                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
-                                <option value="3">3 - Se observa una buena presencia del atributo</option>
-                                <option value="4">4 - Se observa un alto dominio del atributo</option>
-                            </select>
-                        </div>
-            
-                        <!-- Capacidad 5 -->
-                        <div class="form-group label-principal">
-                            <label for="capacidad_5">Participación en colectivos y movimientos de defensa de Agenda por los DDHH:</label>
-                            <select class="form-control mt-1" id="capacidad_5" name="capacidad_5">
-                                <option value="" selected>Seleccione una calificación</option>
-                                <option value="0">0 - No se observa el atributo</option>
-                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
-                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
-                                <option value="3">3 - Se observa una buena presencia del atributo</option>
-                                <option value="4">4 - Se observa un alto dominio del atributo</option>
-                            </select>
-                        </div>
-            
-                        <!-- Otra Capacidad -->
-                        <div class="form-group label-principal">
-                            <label for="otra_capacidad">Dominio de otra capacidad (especificar):</label>
-                            <input type="text" class="form-control" id="otra_capacidad" name="otra_capacidad" maxlength="100">
-                            <label class="mt-2" for="calificacion_otra_capacidad">Calificación Otros:</label>
-                            <select class="form-control mt-1" id="calificacion_otra_capacidad" name="calificacion_otra_capacidad">
-                                <option value="" selected>Seleccione una calificación</option>
-                                <option value="0">0 - No se observa el atributo</option>
-                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
-                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
-                                <option value="3">3 - Se observa una buena presencia del atributo</option>
-                                <option value="4">4 - Se observa un alto dominio del atributo</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-                
             <!-- Fila 3: Botón de Envío -->
             <!-- Botones de navegación -->
             <div class="row justify-content-end mt-3 mb-5">

@@ -1,60 +1,127 @@
-// Espera a que el DOM esté completamente cargado
 document.addEventListener('DOMContentLoaded', function () {
     // Cargar los datos del JSON para los departamentos, provincias y distritos
     fetch('/static/ubigeoPeru.json')
         .then(response => response.json())
         .then(data => {
             window.ubigeoPeru = data;
-            cargarDepartamentos();
+            inicializarSelects(); // Inicializa los selects con datos
         })
         .catch(error => console.error('Error al cargar el JSON:', error));
 });
 
+// Inicializar selects con datos existentes y cargar departamentos
+function inicializarSelects() {
+    cargarDepartamentos();
+
+    // Cargar provincias si hay un departamento preseleccionado
+    const departamentoSeleccionado = document.getElementById("departamento").value;
+    if (departamentoSeleccionado) {
+        cargarProvincias(departamentoSeleccionado);
+
+        // Cargar distritos si hay una provincia preseleccionada
+        const provinciaSeleccionada = document.getElementById("provincia").value;
+        if (provinciaSeleccionada) {
+            cargarDistritos(departamentoSeleccionado, provinciaSeleccionada);
+        }
+    }
+}
+
 // Cargar los departamentos en el select
 function cargarDepartamentos() {
     const departamentoSelect = document.getElementById("departamento");
+    const provinciaSelect = document.getElementById("provincia");
+    const distritoSelect = document.getElementById("distrito");
+    const departamentoSeleccionado = departamentoSelect.getAttribute("value");
+
+    departamentoSelect.innerHTML = '<option value="">Seleccionar Departamento</option>'; // Siempre comienza con "Seleccionar Departamento"
+    provinciaSelect.innerHTML = '<option value="">Seleccionar Provincia</option>'; // Siempre comienza con "Seleccionar Departamento"
+    distritoSelect.innerHTML = '<option value="">Seleccionar Distrito</option>'; // Siempre comienza con "Seleccionar Departamento"
+
     for (const departamento in ubigeoPeru) {
         const option = document.createElement("option");
         option.value = departamento;
         option.text = departamento;
+
+        // Si el departamento coincide con el valor preseleccionado, marcarlo
+        if (departamento === departamentoSeleccionado) {
+            option.selected = true;
+        }
+
         departamentoSelect.add(option);
     }
+
+    // Agregar evento para limpiar provincias y distritos si cambia el departamento
+    departamentoSelect.addEventListener('change', function () {
+        limpiarSelect('provincia', 'Seleccionar Provincia');
+        limpiarSelect('distrito', 'Seleccionar Distrito');
+        cargarProvincias(); // Cargar provincias del nuevo departamento
+    });
 }
 
 // Cargar las provincias cuando se selecciona un departamento
-function cargarProvincias() {
-    const departamentoSelect = document.getElementById("departamento").value;
+function cargarProvincias(departamento = null) {
+    const departamentoSelect = departamento || document.getElementById("departamento").value;
     const provinciaSelect = document.getElementById("provincia");
-    provinciaSelect.innerHTML = '<option value="">Seleccionar Provincia</option>'; // Limpiar opciones anteriores
-    const distritoSelect = document.getElementById("distrito");
-    distritoSelect.innerHTML = '<option value="">Seleccionar Distrito</option>'; // Limpiar distritos
-    if (departamentoSelect !== "") {
+    const provinciaSeleccionada = provinciaSelect.getAttribute("value");
+
+    limpiarSelect('provincia', 'Seleccionar Provincia'); // Limpia las opciones anteriores
+
+    if (departamentoSelect && ubigeoPeru[departamentoSelect]) {
         const provincias = ubigeoPeru[departamentoSelect];
         for (const provincia in provincias) {
             const option = document.createElement("option");
             option.value = provincia;
             option.text = provincia;
+
+            // Si la provincia coincide con el valor preseleccionado, marcarla
+            if (provincia === provinciaSeleccionada) {
+                option.selected = true;
+            }
+
             provinciaSelect.add(option);
         }
     }
+
+    // Agregar evento para limpiar distritos si cambia la provincia
+    provinciaSelect.addEventListener('change', function () {
+        limpiarSelect('distrito', 'Seleccionar Distrito');
+        cargarDistritos(); // Cargar distritos de la nueva provincia
+    });
 }
 
 // Cargar los distritos cuando se selecciona una provincia
-function cargarDistritos() {
-    const departamentoSelect = document.getElementById("departamento").value;
-    const provinciaSelect = document.getElementById("provincia").value;
+function cargarDistritos(departamento = null, provincia = null) {
+    const departamentoSelect = departamento || document.getElementById("departamento").value;
+    const provinciaSelect = provincia || document.getElementById("provincia").value;
     const distritoSelect = document.getElementById("distrito");
-    distritoSelect.innerHTML = '<option value="">Seleccionar Distrito</option>'; // Limpiar opciones anteriores
-    if (provinciaSelect !== "") {
+    const distritoSeleccionado = distritoSelect.getAttribute("value");
+
+    limpiarSelect('distrito', 'Seleccionar Distrito'); // Limpia las opciones anteriores
+
+    if (departamentoSelect && provinciaSelect && ubigeoPeru[departamentoSelect][provinciaSelect]) {
         const distritos = ubigeoPeru[departamentoSelect][provinciaSelect];
         distritos.forEach(function (distrito) {
             const option = document.createElement("option");
             option.value = distrito;
             option.text = distrito;
+
+            // Si el distrito coincide con el valor preseleccionado, marcarlo
+            if (distrito === distritoSeleccionado) {
+                option.selected = true;
+            }
+
             distritoSelect.add(option);
         });
     }
 }
+
+// Función para limpiar un select y agregar una opción por defecto
+function limpiarSelect(id, defaultOptionText) {
+    const select = document.getElementById(id);
+    select.innerHTML = `<option value="">${defaultOptionText}</option>`;
+}
+
+
 
 // Función para mostrar u ocultar el campo de texto basado en la selección de un checkbox
 // Función para mostrar u ocultar el campo de texto basado en la selección de un checkbox
@@ -187,6 +254,30 @@ function fetchPoliticaMemoriaData(nombre_politica_memoria) {
         document.getElementById('numero_formulario_container').style.display = 'none';
     }
 }
+function fetchCapacidadAvances(participantDni) {
+    if (participantDni) {
+        fetch('/get_capacidad_avances/' + participantDni)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Mostrar el número de registros de avances
+                    document.getElementById('numero_registro').innerText = data.numero_registros;
+                    document.getElementById('numero_registro_container').style.display = 'block';
+
+                    // También puedes almacenar el ID de la capacidad en un campo oculto si es necesario
+                    document.getElementById('capacidad-id').value = data.capacidad_id;
+                }
+            })
+            .catch(error => console.log('Error:', error));
+    } else {
+        // Limpiar el mensaje si no se selecciona un participante
+        document.getElementById('numero_registro').innerText = '';
+        document.getElementById('numero_registro_container').style.display = 'none';
+    }
+}
+
 
 
 // FUNCION PARA LA ALERTA QUE DESAPAREZCA EN LA PARTE SUPERIOR AL GUARDAR REGISTRO

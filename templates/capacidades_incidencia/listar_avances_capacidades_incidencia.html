@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Politicas Nacional y/o Memoria</title>
+    <title>Lista de Registro de Capacidades de Incidencia</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/styles.css" rel="stylesheet">
@@ -13,7 +13,7 @@
         .btn-group {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 10px; /* Añade espacio entre los botones */
         }
 
         .btn-icon {
@@ -35,13 +35,11 @@
             border: none;
             color: white;
         }
-
-        .btn-success {
+        .btn-success{
             background-color: #e8e53e;
             border: none;
             color: rgb(40, 40, 40);
         }
-
         .btn-success:hover {
             color: #fff;
             background-color: #383838;
@@ -62,33 +60,35 @@
         }
 
         .table-responsive {
-            overflow-x: auto;
+            overflow-x: auto; /* Agrega scroll horizontal */
         }
 
         .table {
-            border-collapse: collapse;
+            border-collapse: collapse; /* Asegura que los bordes se muestren correctamente */
             width: 100%;
         }
 
         .table th, .table td {
-            white-space: nowrap;
-            border: 1px solid #dee2e6;
+            white-space: nowrap; /* Evita que las celdas se rompan en varias líneas */
+            border: 1px solid #dee2e6; /* Agrega borde entre las celdas */
             padding: 8px;
-            text-align: center;
-            vertical-align: middle;
+            text-align: center; /* Centra el texto horizontalmente */
+            vertical-align: middle; /* Centra el texto verticalmente */
         }
 
         .table th {
-            background-color: #18834d;
+            background-color: #18834d; /* Fondo color verde oscuro para los encabezados */
             color: white;
             font-size: 0.8rem;
         }
 
+        /* Estilo para el botón superior derecho */
         .button-container {
             display: flex;
             justify-content: flex-end;
         }
 
+        /* Nueva barra con logo y nombre de la empresa */
         .title-bar-company {
             display: flex;
             justify-content: space-between;
@@ -97,11 +97,11 @@
             color: white;
             padding: 5px 20px;
             width: 100%;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
         }
 
         .title-bar-company img {
-            height: 40px;
+            height: 40px; /* Ajusta la altura del logo */
         }
 
         @media (min-width: 768px) {
@@ -109,9 +109,8 @@
                 font-size: 2.5rem;
                 margin-bottom: 40px;
             }
-
             .title-bar-company img {
-                height: 50px;
+                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
             }
         }
     </style>
@@ -134,10 +133,9 @@
             {% endif %}
         </div>
     </div>
-
     <!-- Título Principal -->
     <div class="title-bar">
-        Lista de Politicas Nacional y/o Memoria
+        Lista de Registro de Capacidades de Incidencia
     </div>
 
     <div class="container mt-5">
@@ -155,9 +153,9 @@
         <!-- Botón en la parte superior derecha -->
         {% if current_user.role in ['admin'] %}
         <div class="button-container">
-            <a href="/form_registro_politica_nacional_memoria" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nueva Politica nacional y/o memoria</a>
+            <a href="/form_avances_capacidades_incidencia" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nuevo Avance de Capacidad de Incidencia</a>
         </div>
-        {% endif %}    
+        {% endif %}
         <!-- Tabla de registros -->
         <div class="table-responsive mb-5">
             <table class="table table-striped">
@@ -166,30 +164,30 @@
                         {% if current_user.role in ['admin', 'editor'] %}
                         <th>Acciones</th>
                         {% endif %}
-                        <th>Nombre Política Nacional y/o Sitio de Memoria</th>
-                        <th>Localización</th>
-                        <th>Descripcion Propuesta</th>
-                        <th>Institucion 1</th>
-                        <th>Asunto 1</th>
-                        <th>Institucion 2</th>
-                        <th>Asunto 2</th>
-                        <th>Institucion 3</th>
-                        <th>Asunto 3</th>
-                        <th>Organizaciones Aliadas</th>
-                        <th>Otro Dato</th>
+                        <th>Participante</th>
+                        <th>DNI</th>
+                        <th>N° Registro</th>
+                        <th>Iniciativa</th>
+                        <th>Capacidad 1</th>
+                        <th>Capacidad 2</th>
+                        <th>Capacidad 3</th>
+                        <th>Capacidad 4</th>
+                        <th>Capacidad 5</th>
+                        <th>Otra Capacidad</th>
+                        <th>Calificación Otra Capacidad</th>
                         <th>Fecha Registro</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for poli_mem in politica_memoria %}
+                    {% for avance in avances %}
                     <tr>
                         {% if current_user.role in ['admin', 'editor'] %}
                         <td>
                             <div class="btn-group">
-                                <a href="/editar_politica_nacional_memoria/{{ poli_mem.nombre_politica_memoria }}" class="btn btn-primary btn-icon">
+                                <a href="/editar_avances_capacidades_incidencia/{{ avance.id }}" class="btn btn-primary btn-icon">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form method="POST" action="/eliminar_politica_nacional_memoria/{{ poli_mem.nombre_politica_memoria }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este caso?');" style="display:inline;">
+                                <form method="POST" action="/eliminar_avances_capacidades_incidencia/{{ avance.id }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta capacidad?');" style="display:inline;">
                                     <button type="submit" class="btn btn-danger btn-icon">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
@@ -197,18 +195,18 @@
                             </div>
                         </td>
                         {% endif %}
-                        <td>{{ poli_mem.nombre_politica_memoria }}</td>
-                        <td>{{ poli_mem.localizacion }}</td>
-                        <td>{{ poli_mem.descripcion_propuesta }}</td>
-                        <td>{{ poli_mem.institucion_1 }}</td>
-                        <td>{{ poli_mem.asunto_1 }}</td>
-                        <td>{{ poli_mem.institucion_2 }}</td>
-                        <td>{{ poli_mem.asunto_2 }}</td>
-                        <td>{{ poli_mem.institucion_3 }}</td>
-                        <td>{{ poli_mem.asunto_3 }}</td>
-                        <td>{{ poli_mem.organizaciones_aliadas }}</td>
-                        <td>{{ poli_mem.otro_dato }}</td>
-                        <td>{{ poli_mem.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                        <td>{{ avance.capacidad_incidencia.registro.nombre }}</td>
+                        <td>{{ avance.capacidad_incidencia.registro_dni }}</td>
+                        <td>{{ avance.numero_registro }}</td>
+                        <td>{{ avance.capacidad_incidencia.nombre_iniciativa }}</td>
+                        <td>{{ avance.capacidad_1 }}</td>
+                        <td>{{ avance.capacidad_2 }}</td>
+                        <td>{{ avance.capacidad_3 }}</td>
+                        <td>{{ avance.capacidad_4 }}</td>
+                        <td>{{ avance.capacidad_5 }}</td>
+                        <td>{{ avance.otra_capacidad }}</td>
+                        <td>{{ avance.calificacion_otra_capacidad }}</td>
+                        <td>{{ avance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

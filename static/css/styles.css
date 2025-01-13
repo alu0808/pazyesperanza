@@ -169,3 +169,19 @@ th{
 .input-clarity {
     background-color: #fbfbfb; /* Un fondo más claro */
 }
+
+.btn-bi{
+    background-color: #f06221;
+}
+
+.remove-btn {
+    font-size: 10px; /* Tamaño de la fuente más pequeño */
+    width: 20px; /* Ancho del botón */
+    height: 20px; /* Alto del botón */
+    padding: 0; /* Quitar padding interno */
+    line-height: 18px; /* Centrar el contenido verticalmente */
+    border-radius: 50%; /* Hacerlo circular */
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}

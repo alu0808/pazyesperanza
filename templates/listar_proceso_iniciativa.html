@@ -167,6 +167,7 @@
                         <th>Acciones</th>
                         {% endif %}
                         <th>Nombre Iniciativa</th>
+                        <th>N° Registro</th>
                         <th>Objetivo Específico</th>
                         <th>Logros</th>
                         <th>Sustento de Logros</th>
@@ -191,13 +192,6 @@
                         <th>Calificación Componente 3</th>
                         <th>Sustento Valoración</th> <!-- Campo añadido -->
                         <th>Nivel de Avance Comentarios</th>
-                        <th>Capacidad 1</th>
-                        <th>Capacidad 2</th>
-                        <th>Capacidad 3</th>
-                        <th>Capacidad 4</th>
-                        <th>Capacidad 5</th>
-                        <th>Otra Capacidad</th>
-                        <th>Calificación Otra Capacidad</th>
                         <th>Reforzar Competencias</th>
                         <th>Participación Comportamiento</th>
                         <th>Comentario Valoración</th>
@@ -237,6 +231,7 @@
                         </td>
                         {% endif %}
                         <td>{{ proceso.nombre_iniciativa }}</td>
+                        <td>{{ proceso.numero_registro }}</td>
                         <td>{{ proceso.objetivo_especifico }}</td>
                         <td>{{ proceso.logros }}</td>
                         <td>{{ proceso.sustento_logros }}</td>
@@ -261,13 +256,6 @@
                         <td>{{ proceso.calificacion_componente_3 }}</td>
                         <td>{{ proceso.sustento_valoracion }}</td> <!-- Campo añadido -->
                         <td>{{ proceso.nivel_avance_comentarios }}</td>
-                        <td>{{ proceso.capacidad_1 }}</td>
-                        <td>{{ proceso.capacidad_2 }}</td>
-                        <td>{{ proceso.capacidad_3 }}</td>
-                        <td>{{ proceso.capacidad_4 }}</td>
-                        <td>{{ proceso.capacidad_5 }}</td>
-                        <td>{{ proceso.otra_capacidad }}</td>
-                        <td>{{ proceso.calificacion_otra_capacidad }}</td>
                         <td>{{ proceso.reforzar_competencias }}</td>
                         <td>{{ proceso.participacion_comportamiento }}</td>
                         <td>{{ proceso.comentario_valoracion }}</td>
@@ -286,7 +274,7 @@
                         <td>{{ proceso.cambios_estrategia }}</td>
                         <td>{{ proceso.comentario_relevante }}</td>
                         <td>{{ proceso.responsable_registro }}</td>
-                        <td>{{ proceso.fecha_registro.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ proceso.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Capacidades de Incidencia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <style>
+
+        /* Hacer que las columnas no igualen su altura */
+        .row {
+            display: flex;
+            flex-wrap: wrap; /* Asegura que las columnas se ajusten en dispositivos pequeños */
+            align-items: flex-start; /* Alinea las columnas según su contenido */
+        }
+
+        /* Específico para desktop */
+        @media (min-width: 992px) { /* Aplica solo a pantallas grandes */
+            .col-md-6 {
+                flex: 0 0 auto; /* Desactiva el comportamiento de igualar alturas */
+            }
+        }
+
+
+        #participants-list {
+            max-height: 120px; /* Altura máxima de la lista de sugerencias */
+            overflow-y: auto; /* Hacer scroll si excede la altura */
+            border: 1px solid #ddd;
+        }
+
+        /* Botones pequeños */
+        .btn-sm {
+            padding: 3px 8px; /* Reducir tamaño de los botones pequeños */
+            font-size: 0.8rem;
+        }
+
+        /* Ajustes para pantallas más pequeñas */
+        @media (max-width: 768px) {
+
+            #participants-list {
+                max-height: 100px; /* Ajustar la lista de sugerencias */
+                overflow-y: auto;
+                border: 1px solid #ddd;
+            }
+        }
+        /* Nueva barra con logo y nombre de la empresa */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1d7c3a;
+            color: white;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+        }
+
+        .title-bar-company img {
+            height: 40px; /* Ajusta la altura del logo */
+        }
+
+        @media (min-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                margin-bottom: 40px;
+            }
+            .title-bar-company img {
+                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
+            }
+            
+        }
+        .title-bar {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 7px;
+            font-size: 1rem;
+            width: 100%;
+        }
+    </style>
+</head>
+    
+<body>
+    <!-- Barra superior con el nombre de la empresa y el logo -->
+    <!-- Barra superior con el nombre de la empresa y el logo -->
+    <div class="title-bar-company">
+        <a href="{{ url_for('index') }}">
+            <img src="/static/images/logo.png" alt="Logo de la empresa">
+        </a>
+        
+        <!-- Verificar si el usuario está autenticado y mostrar el enlace adecuado -->
+        <div class="button-container">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('logout') }}" class="btn btn-light label-principal">Cerrar sesión</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-light label-principal">Iniciar sesión</a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Título Principal -->
+    <div class="title-bar">
+        Ficha de Registro de Capacidades de Incidencia
+    </div>
+
+    <div class="container mt-5">
+        <!-- Mostrar mensajes flash -->
+        <div class="alert-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert alert_mod alert-{{ messages[0][0] }}">
+                        {{ messages[0][1] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <form method="POST" action="/form_avances_capacidades_incidencia">
+            <!-- Fila 4: Desarrollo de Capacidades de Exigibilidad e Incidencia -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Referencias del participante</h4>
+
+                        <div class="form-group">
+                            <div class="alert alert-info" id="numero_registro_container" style="display: none;">
+                                Registro de Monitoreo #<strong id="numero_registro"></strong> para la capacidad seleccionada.
+                            </div>
+                        </div>
+                        
+                        
+                        <!-- Campo de búsqueda -->
+                        <div class="form-group">
+                            <label class="label-principal" for="search-participants">Buscar participante por nombre o DNI:</label>
+                            <input type="text" id="search-participants" class="form-control" placeholder="Escribe para buscar participante por DNI o Nombre.">
+                            <ul id="participants-list" class="list-group mt-2 label-principal"></ul>
+                        </div>
+                        
+                        <!-- Participante seleccionado -->
+                        <div class="form-group">
+                            <label class="label-principal" for="selected-participant">Participante seleccionado:</label>
+                            <input type="text" id="selected-participant" class="form-control" readonly>
+                        </div>
+
+                        <input type="hidden" id="capacidad-id" name="capacidad_id">
+                        
+                        <!-- Población -->
+                        <div class="form-group">
+                            <label class="label-principal" for="poblacion">Población/Colectivo/Grupo Social:</label>
+                            <input type="text" class="form-control" id="poblacion" name="poblacion_display" readonly>
+                        </div>
+                        <input type="hidden" id="poblacion-hidden" name="poblacion">
+                        
+                        <!-- Derecho prioritario -->
+                        <div class="form-group">
+                            <label class="label-principal" for="derecho_generico">Derecho Prioritario que atiende la propuesta:</label>
+                            <input type="text" class="form-control" id="derecho_generico" name="derecho_prioritario_display" readonly>
+                        </div>
+                        <input type="hidden" id="derecho_prioritario-hidden" name="derecho_generico">
+                        
+                        <!-- Nombre de la iniciativa -->
+                        <div class="form-group">
+                            <label class="label-principal" for="nombre_iniciativa_display">Nombre de la iniciativa o propuesta:</label>
+                            <input type="text" class="form-control" id="nombre_iniciativa_display" name="nombre_iniciativa_display" readonly>
+                        </div>
+                        <!-- <input type="hidden" id="nombre-iniciativa" name="nombre_iniciativa"> -->
+                    </div>
+                    
+                </div>
+
+                <div class="col-md-6">
+                    <div class="section-box mt-3">
+                        <h4>Desarrollo de Capacidades de Exigibilidad e Incidencia</h4>
+
+                        <!-- Capacidad 1 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_1">Conocimiento de la problemática del derecho vulnerado:</label>
+                            <select class="form-control mt-1" id="capacidad_1" name="capacidad_1">
+                                <option value="" selected>Seleccione una calificación</option>
+                                <option value="0">0 - No se observa el atributo</option>
+                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
+                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
+                                <option value="3">3 - Se observa una buena presencia del atributo</option>
+                                <option value="4">4 - Se observa un alto dominio del atributo</option>
+                            </select>
+                        </div>
+
+                        <!-- Capacidad 2 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_2">Manejo de las rutas, mecanismos e instrumentos:</label>
+                            <select class="form-control mt-1" id="capacidad_2" name="capacidad_2">
+                                <option value="" selected>Seleccione una calificación</option>
+                                <option value="0">0 - No se observa el atributo</option>
+                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
+                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
+                                <option value="3">3 - Se observa una buena presencia del atributo</option>
+                                <option value="4">4 - Se observa un alto dominio del atributo</option>
+                            </select>
+                        </div>
+
+                        <!-- Capacidad 3 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_3">Organización y movilización a sus pares:</label>
+                            <select class="form-control mt-1" id="capacidad_3" name="capacidad_3">
+                                <option value="" selected>Seleccione una calificación</option>
+                                <option value="0">0 - No se observa el atributo</option>
+                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
+                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
+                                <option value="3">3 - Se observa una buena presencia del atributo</option>
+                                <option value="4">4 - Se observa un alto dominio del atributo</option>
+                            </select>
+                        </div>
+
+                        <!-- Capacidad 4 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_4">Argumentación y vocería de la propuesta:</label>
+                            <select class="form-control mt-1" id="capacidad_4" name="capacidad_4">
+                                <option value="" selected>Seleccione una calificación</option>
+                                <option value="0">0 - No se observa el atributo</option>
+                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
+                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
+                                <option value="3">3 - Se observa una buena presencia del atributo</option>
+                                <option value="4">4 - Se observa un alto dominio del atributo</option>
+                            </select>
+                        </div>
+
+                        <!-- Capacidad 5 -->
+                        <div class="form-group label-principal">
+                            <label for="capacidad_5">Participación en colectivos y movimientos de defensa de Agenda por los DDHH:</label>
+                            <select class="form-control mt-1" id="capacidad_5" name="capacidad_5">
+                                <option value="" selected>Seleccione una calificación</option>
+                                <option value="0">0 - No se observa el atributo</option>
+                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
+                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
+                                <option value="3">3 - Se observa una buena presencia del atributo</option>
+                                <option value="4">4 - Se observa un alto dominio del atributo</option>
+                            </select>
+                        </div>
+
+                        <!-- Otra Capacidad -->
+                        <div class="form-group label-principal">
+                            <label for="otra_capacidad">Dominio de otra capacidad (especificar):</label>
+                            <input type="text" class="form-control" id="otra_capacidad" name="otra_capacidad" maxlength="100">
+                            <label class="mt-2" for="calificacion_otra_capacidad">Calificación Otros:</label>
+                            <select class="form-control mt-1" id="calificacion_otra_capacidad" name="calificacion_otra_capacidad">
+                                <option value="" selected>Seleccione una calificación</option>
+                                <option value="0">0 - No se observa el atributo</option>
+                                <option value="1">1 - Se observa en un estado incipiente o poco relevante</option>
+                                <option value="2">2 - Se observa una presencia regular, pero aún insuficiente del atributo</option>
+                                <option value="3">3 - Se observa una buena presencia del atributo</option>
+                                <option value="4">4 - Se observa un alto dominio del atributo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row justify-content-end mt-3 mb-5">
+                <div class="col-md-3 d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary btn-sm text-center mr-3 flex-grow-1" style="font-size: 1rem;" onclick="window.location.href='/'">Ir al menú</button>
+                    <!-- <button type="button" class="btn btn-success btn-sm text-center mr-3 flex-grow-1" style="font-size: 1rem;" onclick="window.location.href='/form_registro_inicial'">Ir a Registro</button> -->
+                    <button type="submit" class="btn btn-primary btn-sm text-center flex-grow-1" style="font-size: 1rem;">Guardar</button>
+                </div>
+            </div>
+            
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        // Elementos del DOM
+        const searchInput = document.getElementById('search-participants');
+        const participantsList = document.getElementById('participants-list');
+        const selectedParticipantInput = document.getElementById('selected-participant');
+        // const registroDniInput = document.getElementById('registro-dni');
+        const capacidadIdInput = document.getElementById('capacidad-id');
+        const poblacionInput = document.getElementById('poblacion');
+        const derechoPrioritarioInput = document.getElementById('derecho_generico');
+        // const nombreIniciativaInput = document.getElementById('nombre-iniciativa');
+        const nombreIniciativaDisplayInput = document.getElementById('nombre_iniciativa_display');
+        const numeroRegistroContainer = document.getElementById('numero_registro_container');
+        const numeroRegistroText = document.getElementById('numero_registro');
+
+        // Escuchar cambios en el input de búsqueda
+        searchInput.addEventListener('input', function () {
+            const query = this.value.trim().toLowerCase();
+            participantsList.innerHTML = ''; // Limpiar la lista de sugerencias
+
+            if (!query) {
+                numeroRegistroContainer.style.display = 'none'; // Ocultar el contenedor
+                return;
+            }
+
+            // Realizar la búsqueda en el servidor
+            fetch(`/buscar_participante?q=${query}`)
+                .then(response => response.json())
+                .then(participants => {
+                    participantsList.innerHTML = ''; // Limpiar resultados anteriores
+
+                    participants.forEach(participant => {
+                        // Crear un elemento de lista para cada participante
+                        const li = document.createElement('li');
+                        li.classList.add('list-group-item');
+                        li.textContent = `${participant.nombre} (DNI: ${participant.dni})`;
+
+                        // Al hacer clic en un participante
+                        li.addEventListener('click', () => {
+                            // Asignar valores seleccionados a los campos del formulario
+                            // registroDniInput.value = participant.dni;
+                            capacidadIdInput.value = participant.capacidad_id; // Agregar capacidad_id
+                            poblacionInput.value = participant.poblacion || 'No especificado';
+                            derechoPrioritarioInput.value = participant.derecho_generico || 'No especificado';
+                            // nombreIniciativaInput.value = participant.iniciativa || '';
+                            nombreIniciativaDisplayInput.value = participant.iniciativa || 'No especificado';
+
+                            // Mostrar el participante seleccionado en el campo readonly
+                            selectedParticipantInput.value = `${participant.nombre} (DNI: ${participant.dni})`;
+
+                            // Si no hay capacidad inicial, ocultar el contenedor y limpiar campos
+                            if (!participant.capacidad_id) {
+                                numeroRegistroContainer.style.display = 'none';
+                                alert('El participante no tiene un registro inicial de capacidad.');
+                                return;
+                            }
+
+                            // Llamada para obtener el número de avances
+                            fetch(`/get_numero_avances/${participant.capacidad_id}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.error) {
+                                        alert(data.error);
+                                        numeroRegistroContainer.style.display = 'none';
+                                    } else {
+                                        numeroRegistroText.textContent = data.proximo_registro;
+                                        numeroRegistroContainer.style.display = 'block';
+                                    }
+                                })
+                                .catch(error => console.error('Error al obtener número de avances:', error));
+
+                            // Limpiar la lista de resultados para cerrar las sugerencias
+                            participantsList.innerHTML = '';
+
+                            // Limpiar el campo de búsqueda
+                            searchInput.value = '';
+                        });
+
+                        // Añadir el elemento a la lista de sugerencias
+                        participantsList.appendChild(li);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error al buscar participantes:', error);
+                    participantsList.innerHTML = '<li class="list-group-item text-danger">Error al buscar participantes</li>';
+                });
+        });
+    });
+
+    </script>
+    
+</body>
+</html>

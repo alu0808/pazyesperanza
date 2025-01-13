@@ -9,6 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from functools import wraps
 from urllib.parse import urlparse, urljoin
+import json 
 
 app = Flask(__name__)
 
@@ -62,7 +63,7 @@ class User(UserMixin, db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # Función para verificar que la URL sea segura
 def is_safe_url(target):
@@ -217,6 +218,13 @@ def validar_longitud(campo, valor, max_length):
 ##########                 REGISTRO INICIAL PARTICIPANTES              #################################################################
 ########################################################################################################################################
 ########################################################################################################################################
+# TABLA RELACION ENTRE REGISTRO E INICIATIVAS
+iniciativa_registro = db.Table(
+    'iniciativa_registro',
+    db.Column('iniciativa_nombre', db.String(150), db.ForeignKey('iniciativa.nombre_iniciativa'), primary_key=True),
+    db.Column('registro_dni', db.String(20), db.ForeignKey('registro.dni'), primary_key=True)
+)
+
 # Definición del modelo de datos
 class Registro(db.Model):
     dni = db.Column(db.String(20), primary_key=True, nullable=False)
@@ -229,32 +237,8 @@ class Registro(db.Model):
     distrito = db.Column(db.String(60), nullable=True)
     provincia = db.Column(db.String(60), nullable=True)
     departamento = db.Column(db.String(60), nullable=True)
-    poblacion_titular = db.Column(db.String(300), nullable=True)
-    otro_poblacion = db.Column(db.String(60), nullable=True)
-    derecho_prioritario = db.Column(db.String(300), nullable=True)
-    otro_derecho = db.Column(db.String(60), nullable=True)
-    oficina_regional = db.Column(db.String(60), nullable=True)
-    proyectos = db.Column(db.String(100), nullable=True)
-    tipo_servicios = db.Column(db.String(300), nullable=True)
-    servicio_actividad = db.Column(db.String(150), nullable=True)
-    fecha_participacion = db.Column(db.Date, nullable=True)  # Permitir NULL
-    propuesta_agenda = db.Column(db.String(50), nullable=True)
-    agenda_detalle = db.Column(db.String(80), nullable=True)
-    red_colectivo = db.Column(db.String(50), nullable=True)
-    red_detalle = db.Column(db.String(80), nullable=True)
-    comunidad_fe = db.Column(db.String(50), nullable=True)
-    fe_detalle = db.Column(db.String(80), nullable=True)
-    tipo_participacion_fe = db.Column(db.String(80), nullable=True)
-    capacidad_1 = db.Column(db.Integer, nullable=True)  # Permitir NULL
-    capacidad_2 = db.Column(db.Integer, nullable=True)  # Permitir NULL
-    capacidad_3 = db.Column(db.Integer, nullable=True)  # Permitir NULL
-    capacidad_4 = db.Column(db.Integer, nullable=True)  # Permitir NULL
-    capacidad_5 = db.Column(db.Integer, nullable=True)  # Permitir NULL
-    otra_capacidad = db.Column(db.String(100), nullable=True)
-    calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
+    estado = db.Column(db.String(3), nullable=True, default='ACT')  # Valor predeterminado "ACT"
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
-    # Relación con la tabla Iniciativa
-    # iniciativas = db.relationship('Iniciativa', backref='registro', lazy=True)
 
 @app.route('/form_registro_inicial', methods=['GET', 'POST'])
 @login_required
@@ -267,7 +251,7 @@ def form_registro_inicial():
         # Verificar si el DNI ya existe
         if Registro.query.filter_by(dni=dni).first():
             flash('Este DNI ya ha sido registrado.', 'danger')
-            return redirect(url_for('form_registro_inicial'))
+            return redirect(url_for('listar_registros'))
         
         # Crear una nueva instancia de Registro con los datos del formulario
         nuevo_registro = Registro(
@@ -281,29 +265,23 @@ def form_registro_inicial():
             distrito=request.form.get('distrito', ''),
             provincia=request.form.get('provincia', ''),
             departamento=request.form.get('departamento', ''),
-            poblacion_titular=", ".join(request.form.getlist('poblacion_titular')),
-            otro_poblacion=request.form.get('otro_poblacion', ''),
-            derecho_prioritario=", ".join(request.form.getlist('derecho_prioritario')),
-            otro_derecho=request.form.get('otro_derecho', ''),
-            oficina_regional=request.form.get('oficina_regional', ''),
-            proyectos=request.form.get('proyectos', ''),
-            tipo_servicios=", ".join(request.form.getlist('tipo_servicios')),
-            servicio_actividad=request.form.get('servicio_actividad', ''),
-            fecha_participacion=request.form.get('fecha_participacion', '') or None,  # Aplica solo para fechas
-            propuesta_agenda=request.form.get('propuesta_agenda', ''),
-            agenda_detalle=request.form.get('agenda_detalle', ''),
-            red_colectivo=request.form.get('red_colectivo', ''),
-            red_detalle=request.form.get('red_detalle', ''),
-            comunidad_fe=request.form.get('comunidad_fe', ''),
-            fe_detalle=request.form.get('fe_detalle', ''),
-            tipo_participacion_fe=request.form.get('tipo_participacion_fe', ''),
-            capacidad_1=request.form.get('capacidad_1', None) or None,  # Aplica solo para enteros
-            capacidad_2=request.form.get('capacidad_2', None) or None,  # Aplica solo para enteros
-            capacidad_3=request.form.get('capacidad_3', None) or None,  # Aplica solo para enteros
-            capacidad_4=request.form.get('capacidad_4', None) or None,  # Aplica solo para enteros
-            capacidad_5=request.form.get('capacidad_5', None) or None,  # Aplica solo para enteros
-            otra_capacidad=request.form.get('otra_capacidad', ''),
-            calificacion_otra_capacidad=request.form.get('calificacion_otra_capacidad', None) or None  # Aplica solo para enteros
+            estado=request.form.get('estado', 'ACT')
+            # poblacion_titular=", ".join(request.form.getlist('poblacion_titular')),
+            # otro_poblacion=request.form.get('otro_poblacion', ''),
+            # derecho_prioritario=", ".join(request.form.getlist('derecho_prioritario')),
+            # otro_derecho=request.form.get('otro_derecho', ''),
+            # oficina_regional=request.form.get('oficina_regional', ''),
+            # proyectos=request.form.get('proyectos', ''),
+            # tipo_servicios=", ".join(request.form.getlist('tipo_servicios')),
+            # servicio_actividad=request.form.get('servicio_actividad', ''),
+            # fecha_participacion=request.form.get('fecha_participacion', '') or None,  # Aplica solo para fechas
+            # propuesta_agenda=request.form.get('propuesta_agenda', ''),
+            # agenda_detalle=request.form.get('agenda_detalle', ''),
+            # red_colectivo=request.form.get('red_colectivo', ''),
+            # red_detalle=request.form.get('red_detalle', ''),
+            # comunidad_fe=request.form.get('comunidad_fe', ''),
+            # fe_detalle=request.form.get('fe_detalle', ''),
+            # tipo_participacion_fe=request.form.get('tipo_participacion_fe', '')
         )
         # Guardar el nuevo registro en la base de datos
         db.session.add(nuevo_registro)
@@ -319,8 +297,9 @@ def form_registro_inicial():
 @login_required
 @roles_required('admin', 'editor', 'viewer')
 def listar_registros():
-    registros = Registro.query.all()  # Obtener todos los registros de la base de datos
+    registros = Registro.query.order_by(Registro.fecha_registro.desc()).all()  # Ordenar por fecha de registro (descendente)
     return render_template('listar_registros.html', registros=registros)
+
 
 ################################################################################################################################
 ################################################################################################################################
@@ -347,29 +326,30 @@ def editar_registro(dni):
         registro.distrito = request.form.get('distrito', '')
         registro.provincia = request.form.get('provincia', '')
         registro.departamento = request.form.get('departamento', '')
-        registro.poblacion_titular = ", ".join(request.form.getlist('poblacion_titular'))
-        registro.otro_poblacion = request.form.get('otro_poblacion', '')
-        registro.derecho_prioritario = ", ".join(request.form.getlist('derecho_prioritario'))
-        registro.otro_derecho = request.form.get('otro_derecho', '')
-        registro.oficina_regional = request.form.get('oficina_regional', '')
-        registro.proyectos = request.form.get('proyectos', '')
-        registro.tipo_servicios = ", ".join(request.form.getlist('tipo_servicios'))
-        registro.servicio_actividad = request.form.get('servicio_actividad', '')
-        registro.fecha_participacion = request.form.get('fecha_participacion', '') or None
-        registro.propuesta_agenda = request.form.get('propuesta_agenda', '')
-        registro.agenda_detalle = request.form.get('agenda_detalle', '')
-        registro.red_colectivo = request.form.get('red_colectivo', '')
-        registro.red_detalle = request.form.get('red_detalle', '')
-        registro.comunidad_fe = request.form.get('comunidad_fe', '')
-        registro.fe_detalle = request.form.get('fe_detalle', '')
-        registro.tipo_participacion_fe = request.form.get('tipo_participacion_fe', '')
-        registro.capacidad_1 = request.form.get('capacidad_1', None) or None
-        registro.capacidad_2 = request.form.get('capacidad_2', None) or None
-        registro.capacidad_3 = request.form.get('capacidad_3', None) or None
-        registro.capacidad_4 = request.form.get('capacidad_4', None) or None
-        registro.capacidad_5 = request.form.get('capacidad_5', None) or None
-        registro.otra_capacidad = request.form.get('otra_capacidad', '')
-        registro.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
+        registro.estado = request.form.get('estado', 'ACT')
+        # registro.poblacion_titular = ", ".join(request.form.getlist('poblacion_titular'))
+        # registro.otro_poblacion = request.form.get('otro_poblacion', '')
+        # registro.derecho_prioritario = ", ".join(request.form.getlist('derecho_prioritario'))
+        # registro.otro_derecho = request.form.get('otro_derecho', '')
+        # registro.oficina_regional = request.form.get('oficina_regional', '')
+        # registro.proyectos = request.form.get('proyectos', '')
+        # registro.tipo_servicios = ", ".join(request.form.getlist('tipo_servicios'))
+        # registro.servicio_actividad = request.form.get('servicio_actividad', '')
+        # registro.fecha_participacion = request.form.get('fecha_participacion', '') or None
+        # registro.propuesta_agenda = request.form.get('propuesta_agenda', '')
+        # registro.agenda_detalle = request.form.get('agenda_detalle', '')
+        # registro.red_colectivo = request.form.get('red_colectivo', '')
+        # registro.red_detalle = request.form.get('red_detalle', '')
+        # registro.comunidad_fe = request.form.get('comunidad_fe', '')
+        # registro.fe_detalle = request.form.get('fe_detalle', '')
+        # registro.tipo_participacion_fe = request.form.get('tipo_participacion_fe', '')
+        # registro.capacidad_1 = request.form.get('capacidad_1', None) or None
+        # registro.capacidad_2 = request.form.get('capacidad_2', None) or None
+        # registro.capacidad_3 = request.form.get('capacidad_3', None) or None
+        # registro.capacidad_4 = request.form.get('capacidad_4', None) or None
+        # registro.capacidad_5 = request.form.get('capacidad_5', None) or None
+        # registro.otra_capacidad = request.form.get('otra_capacidad', '')
+        # registro.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
 
         # Guardar los cambios en la base de datos
         db.session.commit()
@@ -391,12 +371,27 @@ def eliminar_registro(dni):
     if not registro:
         flash('El registro no existe.', 'danger')
         return redirect(url_for('listar_registros'))
+    
+    
+    # # Validar si el participante está asociado a alguna iniciativa
+    # if registro.iniciativas:
+    #     flash("El participante no puede ser eliminado porque está asociado a una o más iniciativas.", "danger")
+    #     return redirect(url_for('listar_registros'))
+    
+    # # Verificar si el participante tiene capacidades relacionadas
+    # if registro.capacidades:  # Asegúrate de que la relación esté configurada como backref
+    #     flash('No se puede eliminar el participante porque tiene capacidades relacionadas.', 'danger')
+    #     return redirect(url_for('listar_registros'))
 
     try:
-        # Eliminar el registro de la base de datos
-        db.session.delete(registro)
+        # Marcar el registro como inactivo
+        registro.estado = 'INA'  # INA = Inactivo
         db.session.commit()
-        flash('El registro ha sido eliminado con éxito.', 'success')
+        flash("El participante ha sido marcado como inactivo.", "success")
+        # Eliminar el registro de la base de datos
+        # db.session.delete(registro)
+        # db.session.commit()
+        # flash('El registro ha sido eliminado con éxito.', 'success')
     except Exception as e:
         # Si ocurre un error, lo gestionamos
         db.session.rollback()
@@ -460,6 +455,9 @@ class Iniciativa(db.Model):
     componente_1 = db.Column(db.String(100), nullable=True)
     componente_2 = db.Column(db.String(100), nullable=True)
     componente_3 = db.Column(db.String(100), nullable=True)
+    oficina_regional = db.Column(db.String(60), nullable=True)
+    proyectos = db.Column(db.String(100), nullable=True)
+    tipo_participacion_fe = db.Column(db.String(80), nullable=True)
     contenido_1 = db.Column(db.Integer, nullable=True)
     contenido_2 = db.Column(db.Integer, nullable=True)
     contenido_3 = db.Column(db.Integer, nullable=True)
@@ -488,7 +486,15 @@ class Iniciativa(db.Model):
     periodo_financiamiento_2 = db.Column(db.String(100), nullable=True)
     observaciones = db.Column(db.String(255), nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
+    tipo_participacion_fe = db.Column(db.String(80), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    # Relación con múltiples registros mediante tabla intermedia
+    registros = db.relationship(
+        'Registro',
+        secondary='iniciativa_registro',  # Nombre de la tabla intermedia
+        backref=db.backref('iniciativas', lazy=True),
+        lazy=True
+    )
     # Relación con ProcesoIniciativa
     procesos = db.relationship('ProcesoIniciativa', backref='iniciativa', lazy=True, cascade="all, delete-orphan")
 
@@ -498,6 +504,8 @@ class Iniciativa(db.Model):
 def form_iniciativas():
     if request.method == 'POST':
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
+        # Obtener los DNIs seleccionados
+        registros_seleccionados = request.form.get('registros', '')  # Lista de DNIs seleccionados
 
         if Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == nombre_iniciativa).first():
             flash('Esta Iniciativa ya ha sido registrada.', 'danger')
@@ -508,7 +516,7 @@ def form_iniciativas():
             derecho_generico=request.form.get('derecho_generico', ''),
             otro_derecho_detalle=request.form.get('otro_derecho_detalle', ''),
             colectivo_organizacion=request.form.get('colectivo_organizacion', ''),
-            poblacion=", ".join(request.form.getlist('poblacion[]')),
+            poblacion="|".join(request.form.getlist('poblacion[]')),
             total_hombres_ninos=request.form.get('total_hombres_ninos', None) or None,
             total_mujeres_ninos=request.form.get('total_mujeres_ninos', None) or None,
             total_hombres_adolescentes=request.form.get('total_hombres_adolescentes', None) or None,
@@ -530,7 +538,7 @@ def form_iniciativas():
             otra_poblacion_detalle=request.form.get('otra_poblacion_detalle', ''),
             total_hombres_otra=request.form.get('total_hombres_otra', None) or None,
             total_mujeres_otra=request.form.get('total_mujeres_otra', None) or None,
-            tipo_naturaleza=", ".join(request.form.getlist('tipo_naturaleza[]')),
+            tipo_naturaleza="|".join(request.form.getlist('tipo_naturaleza[]')),
             cambio_politica_detalle=request.form.get('cambio_politica_detalle', ''),
             cambio_marcos_detalle=request.form.get('cambio_marcos_detalle', ''),
             cambio_practicas_detalle=request.form.get('cambio_practicas_detalle', ''),
@@ -548,7 +556,7 @@ def form_iniciativas():
             localidad_3=request.form.get('localidad_3', ''),
             descripcion_situacion=request.form.get('descripcion_situacion', ''),
             objetivo_especifico=request.form.get('objetivo_especifico', ''),
-            campos=", ".join(request.form.getlist('campos[]')),
+            campos="|".join(request.form.getlist('campos[]')),
             campo_otro_detalle=request.form.get('campo_otro_detalle', ''),
             componente_1=request.form.get('componente_1', ''),
             componente_2=request.form.get('componente_2', ''),
@@ -562,7 +570,7 @@ def form_iniciativas():
             contenido_7=request.form.get('contenido_7', None) or None,
             contenido_otro=request.form.get('contenido_otro', ''),
             calificacion_otro_contenido=request.form.get('calificacion_otro_contenido', None) or None,
-            fase_implementacion=", ".join(request.form.getlist('fase_implementacion[]')),
+            fase_implementacion="|".join(request.form.getlist('fase_implementacion[]')),
             fase_normas_detalle=request.form.get('fase_normas_detalle', ''),
             fase_institucionalizacion_detalle=request.form.get('fase_institucionalizacion_detalle', ''),
             fase_otro_detalle=request.form.get('fase_otro_detalle', ''),
@@ -580,16 +588,77 @@ def form_iniciativas():
             financiamiento_2=request.form.get('financiamiento_2', None) or None,
             periodo_financiamiento_2=request.form.get('periodo_financiamiento_2', ''),
             observaciones=request.form.get('observaciones', ''),
+            oficina_regional=request.form.get('oficina_regional', ''),
+            proyectos=request.form.get('proyectos', ''),
+            tipo_participacion_fe=request.form.get('tipo_participacion_fe', ''),                
             responsable_registro=request.form.get('responsable_registro', '')
         )
 
+        # Asignar registros seleccionados
+       
+
         db.session.add(nueva_iniciativa)
+        db.session.flush()  # Realizar un flush para obtener el ID de la nueva iniciativa
+
+        # Asociar los registros seleccionados a la iniciativa usando la tabla intermedia
+        if registros_seleccionados:
+            dnis = registros_seleccionados.split(',')  # Los DNIs llegan como una lista separada por comas
+            for dni in dnis:
+                registro = Registro.query.filter_by(dni=dni).first()
+                if registro:
+                    # Usar la tabla intermedia para crear la relación
+                    conn = iniciativa_registro.insert().values(
+                        iniciativa_nombre=nueva_iniciativa.nombre_iniciativa,
+                        registro_dni=registro.dni
+                    )
+                    db.session.execute(conn)
+
+        # Guardar cambios en la base de datos
         db.session.commit()
 
         flash('Iniciativa registrada exitosamente.', 'success')
         return redirect(url_for('listar_iniciativas'))
+    
+    # Si es GET, pasar los registros disponibles al frontend
+    registros_disponibles = Registro.query.filter(
+        ~Registro.iniciativas.any()  # Registros que no están asociados a ninguna iniciativa
+    ).all()
 
-    return render_template('form_iniciativas.html')
+    return render_template('form_iniciativas.html', registros_disponibles=registros_disponibles)
+
+@app.route('/get_seleccionados/<nombre_iniciativa>', methods=['GET'])
+@login_required
+def get_seleccionados(nombre_iniciativa):
+    iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
+
+    if not iniciativa:
+        return jsonify([]), 404
+
+    registros = [
+        {
+            "dni": registro.dni,
+            "nombre": registro.nombre,
+            "estado": registro.estado  # Incluir el estado
+        }
+        for registro in iniciativa.registros
+    ]
+    return jsonify(registros)
+
+
+@app.route('/get_registros', methods=['GET'])
+@login_required
+def get_registros():
+    # registros_disponibles = Registro.query.filter(Registro.estado == "ACT").all()
+    registros_disponibles = Registro.query.filter(Registro.estado == "ACT").all()
+    registros_json = [
+        {
+            "dni": registro.dni,
+            "nombre": registro.nombre,
+            "estado": registro.estado  # Incluir el estado
+        }
+        for registro in registros_disponibles
+    ]
+    return jsonify(registros_json)
 
 # LISTAR INICIATIVAS
 @app.route('/listado_iniciativas', methods=['GET'])
@@ -614,7 +683,7 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.derecho_generico = request.form.get('derecho_generico', '')
         iniciativa.otro_derecho_detalle = request.form.get('otro_derecho_detalle', '')
         iniciativa.colectivo_organizacion = request.form.get('colectivo_organizacion', '')
-        iniciativa.poblacion = ", ".join(request.form.getlist('poblacion[]'))
+        iniciativa.poblacion = "|".join(request.form.getlist('poblacion[]'))
         iniciativa.total_hombres_ninos = request.form.get('total_hombres_ninos', None) or None
         iniciativa.total_mujeres_ninos = request.form.get('total_mujeres_ninos', None) or None
         iniciativa.total_hombres_adolescentes = request.form.get('total_hombres_adolescentes', None) or None
@@ -636,7 +705,7 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.otra_poblacion_detalle = request.form.get('otra_poblacion_detalle', '')
         iniciativa.total_hombres_otra = request.form.get('total_hombres_otra', None) or None
         iniciativa.total_mujeres_otra = request.form.get('total_mujeres_otra', None) or None
-        iniciativa.tipo_naturaleza = ", ".join(request.form.getlist('tipo_naturaleza[]'))
+        iniciativa.tipo_naturaleza = "|".join(request.form.getlist('tipo_naturaleza[]'))
         iniciativa.cambio_politica_detalle = request.form.get('cambio_politica_detalle', '')
         iniciativa.cambio_marcos_detalle = request.form.get('cambio_marcos_detalle', '')
         iniciativa.cambio_practicas_detalle = request.form.get('cambio_practicas_detalle', '')
@@ -654,7 +723,7 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.localidad_3 = request.form.get('localidad_3', '')
         iniciativa.descripcion_situacion = request.form.get('descripcion_situacion', '')
         iniciativa.objetivo_especifico = request.form.get('objetivo_especifico', '')
-        iniciativa.campos = ", ".join(request.form.getlist('campos[]'))
+        iniciativa.campos = "|".join(request.form.getlist('campos[]'))
         iniciativa.campo_otro_detalle = request.form.get('campo_otro_detalle', '')
         iniciativa.componente_1 = request.form.get('componente_1', '')
         iniciativa.componente_2 = request.form.get('componente_2', '')
@@ -668,7 +737,7 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.contenido_7 = request.form.get('contenido_7', None) or None
         iniciativa.contenido_otro = request.form.get('contenido_otro', '')
         iniciativa.calificacion_otro_contenido = request.form.get('calificacion_otro_contenido', None) or None
-        iniciativa.fase_implementacion = ", ".join(request.form.getlist('fase_implementacion[]'))
+        iniciativa.fase_implementacion = "|".join(request.form.getlist('fase_implementacion[]'))
         iniciativa.fase_normas_detalle = request.form.get('fase_normas_detalle', '')
         iniciativa.fase_institucionalizacion_detalle = request.form.get('fase_institucionalizacion_detalle', '')
         iniciativa.fase_otro_detalle = request.form.get('fase_otro_detalle', '')
@@ -687,13 +756,53 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.periodo_financiamiento_2 = request.form.get('periodo_financiamiento_2', '')
         iniciativa.observaciones = request.form.get('observaciones', '')
         iniciativa.responsable_registro = request.form.get('responsable_registro', '')
+        iniciativa.oficina_regional=request.form.get('oficina_regional', '')
+        iniciativa.proyectos=request.form.get('proyectos', '')
+        iniciativa.tipo_participacion_fe=request.form.get('tipo_participacion_fe', '')
+        
+        # Actualizar participantes
+        nuevos_dnis = request.form.get('registros', '').split(',')
+        nuevos_dnis = [dni.strip() for dni in nuevos_dnis if dni]
+        actuales_dnis = [registro.dni for registro in iniciativa.registros]
+                
+                
+        # Agregar nuevos participantes
+        for dni in nuevos_dnis:
+            if dni not in actuales_dnis:
+                registro = Registro.query.filter_by(dni=dni).first()
+                if registro:
+                    iniciativa.registros.append(registro)
+
+        # Eliminar participantes no seleccionados
+        for registro in iniciativa.registros[:]:
+            if registro.dni not in nuevos_dnis:
+                iniciativa.registros.remove(registro)
 
         db.session.commit()
 
         flash('La iniciativa ha sido actualizada con éxito.', 'success')
         return redirect(url_for('listar_iniciativas'))
 
-    return render_template('editar_iniciativa.html', iniciativa=iniciativa)
+    # Registros disponibles para ser seleccionados
+    registros_disponibles = Registro.query.filter(Registro.estado == "ACT").all()
+
+    # Registros ya asociados a la iniciativa
+    registros_seleccionados = [
+        {
+            "dni": registro.dni,
+            "nombre": registro.nombre,
+            "estado": registro.estado  # Incluye el estado del participante
+        }
+        for registro in iniciativa.registros
+    ]
+
+    return render_template(
+        'editar_iniciativa.html',
+        iniciativa=iniciativa,
+        registros_disponibles=registros_disponibles,
+        registros_seleccionados=registros_seleccionados,
+        iniciativa_nombre=nombre_iniciativa
+    )
 
 # ELIMINAR INICIATIVA
 @app.route('/eliminar_iniciativa/<nombre_iniciativa>', methods=['POST'])
@@ -706,11 +815,13 @@ def eliminar_iniciativa(nombre_iniciativa):
     if not iniciativa:
         flash('La iniciativa no existe.', 'danger')
         return redirect(url_for('listar_iniciativas'))
+    
+    # Verificar si la iniciativa tiene capacidades relacionadas
+    if iniciativa.capacidades:  # Asegúrate de que la relación esté configurada correctamente
+        flash('No se puede eliminar la iniciativa porque tiene capacidades relacionadas.', 'danger')
+        return redirect(url_for('listar_iniciativas'))
 
     try:
-        # Si la relación 1 a muchos existe, elimina también los registros en ProcesoIniciativa relacionados a esta iniciativa
-        # ProcesoIniciativa.query.filter_by(nombre_iniciativa=iniciativa.nombre_iniciativa).delete()
-
         # Eliminar la iniciativa
         db.session.delete(iniciativa)
         db.session.commit()
@@ -766,14 +877,14 @@ class ProcesoIniciativa(db.Model):
     calificacion_componente_3 = db.Column(db.Integer, nullable=True)
     sustento_valoracion = db.Column(db.String(255), nullable=True)
 
-    # Desempeño de representantes y líderes
-    capacidad_1 = db.Column(db.Integer, nullable=True)
-    capacidad_2 = db.Column(db.Integer, nullable=True)
-    capacidad_3 = db.Column(db.Integer, nullable=True)
-    capacidad_4 = db.Column(db.Integer, nullable=True)
-    capacidad_5 = db.Column(db.Integer, nullable=True)
-    otra_capacidad = db.Column(db.String(80), nullable=True)
-    calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
+    # # Desempeño de representantes y líderes
+    # capacidad_1 = db.Column(db.Integer, nullable=True)
+    # capacidad_2 = db.Column(db.Integer, nullable=True)
+    # capacidad_3 = db.Column(db.Integer, nullable=True)
+    # capacidad_4 = db.Column(db.Integer, nullable=True)
+    # capacidad_5 = db.Column(db.Integer, nullable=True)
+    # otra_capacidad = db.Column(db.String(80), nullable=True)
+    # calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
 
     # Competencias y participación
     reforzar_competencias = db.Column(db.String(255), nullable=True)
@@ -803,6 +914,15 @@ class ProcesoIniciativa(db.Model):
 
     # Timestamp
     fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    
+    # Relación con registros a través de Iniciativa
+    @property
+    def registros(self):
+        return db.session.query(Registro).join(
+            iniciativa_registro, Registro.dni == iniciativa_registro.c.registro_dni
+        ).filter(
+            iniciativa_registro.c.iniciativa_nombre == self.nombre_iniciativa
+        ).all()
 
 @app.route('/form_registro_proceso_iniciativa', methods=['GET', 'POST'])
 @login_required
@@ -825,7 +945,7 @@ def form_registro_proceso_iniciativa():
             contenido_7 = request.form.get('contenido_7', None) or None,
             contenido_otro = request.form.get('contenido_otro', ''),
             calificacion_otro_contenido = request.form.get('calificacion_otro_contenido', None) or None,
-            fase_implementacion = ", ".join(request.form.getlist('fase_implementacion[]')),
+            fase_implementacion = "|".join(request.form.getlist('fase_implementacion[]')),
             fase_normas_detalle = request.form.get('fase_normas_detalle', ''),
             fase_institucionalizacion_detalle = request.form.get('fase_institucionalizacion_detalle', ''),
             fase_otro_detalle = request.form.get('fase_otro_detalle', ''),
@@ -837,13 +957,13 @@ def form_registro_proceso_iniciativa():
             componente_3 = request.form.get('componente_3', ''),
             calificacion_componente_3 = request.form.get('calificacion_componente_3', None) or None,
             sustento_valoracion = request.form.get('sustento_valoracion', ''),
-            capacidad_1 = request.form.get('capacidad_1', None) or None,
-            capacidad_2 = request.form.get('capacidad_2', None) or None,
-            capacidad_3 = request.form.get('capacidad_3', None) or None,
-            capacidad_4 = request.form.get('capacidad_4', None) or None,
-            capacidad_5 = request.form.get('capacidad_5', None) or None,
-            otra_capacidad = request.form.get('otra_capacidad', ''),
-            calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None,
+            # capacidad_1 = request.form.get('capacidad_1', None) or None,
+            # capacidad_2 = request.form.get('capacidad_2', None) or None,
+            # capacidad_3 = request.form.get('capacidad_3', None) or None,
+            # capacidad_4 = request.form.get('capacidad_4', None) or None,
+            # capacidad_5 = request.form.get('capacidad_5', None) or None,
+            # otra_capacidad = request.form.get('otra_capacidad', ''),
+            # calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None,
             reforzar_competencias = request.form.get('reforzar_competencias', ''),
             participacion_comportamiento = request.form.get('participacion_comportamiento', None) or None,
             comentario_valoracion = request.form.get('comentario_valoracion', ''),
@@ -866,8 +986,15 @@ def form_registro_proceso_iniciativa():
 
         # Guardar el nuevo proceso en la base de datos
         db.session.add(nuevo_proceso)
-        db.session.commit()
+        db.session.flush()  # Hacer flush para asegurar el ID del proceso
 
+        # Relacionar los registros seleccionados (participantes)
+        iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nuevo_proceso.nombre_iniciativa).first()
+        if iniciativa:
+            participantes = iniciativa.registros  # Relación indirecta ya configurada
+            print(f"Participantes asociados: {[p.nombre for p in participantes]}")  # Debug opcional
+
+        db.session.commit()
         flash('Proceso de Iniciativa registrado exitosamente.', 'success')
         return redirect(url_for('listar_proceso_iniciativa'))
 
@@ -876,13 +1003,38 @@ def form_registro_proceso_iniciativa():
     return render_template('form_registro_proceso_iniciativa.html', iniciativas=iniciativas)
 
 # LISTAR PROCESO INICIATIVAS
-@app.route('/listar_proceso_iniciativa')
+@app.route('/listar_proceso_iniciativa', methods=['GET'])
 @login_required
 @roles_required('admin', 'editor', 'viewer')
 def listar_proceso_iniciativa():
-    # Obtener los registros en orden descendente por la fecha de registro
-    procesos = ProcesoIniciativa.query.order_by(ProcesoIniciativa.fecha_registro.desc()).all()
-    return render_template('listar_proceso_iniciativa.html', procesos=procesos)
+    # Consultar procesos ordenados por nombre de iniciativa y fecha de registro
+    procesos = ProcesoIniciativa.query.join(Iniciativa).order_by(
+        Iniciativa.nombre_iniciativa,  # Ordenar por el nombre de la iniciativa
+        ProcesoIniciativa.fecha_registro.desc()  # Luego por fecha de registro
+    ).all()
+
+    # Calcular el número de registro dinámico
+    procesos_con_numero = []
+    iniciativa_actual = None
+    numero_registro = 0
+
+    for proceso in procesos:
+        # Si cambia la iniciativa, reinicia el contador
+        if iniciativa_actual != proceso.nombre_iniciativa:
+            iniciativa_actual = proceso.nombre_iniciativa
+            numero_registro = 1  # Reinicia el número de registro para cada nueva iniciativa
+        else:
+            numero_registro += 1
+
+        # Añadir el número de registro como un atributo dinámico
+        proceso.numero_registro = numero_registro
+        procesos_con_numero.append(proceso)
+
+    return render_template(
+        'listar_proceso_iniciativa.html',
+        procesos=procesos_con_numero
+    )
+
 
 # EDITAR PROCESO DE INICIATIVA
 @app.route('/editar_proceso_iniciativa/<int:id>', methods=['GET', 'POST'])
@@ -915,7 +1067,7 @@ def editar_proceso_iniciativa(id):
         proceso_iniciativas.calificacion_otro_contenido = request.form.get('calificacion_otro_contenido', None) or None
 
         # Fase de Implementación
-        proceso_iniciativas.fase_implementacion = ", ".join(request.form.getlist('fase_implementacion[]'))
+        proceso_iniciativas.fase_implementacion = "|".join(request.form.getlist('fase_implementacion[]'))
         proceso_iniciativas.fase_normas_detalle = request.form.get('fase_normas_detalle', '')
         proceso_iniciativas.fase_institucionalizacion_detalle = request.form.get('fase_institucionalizacion_detalle', '')
         proceso_iniciativas.fase_otro_detalle = request.form.get('fase_otro_detalle', '')
@@ -931,13 +1083,13 @@ def editar_proceso_iniciativa(id):
         proceso_iniciativas.sustento_valoracion = request.form.get('sustento_valoracion', '')
 
         # Nivel de desempeño de los representantes y líderes
-        proceso_iniciativas.capacidad_1 = request.form.get('capacidad_1', None) or None
-        proceso_iniciativas.capacidad_2 = request.form.get('capacidad_2', None) or None
-        proceso_iniciativas.capacidad_3 = request.form.get('capacidad_3', None) or None
-        proceso_iniciativas.capacidad_4 = request.form.get('capacidad_4', None) or None
-        proceso_iniciativas.capacidad_5 = request.form.get('capacidad_5', None) or None
-        proceso_iniciativas.otra_capacidad = request.form.get('otra_capacidad', '')
-        proceso_iniciativas.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
+        # proceso_iniciativas.capacidad_1 = request.form.get('capacidad_1', None) or None
+        # proceso_iniciativas.capacidad_2 = request.form.get('capacidad_2', None) or None
+        # proceso_iniciativas.capacidad_3 = request.form.get('capacidad_3', None) or None
+        # proceso_iniciativas.capacidad_4 = request.form.get('capacidad_4', None) or None
+        # proceso_iniciativas.capacidad_5 = request.form.get('capacidad_5', None) or None
+        # proceso_iniciativas.otra_capacidad = request.form.get('otra_capacidad', '')
+        # proceso_iniciativas.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
 
         # Reforzamiento de competencias
         proceso_iniciativas.reforzar_competencias = request.form.get('reforzar_competencias', '')
@@ -967,6 +1119,9 @@ def editar_proceso_iniciativa(id):
         proceso_iniciativas.comentario_relevante = request.form.get('comentario_relevante', '')
         proceso_iniciativas.responsable_registro = request.form.get('responsable_registro', '')
 
+        # Validar y acceder a los participantes
+        participantes = proceso_iniciativas.registros  # Relación indirecta ya configurada
+        print(f"Participantes asociados al proceso: {[p.nombre for p in participantes]}")  # Debug opcional
 
         # Guardar cambios en la base de datos
         try:
@@ -979,7 +1134,8 @@ def editar_proceso_iniciativa(id):
 
     # Renderizar el formulario con los datos existentes
     iniciativas = Iniciativa.query.all()  # Asumiendo que hay un modelo de Iniciativas
-    return render_template('editar_proceso_iniciativa.html', proceso_iniciativas=proceso_iniciativas, iniciativas=iniciativas)
+    participantes = proceso_iniciativas.registros  # Participantes relacionados
+    return render_template('editar_proceso_iniciativa.html', proceso_iniciativas=proceso_iniciativas, iniciativas=iniciativas, participantes=participantes)
 
 # ELIMINAR PROCESO INICIATIVAS
 @app.route('/eliminar_proceso_iniciativa/<int:id>', methods=['POST'])
@@ -1006,6 +1162,386 @@ def eliminar_proceso_iniciativa(id):
     # Redirigir a la lista de procesos de iniciativas
     return redirect(url_for('listar_proceso_iniciativa'))
 
+########################################################################################################################################
+########################################################################################################################################
+############                      CAPACIDAD INCIDENCIA                   ###############################################################
+########################################################################################################################################
+########################################################################################################################################
+class CapacidadIncidencia(db.Model):
+    __tablename__ = 'capacidad_incidencia'
+    id = db.Column(db.Integer, primary_key=True)
+    registro_dni = db.Column(db.String(20), db.ForeignKey('registro.dni', ondelete='CASCADE'), nullable=False)
+    nombre_iniciativa = db.Column(db.String(150), db.ForeignKey('iniciativa.nombre_iniciativa', ondelete='CASCADE'), nullable=False)
+    capacidad_1 = db.Column(db.Integer, nullable=True)
+    capacidad_2 = db.Column(db.Integer, nullable=True)
+    capacidad_3 = db.Column(db.Integer, nullable=True)
+    capacidad_4 = db.Column(db.Integer, nullable=True)
+    capacidad_5 = db.Column(db.Integer, nullable=True)
+    otra_capacidad = db.Column(db.String(100), nullable=True)
+    calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
+    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+
+    # Relación con Registro
+    registro = db.relationship('Registro', backref='capacidades')
+
+    # Relación con Iniciativa
+    iniciativa = db.relationship('Iniciativa', backref='capacidades')
+    
+    avances = db.relationship('AvanceCapacidadIncidencia', backref='capacidad_incidencia', lazy=True, cascade="all, delete-orphan")
+    
+# BUSCAR PARTICIPANTE
+@app.route('/buscar_participante', methods=['GET'])
+@login_required
+def buscar_participante():
+    search = request.args.get('q', '').strip().lower()  # Captura el término de búsqueda
+    if not search:
+        return jsonify([])  # Retorna una lista vacía si no hay término de búsqueda
+
+    # Buscar coincidencias por DNI o nombre, asegurarse de que tengan iniciativas relacionadas y estén activos
+    registros = Registro.query.filter(
+        ((Registro.dni.ilike(f'%{search}%')) | (Registro.nombre.ilike(f'%{search}%'))) &  # Coincidencia en búsqueda
+        (Registro.iniciativas.any()) &  # Tengan al menos una iniciativa relacionada
+        (Registro.estado == 'ACT')  # El estado del participante sea ACT
+    ).all()
+
+    # Construir el resultado con lógica robusta para campos opcionales
+    resultado = []
+    for registro in registros:
+        iniciativa = registro.iniciativas[0] if registro.iniciativas else None  # Tomar la primera iniciativa relacionada, si existe
+        resultado.append({
+            "dni": registro.dni or "",
+            "nombre": registro.nombre or "",
+            "poblacion": iniciativa.poblacion or iniciativa.otra_poblacion_detalle if iniciativa else "No especificado",
+            "derecho_generico": iniciativa.derecho_generico or iniciativa.otro_derecho_detalle if iniciativa else "No especificado",
+            "iniciativa": iniciativa.nombre_iniciativa if iniciativa else "No especificado",
+            "capacidad_id": registro.capacidades[0].id if registro.capacidades else None
+        })
+
+    return jsonify(resultado)
+
+
+@app.route('/form_capacidades_incidencia', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def form_capacidades_incidencia():
+    if request.method == 'POST':
+        registro_dni = request.form['registro_dni']
+        nombre_iniciativa = request.form['nombre_iniciativa']
+        
+        if not registro_dni:
+            flash('El participante buscado no está en el listado de Registro inicial.', 'danger')
+            return redirect(url_for('form_capacidades_incidencia'))
+        
+        if not nombre_iniciativa:
+            flash('El participante debe pertenecer a una iniciativa. Debe crear la iniciativa y asignar al usuario.', 'danger')
+            return redirect(url_for('form_capacidades_incidencia'))
+        
+        # Verificar si ya existe una capacidad registrada para el participante en esa iniciativa
+        capacidad_existente = CapacidadIncidencia.query.filter_by(
+            registro_dni=registro_dni,
+            nombre_iniciativa=nombre_iniciativa
+        ).first()
+
+        if capacidad_existente:
+            flash('Ya existe un registro inicial de capacidades para este participante en esta iniciativa.', 'danger')
+            return redirect(url_for('listar_capacidades_incidencia'))
+        
+
+        nueva_capacidad = CapacidadIncidencia(
+            registro_dni=registro_dni,
+            nombre_iniciativa=nombre_iniciativa,
+            capacidad_1=request.form.get('capacidad_1', None) or None,
+            capacidad_2=request.form.get('capacidad_2', None) or None,
+            capacidad_3=request.form.get('capacidad_3', None) or None,
+            capacidad_4=request.form.get('capacidad_4', None) or None,
+            capacidad_5=request.form.get('capacidad_5', None) or None,
+            otra_capacidad=request.form.get('otra_capacidad', ''),
+            calificacion_otra_capacidad=request.form.get('calificacion_otra_capacidad', None) or None,
+        )
+
+        db.session.add(nueva_capacidad)
+        db.session.commit()
+        flash('Capacidades registradas exitosamente.', 'success')
+        return redirect(url_for('listar_capacidades_incidencia'))
+
+    # Si es GET
+    return render_template('capacidades_incidencia/form_capacidades_incidencia.html')
+
+@app.route('/listar_capacidades_incidencia', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor', 'viewer')
+def listar_capacidades_incidencia():
+    capacidades = CapacidadIncidencia.query.order_by(CapacidadIncidencia.fecha_registro.desc()).all()
+    return render_template('capacidades_incidencia/listar_capacidades_incidencia.html', capacidades=capacidades)
+
+@app.route('/editar_capacidades_incidencia/<int:id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
+def editar_capacidades_incidencia(id):
+    # Buscar la capacidad en la base de datos por ID
+    capacidad = CapacidadIncidencia.query.filter_by(id=id).first()
+    
+    if not capacidad:
+        flash('El registro de capacidad de incidencia no existe.', 'danger')
+        return redirect(url_for('listar_capacidades_incidencia'))  # Redirigir si no se encuentra
+
+    if request.method == 'POST':
+        try:
+            # Actualizar los valores de las capacidades
+            capacidad.capacidad_1 = request.form.get('capacidad_1', None) or None
+            capacidad.capacidad_2 = request.form.get('capacidad_2', None) or None
+            capacidad.capacidad_3 = request.form.get('capacidad_3', None) or None
+            capacidad.capacidad_4 = request.form.get('capacidad_4', None) or None
+            capacidad.capacidad_5 = request.form.get('capacidad_5', None) or None
+            capacidad.otra_capacidad = request.form.get('otra_capacidad', '').strip()
+            capacidad.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
+
+            # Guardar los cambios en la base de datos
+            db.session.commit()
+            flash('Capacidades actualizadas exitosamente.', 'success')
+            return redirect(url_for('listar_capacidades_incidencia'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar las capacidades: {str(e)}', 'danger')
+            return redirect(url_for('listar_capacidades_incidencia'))
+
+    # Si es GET, renderizar la página con los datos actuales
+    return render_template('capacidades_incidencia/editar_capacidades_incidencia.html', capacidad=capacidad)
+
+# ELIMINAR PROCESO INICIATIVAS
+@app.route('/eliminar_capacidades_incidencia/<int:id>', methods=['POST'])
+@login_required
+@roles_required('admin')
+def eliminar_capacidades_incidencia(id):
+    # Buscar el proceso de iniciativa por su id
+    capacidad = CapacidadIncidencia.query.filter_by(id=id).first()
+
+    if not capacidad:
+        flash('La capacidad no existe.', 'danger')
+        return redirect(url_for('listar_capacidades_incidencia'))
+    
+    try:
+        # Eliminar el proceso de la base de datos
+        db.session.delete(capacidad)
+        db.session.commit()
+        flash('La Capacidad ha sido eliminado correctamente.', 'success')
+    except:
+        # En caso de error, hacer rollback
+        db.session.rollback()
+        flash('Hubo un error al intentar eliminar la capacidad.', 'danger')
+
+    # Redirigir a la lista de procesos de iniciativas
+    return redirect(url_for('listar_capacidades_incidencia'))
+
+#######################################################################################################################################
+#######################################################################################################################################
+############################################ AVANCES CAPACIDAD INCIDENCIA #############################################################
+class AvanceCapacidadIncidencia(db.Model):
+    __tablename__ = 'avance_capacidad_incidencia'
+    id = db.Column(db.Integer, primary_key=True)
+    capacidad_id = db.Column(db.Integer, db.ForeignKey('capacidad_incidencia.id', ondelete='CASCADE'), nullable=False)  # Relación con CapacidadIncidencia
+    capacidad_1 = db.Column(db.Integer, nullable=True)
+    capacidad_2 = db.Column(db.Integer, nullable=True)
+    capacidad_3 = db.Column(db.Integer, nullable=True)
+    capacidad_4 = db.Column(db.Integer, nullable=True)
+    capacidad_5 = db.Column(db.Integer, nullable=True)
+    otra_capacidad = db.Column(db.String(100), nullable=True)
+    calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
+    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+
+    # Relación con CapacidadIncidencia
+    # capacidad_incidencia = db.relationship('CapacidadIncidencia', backref=db.backref('avances', lazy=True))
+
+@app.route('/get_numero_avances/<int:capacidad_id>', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor', 'viewer')
+def get_numero_avances(capacidad_id):
+    try:
+        # Verificar si la capacidad inicial existe
+        capacidad = CapacidadIncidencia.query.filter_by(id=capacidad_id).first()
+        if not capacidad:
+            return jsonify({'error': 'El participante no tiene un registro inicial de capacidad.'})
+
+        # Contar los avances existentes
+        numero_avances = AvanceCapacidadIncidencia.query.filter_by(capacidad_id=capacidad_id).count()
+
+        # El próximo registro será el actual número de avances + 1
+        proximo_registro = numero_avances + 1
+        return jsonify({'proximo_registro': proximo_registro})
+    except Exception as e:
+        return jsonify({'error': f'Error al obtener el número de avances: {str(e)}'})
+
+@app.route('/form_avances_capacidades_incidencia', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def form_avances_capacidades_incidencia():
+    if request.method == 'POST':
+        # Obtener datos del formulario
+        capacidad_id = request.form.get('capacidad_id')  # ID de la capacidad seleccionada
+        # registro_dni = request.form.get('registro_dni')  # DNI del participante seleccionado
+        # nombre_iniciativa = request.form.get('nombre_iniciativa')  # Nombre de la iniciativa
+
+        # Calificaciones y datos específicos del avance
+        capacidad_1 = request.form.get('capacidad_1', None) or None
+        capacidad_2 = request.form.get('capacidad_2', None) or None
+        capacidad_3 = request.form.get('capacidad_3', None) or None
+        capacidad_4 = request.form.get('capacidad_4', None) or None
+        capacidad_5 = request.form.get('capacidad_5', None) or None
+        otra_capacidad = request.form.get('otra_capacidad', '').strip()
+        calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
+
+        # Verificar que se haya seleccionado una capacidad
+        if not capacidad_id:
+            flash('El participante no tiene un registro inicial de Capacidades de Incidencia. Dirigirse al módulo a crearlo.', 'danger')
+            return redirect(url_for('form_avances_capacidades_incidencia'))
+
+        # Buscar la capacidad en la base de datos
+        capacidad = CapacidadIncidencia.query.filter_by(id=capacidad_id).first()
+        if not capacidad:
+            flash('La capacidad seleccionada no existe.', 'danger')
+            return redirect(url_for('form_avances_capacidades_incidencia'))
+
+        # Crear un nuevo avance para la capacidad seleccionada
+        nuevo_avance = AvanceCapacidadIncidencia(
+            capacidad_id=capacidad_id,
+            # registro_dni=registro_dni,  # Relación del DNI
+            # nombre_iniciativa=nombre_iniciativa,  # Relación de la iniciativa
+            capacidad_1=capacidad_1,
+            capacidad_2=capacidad_2,
+            capacidad_3=capacidad_3,
+            capacidad_4=capacidad_4,
+            capacidad_5=capacidad_5,
+            otra_capacidad=otra_capacidad,
+            calificacion_otra_capacidad=calificacion_otra_capacidad,
+        )
+
+        try:
+            # Guardar el avance en la base de datos
+            db.session.add(nuevo_avance)
+            db.session.commit()
+            flash('El avance de capacidades se registró exitosamente.', 'success')
+            return redirect(url_for('listar_avances_capacidades_incidencia')) #listar_avances_capacidades_incidencia
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al guardar el avance: {str(e)}', 'danger')
+            return redirect(url_for('listar_avances_capacidades_incidencia'))
+
+    # Si es GET, renderizar el formulario vacío
+    return render_template('capacidades_incidencia/form_avances_capacidades_incidencia.html')
+
+@app.route('/get_capacidad_avances/<participant_dni>', methods=['GET'])
+@login_required
+def get_capacidad_avances(participant_dni):
+    # Buscar la capacidad asociada al participante
+    capacidad = CapacidadIncidencia.query.filter_by(registro_dni=participant_dni).first()
+    if not capacidad:
+        return jsonify({"error": "No se encontró una capacidad para este participante."})
+
+    # Contar los avances asociados a esta capacidad
+    numero_registros = len(capacidad.avances)
+
+    return jsonify({
+        "capacidad_id": capacidad.id,
+        "numero_registros": numero_registros
+    })
+
+@app.route('/listar_avances_capacidades_incidencia', methods=['GET'])
+@login_required
+@roles_required('admin', 'editor', 'viewer')
+def listar_avances_capacidades_incidencia():
+    # Obtener todos los avances ordenados por capacidad y fecha de registro
+    avances = db.session.query(AvanceCapacidadIncidencia).join(CapacidadIncidencia).order_by(
+        CapacidadIncidencia.registro_dni,  # Ordenar por DNI del participante
+        AvanceCapacidadIncidencia.capacidad_id,  # Asegurar orden dentro de la capacidad
+        AvanceCapacidadIncidencia.fecha_registro  # Ordenar por fecha dentro de la capacidad
+    ).all()
+
+    # Añadir el número de registro (índice) para cada avance en su capacidad
+    avances_con_numero = []
+    capacidad_actual = None
+    numero_registro = 0
+
+    for avance in avances:
+        if capacidad_actual != avance.capacidad_id:
+            capacidad_actual = avance.capacidad_id
+            numero_registro = 1  # Reiniciar el conteo para cada nueva capacidad
+        else:
+            numero_registro += 1
+
+        # Añadir el número de registro como un atributo dinámico
+        avance.numero_registro = numero_registro
+        avances_con_numero.append(avance)
+
+    # Pasar los avances con el número de registro al template
+    return render_template(
+        'capacidades_incidencia/listar_avances_capacidades_incidencia.html',
+        avances=avances_con_numero
+    )
+
+
+@app.route('/editar_avances_capacidades_incidencia/<int:avance_id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin', 'editor')
+def editar_avances_capacidades_incidencia(avance_id):
+    # Buscar el avance por ID
+    avance = AvanceCapacidadIncidencia.query.filter_by(id=avance_id).first()
+
+    # Validar si el avance existe
+    if not avance:
+        flash('El avance no existe.', 'danger')
+        return redirect(url_for('listar_avances_capacidades_incidencia'))
+
+    if request.method == 'POST':
+        # Actualizar los valores de las capacidades desde el formulario
+        avance.capacidad_1 = request.form.get('capacidad_1', None) or None
+        avance.capacidad_2 = request.form.get('capacidad_2', None) or None
+        avance.capacidad_3 = request.form.get('capacidad_3', None) or None
+        avance.capacidad_4 = request.form.get('capacidad_4', None) or None
+        avance.capacidad_5 = request.form.get('capacidad_5', None) or None
+        avance.otra_capacidad = request.form.get('otra_capacidad', '').strip()
+        avance.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
+
+        try:
+            # Guardar los cambios en la base de datos
+            db.session.commit()
+            flash('El avance se actualizó exitosamente.', 'success')
+            return redirect(url_for('listar_avances_capacidades_incidencia'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar el avance: {str(e)}', 'danger')
+            return redirect(url_for('editar_avances_capacidades_incidencia', avance_id=avance_id))
+
+    # Si es GET, renderizar el formulario con los valores actuales del avance
+    return render_template(
+        'capacidades_incidencia/editar_avances_capacidades_incidencia.html',
+        avance=avance,
+        capacidad=avance.capacidad_incidencia  # Acceso a la capacidad relacionada
+    )
+
+@app.route('/eliminar_avances_capacidades_incidencia/<int:avance_id>', methods=['POST'])
+@login_required
+@roles_required('admin')
+def eliminar_avances_capacidades_incidencia(avance_id):
+    # Buscar el avance por ID
+    avance = AvanceCapacidadIncidencia.query.filter_by(id=avance_id).first()
+
+    # Validar si el avance existe
+    if not avance:
+        flash('El avance no existe.', 'danger')
+        return redirect(url_for('listar_avances_capacidades_incidencia'))
+
+    try:
+        # Eliminar el avance de la base de datos
+        db.session.delete(avance)
+        db.session.commit()
+        flash('El avance se eliminó exitosamente.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar el avance: {str(e)}', 'danger')
+
+    # Redirigir al listado de avances
+    return redirect(url_for('listar_avances_capacidades_incidencia'))
 
 ########################################################################################################################################
 ########################################################################################################################################

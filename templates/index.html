@@ -166,8 +166,9 @@
                     <h4>REGISTRO</h4>
                 
                     <div class="btn-container">
-                        <a href="{{ url_for('listar_registros') }}" class="btn btn-custom btn-red">Registro Inicial Participantes</a>
-                        <a href="{{ url_for('listar_iniciativas') }}" class="btn btn-custom btn-blue">Iniciativas</a>
+                        <a href="{{ url_for('listar_registros') }}" class="btn btn-custom btn-red">Registro de Lideres Participantes</a>
+                        <a href="{{ url_for('listar_iniciativas') }}" class="btn btn-custom btn-blue">Iniciativas de incidencia / exigibilidad</a>
+                        <a href="{{ url_for('listar_capacidades_incidencia') }}" class="btn btn-custom btn-bi">Capacidades de Incidencia</a>
                         <a href="{{ url_for('listar_casos_emblematicos') }}" class="btn btn-custom btn-yellow">Casos Emblemáticos</a>
                         <a href="{{ url_for('listar_politica_nacional_memoria') }}" class="btn btn-custom btn-green">Política Nacional y Sitios de Memoria</a>
                     </div>
@@ -179,9 +180,11 @@
                 <div class="section-box mt-5">
                     <h4>SEGUIMIENTO</h4>
                     <div class="btn-container">
-                        <a href="{{ url_for('listar_proceso_iniciativa') }}" class="btn btn-custom btn-blue">Iniciativas</a>
+                        <a href="{{ url_for('listar_proceso_iniciativa') }}" class="btn btn-custom btn-blue">Iniciativas de incidencia / exigibilidad</a>
+                        <a href="{{ url_for('listar_avances_capacidades_incidencia') }}" class="btn btn-custom btn-bi">Desarrollo de Capacidades de Incidencia</a>
                         <a href="{{ url_for('listar_avances_caso_emblematico') }}" class="btn btn-custom btn-yellow">Casos Emblemáticos</a>
                         <a href="{{ url_for('listar_avances_politica_nacional_memoria') }}" class="btn btn-custom btn-green">Política Nacional y Sitios de Memoria</a>
+                        
                     </div>
                 </div>
             </div>
