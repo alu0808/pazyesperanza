@@ -154,9 +154,12 @@
                         <input type="hidden" id="derecho_generico-hidden" name="derecho_generico">
                         
                         <!-- Nombre de la iniciativa -->
+                        <!-- Campo dinámico para elegir la iniciativa -->
                         <div class="form-group">
                             <label class="label-principal" for="nombre_iniciativa_display">Nombre de la iniciativa o propuesta:</label>
-                            <input type="text" class="form-control" id="nombre_iniciativa_display" name="nombre_iniciativa_display" readonly>
+                            <select class="form-control" id="nombre_iniciativa" name="nombre_iniciativa" required>
+                                <option value="" selected>Seleccione una iniciativa</option>
+                            </select>
                         </div>
                         <input type="hidden" id="nombre-iniciativa" name="nombre_iniciativa">
                     </div>
@@ -266,65 +269,77 @@
     <script src="/static/script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-        // Elementos del DOM
-        const searchInput = document.getElementById('search-participants');
-        const participantsList = document.getElementById('participants-list');
-        const selectedParticipantInput = document.getElementById('selected-participant');
-        const registroDniInput = document.getElementById('registro-dni');
-        const poblacionInput = document.getElementById('poblacion');
-        const derechoPrioritarioInput = document.getElementById('derecho_generico');
-        const nombreIniciativaInput = document.getElementById('nombre-iniciativa');
-        const nombreIniciativaDisplayInput = document.getElementById('nombre_iniciativa_display');
+            const searchInput = document.getElementById('search-participants');
+            const participantsList = document.getElementById('participants-list');
+            const selectedParticipantInput = document.getElementById('selected-participant');
+            const registroDniInput = document.getElementById('registro-dni');
+            const poblacionInput = document.getElementById('poblacion');
+            const derechoPrioritarioInput = document.getElementById('derecho_generico');
+            const nombreIniciativaSelect = document.getElementById('nombre_iniciativa');
+            // const nombreIniciativaInput = document.getElementById('nombre-iniciativa');
+            // const nombreIniciativaDisplayInput = document.getElementById('nombre_iniciativa_display');
 
-        // Escuchar cambios en el input de búsqueda
-        searchInput.addEventListener('input', function () {
-            const query = this.value.trim().toLowerCase();
-            participantsList.innerHTML = ''; // Limpiar la lista de sugerencias
+            // Escuchar cambios en el input de búsqueda
+            searchInput.addEventListener('input', function () {
+                const query = this.value.trim().toLowerCase();
+                participantsList.innerHTML = ''; // Limpiar la lista de sugerencias
 
-            if (!query) return;
+                if (!query) return;
 
-            // Realizar la búsqueda en el servidor
-            fetch(`/buscar_participante?q=${query}`)
-                .then(response => response.json())
-                .then(participants => {
-                    participantsList.innerHTML = ''; // Limpiar resultados anteriores
+                // Realizar la búsqueda en el servidor
+                fetch(`/buscar_participante?q=${query}`)
+                    .then(response => response.json())
+                    .then(participants => {
+                        participantsList.innerHTML = ''; // Limpiar resultados anteriores
 
-                    participants.forEach(participant => {
-                        // Crear un elemento de lista para cada participante
-                        const li = document.createElement('li');
-                        li.classList.add('list-group-item');
-                        li.textContent = `${participant.nombre} (DNI: ${participant.dni})`;
+                        participants.forEach(participant => {
+                            // Crear un elemento de lista para cada participante
+                            const li = document.createElement('li');
+                            li.classList.add('list-group-item');
+                            li.textContent = `${participant.nombre} (DNI: ${participant.dni})`;
 
-                        // Al hacer clic en un participante
-                        li.addEventListener('click', () => {
-                            // Asignar valores seleccionados a los campos del formulario
-                            registroDniInput.value = participant.dni;
-                            poblacionInput.value = participant.poblacion || participant.otra_poblacion_detalle || 'No especificado';
-                            // Priorizar derecho_generico, pero usar otro_derecho_detalle si derecho_generico está vacío
-                            derechoPrioritarioInput.value = participant.derecho_generico || participant.otro_derecho_detalle || 'No especificado';
-                            nombreIniciativaInput.value = participant.iniciativa || '';
-                            nombreIniciativaDisplayInput.value = participant.iniciativa || 'No especificado';
+                            // Al hacer clic en un participante
+                            li.addEventListener('click', () => {
+                                // Asignar valores seleccionados a los campos del formulario
+                                registroDniInput.value = participant.dni;
+                                poblacionInput.value = participant.poblacion || participant.otra_poblacion_detalle || 'No especificado';
+                                derechoPrioritarioInput.value = participant.derecho_generico || participant.otro_derecho_detalle || 'No especificado';
+                                selectedParticipantInput.value = `${participant.nombre} (DNI: ${participant.dni})`;
+                                // nombreIniciativaInput.value = participant.iniciativa || '';
+                                // nombreIniciativaDisplayInput.value = participant.iniciativa || 'No especificado';    
+                                
+                                // Consultar iniciativas asociadas y llenar el select
+                                fetch(`/buscar_iniciativas_participante?dni=${participant.dni}`)
+                                    .then(response => response.json())
+                                    .then(iniciativas => {
+                                        nombreIniciativaSelect.innerHTML = '<option value="" selected>Seleccione una iniciativa</option>';
+                                        iniciativas.forEach(iniciativa => {
+                                            const option = document.createElement('option');
+                                            option.value = iniciativa.nombre_iniciativa;
+                                            option.textContent = iniciativa.nombre_iniciativa;
+                                            nombreIniciativaSelect.appendChild(option);
+                                        });
+                                    })
+                                    .catch(error => {
+                                        console.error('Error al buscar iniciativas:', error);
+                                        nombreIniciativaSelect.innerHTML = '<option value="" selected>Error al cargar iniciativas</option>';
+                                    });
 
-                            // Mostrar el participante seleccionado en el campo readonly
-                            selectedParticipantInput.value = `${participant.nombre} (DNI: ${participant.dni})`;
+                                // Limpiar la lista de resultados para cerrar las sugerencias
+                                participantsList.innerHTML = '';
+                                searchInput.value = '';
+                            });
 
-                            // Limpiar la lista de resultados para cerrar las sugerencias
-                            participantsList.innerHTML = '';
-
-                            // Limpiar el campo de búsqueda
-                            searchInput.value = '';
+                            // Añadir el elemento a la lista de sugerencias
+                            participantsList.appendChild(li);
                         });
-
-                        // Añadir el elemento a la lista de sugerencias
-                        participantsList.appendChild(li);
+                    })
+                    .catch(error => {
+                        console.error('Error al buscar participantes:', error);
+                        participantsList.innerHTML = '<li class="list-group-item text-danger">Error al buscar participantes</li>';
                     });
-                })
-                .catch(error => {
-                    console.error('Error al buscar participantes:', error);
-                    participantsList.innerHTML = '<li class="list-group-item text-danger">Error al buscar participantes</li>';
-                });
+            });
         });
-    });
 
     </script>
     

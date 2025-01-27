@@ -1219,6 +1219,24 @@ def buscar_participante():
 
     return jsonify(resultado)
 
+@app.route('/buscar_iniciativas_participante', methods=['GET'])
+@login_required
+def buscar_iniciativas_participante():
+    dni = request.args.get('dni', '').strip()
+    if not dni:
+        return jsonify([])
+
+    # Buscar las iniciativas asociadas al participante por su DNI
+    participante = Registro.query.filter_by(dni=dni).first()
+    if not participante:
+        return jsonify([])
+
+    iniciativas = [
+        {"nombre_iniciativa": iniciativa.nombre_iniciativa}
+        for iniciativa in participante.iniciativas
+    ]
+    return jsonify(iniciativas)
+
 
 @app.route('/form_capacidades_incidencia', methods=['GET', 'POST'])
 @login_required
@@ -1231,6 +1249,11 @@ def form_capacidades_incidencia():
         if not registro_dni:
             flash('El participante buscado no está en el listado de Registro inicial.', 'danger')
             return redirect(url_for('form_capacidades_incidencia'))
+        
+        if not Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first():
+            flash('La iniciativa seleccionada no existe o no está asociada al participante.', 'danger')
+            return redirect(url_for('form_capacidades_incidencia'))
+
         
         if not nombre_iniciativa:
             flash('El participante debe pertenecer a una iniciativa. Debe crear la iniciativa y asignar al usuario.', 'danger')
@@ -1353,24 +1376,64 @@ class AvanceCapacidadIncidencia(db.Model):
     # Relación con CapacidadIncidencia
     # capacidad_incidencia = db.relationship('CapacidadIncidencia', backref=db.backref('avances', lazy=True))
 
-@app.route('/get_numero_avances/<int:capacidad_id>', methods=['GET'])
+@app.route('/get_iniciativas_por_participante', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor', 'viewer')
-def get_numero_avances(capacidad_id):
-    try:
-        # Verificar si la capacidad inicial existe
-        capacidad = CapacidadIncidencia.query.filter_by(id=capacidad_id).first()
-        if not capacidad:
-            return jsonify({'error': 'El participante no tiene un registro inicial de capacidad.'})
+def get_iniciativas_por_participante():
+    dni = request.args.get('dni')
+    if not dni:
+        return jsonify([])
 
-        # Contar los avances existentes
-        numero_avances = AvanceCapacidadIncidencia.query.filter_by(capacidad_id=capacidad_id).count()
+    # Obtener todas las iniciativas asociadas al participante
+    iniciativas = Iniciativa.query.join(iniciativa_registro).filter_by(registro_dni=dni).all()
 
-        # El próximo registro será el actual número de avances + 1
-        proximo_registro = numero_avances + 1
-        return jsonify({'proximo_registro': proximo_registro})
-    except Exception as e:
-        return jsonify({'error': f'Error al obtener el número de avances: {str(e)}'})
+    return jsonify([{'nombre_iniciativa': iniciativa.nombre_iniciativa} for iniciativa in iniciativas])
+
+
+@app.route('/get_numero_avances_por_iniciativa', methods=['GET'])
+@login_required
+def get_numero_avances_por_iniciativa():
+    dni = request.args.get('dni')
+    nombre_iniciativa = request.args.get('iniciativa')
+
+    if not dni or not nombre_iniciativa:
+        return jsonify({'error': 'DNI o iniciativa no especificados.'})
+
+    # Buscar la capacidad específica para el participante y la iniciativa
+    capacidad = CapacidadIncidencia.query.filter_by(registro_dni=dni, nombre_iniciativa=nombre_iniciativa).first()
+    if not capacidad:
+        return jsonify({'error': 'No existe capacidad para esta combinación de participante e iniciativa.'})
+
+    # Contar los avances asociados a esta capacidad
+    numero_avances = AvanceCapacidadIncidencia.query.filter_by(capacidad_id=capacidad.id).count()
+
+    # El próximo registro será el actual número de avances + 1
+    proximo_registro = numero_avances + 1
+    return jsonify({'proximo_registro': proximo_registro})
+
+
+
+
+
+
+
+@app.route('/buscar_iniciativas_participante_avances', methods=['GET'])
+@login_required
+def buscar_iniciativas_participante_avances():
+    dni = request.args.get('dni', '').strip()
+    if not dni:
+        return jsonify([])
+
+    # Buscar las iniciativas asociadas al participante por su DNI
+    participante = Registro.query.filter_by(dni=dni).first()
+    if not participante:
+        return jsonify([])
+
+    iniciativas = [
+        {"nombre_iniciativa": iniciativa.nombre_iniciativa}
+        for iniciativa in participante.iniciativas
+    ]
+    return jsonify(iniciativas)
+
 
 @app.route('/form_avances_capacidades_incidencia', methods=['GET', 'POST'])
 @login_required
@@ -1379,9 +1442,24 @@ def form_avances_capacidades_incidencia():
     if request.method == 'POST':
         # Obtener datos del formulario
         capacidad_id = request.form.get('capacidad_id')  # ID de la capacidad seleccionada
-        # registro_dni = request.form.get('registro_dni')  # DNI del participante seleccionado
-        # nombre_iniciativa = request.form.get('nombre_iniciativa')  # Nombre de la iniciativa
-
+        nombre_iniciativa = request.form.get('nombre_iniciativa')  # Nombre de la iniciativa
+        registro_dni = request.form.get('registro_dni')  # DNI del participante seleccionado
+        print(f"Registro DNI: {registro_dni}, Nombre Iniciativa: {nombre_iniciativa}")  # Verifica estos valores en el terminal/log
+        # Verificar que los datos esenciales existan
+        if not registro_dni or not nombre_iniciativa:
+            flash('El participante o la iniciativa no son válidos.', 'danger')
+            return redirect(url_for('form_avances_capacidades_incidencia'))
+        
+        # Buscar la capacidad en la base de datos usando el DNI y la iniciativa
+        capacidad = CapacidadIncidencia.query.filter_by(
+            registro_dni=registro_dni,
+            nombre_iniciativa=nombre_iniciativa
+        ).first()
+        
+        if not capacidad:
+            flash('La iniciativa seleccionada no está asociada a este participante.', 'danger')
+            return redirect(url_for('form_avances_capacidades_incidencia'))
+                
         # Calificaciones y datos específicos del avance
         capacidad_1 = request.form.get('capacidad_1', None) or None
         capacidad_2 = request.form.get('capacidad_2', None) or None
@@ -1391,20 +1469,9 @@ def form_avances_capacidades_incidencia():
         otra_capacidad = request.form.get('otra_capacidad', '').strip()
         calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
 
-        # Verificar que se haya seleccionado una capacidad
-        if not capacidad_id:
-            flash('El participante no tiene un registro inicial de Capacidades de Incidencia. Dirigirse al módulo a crearlo.', 'danger')
-            return redirect(url_for('form_avances_capacidades_incidencia'))
-
-        # Buscar la capacidad en la base de datos
-        capacidad = CapacidadIncidencia.query.filter_by(id=capacidad_id).first()
-        if not capacidad:
-            flash('La capacidad seleccionada no existe.', 'danger')
-            return redirect(url_for('form_avances_capacidades_incidencia'))
-
         # Crear un nuevo avance para la capacidad seleccionada
         nuevo_avance = AvanceCapacidadIncidencia(
-            capacidad_id=capacidad_id,
+            capacidad_id=capacidad.id,
             # registro_dni=registro_dni,  # Relación del DNI
             # nombre_iniciativa=nombre_iniciativa,  # Relación de la iniciativa
             capacidad_1=capacidad_1,
