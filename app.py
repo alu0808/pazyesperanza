@@ -1189,6 +1189,23 @@ class CapacidadIncidencia(db.Model):
     
     avances = db.relationship('AvanceCapacidadIncidencia', backref='capacidad_incidencia', lazy=True, cascade="all, delete-orphan")
     
+@app.route('/obtener_datos_iniciativa', methods=['GET'])
+@login_required
+def obtener_datos_iniciativa():
+    nombre_iniciativa = request.args.get('nombre_iniciativa', '').strip()
+    if not nombre_iniciativa:
+        return jsonify({'error': 'Debe proporcionar el nombre de la iniciativa.'}), 400
+
+    iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
+    if not iniciativa:
+        return jsonify({'error': 'Iniciativa no encontrada.'}), 404
+
+    return jsonify({
+        'poblacion': iniciativa.poblacion or iniciativa.otra_poblacion_detalle,
+        'derecho_generico': iniciativa.derecho_generico or iniciativa.otro_derecho_detalle
+    })
+
+
 # BUSCAR PARTICIPANTE
 @app.route('/buscar_participante', methods=['GET'])
 @login_required

@@ -290,118 +290,137 @@
     <script src="/static/script.js"></script>
     <script>
        document.addEventListener('DOMContentLoaded', function () {
-            // Elementos del DOM
-            const searchInput = document.getElementById('search-participants');
-            const participantsList = document.getElementById('participants-list');
-            const selectedParticipantInput = document.getElementById('selected-participant');
-            const registroDniInput = document.getElementById('registro-dni'); // Campo oculto para el DNI
-            const capacidadIdInput = document.getElementById('capacidad-id');
-            const poblacionInput = document.getElementById('poblacion');
-            const derechoPrioritarioInput = document.getElementById('derecho_generico');
-            const nombreIniciativaSelect = document.getElementById('nombre-iniciativa'); // Select de iniciativas
-            const nombreIniciativaDisplayInput = document.getElementById('nombre_iniciativa_display'); // Campo de texto para mostrar iniciativa
-            const numeroRegistroContainer = document.getElementById('numero_registro_container');
-            const numeroRegistroText = document.getElementById('numero_registro');
+        // Elementos del DOM
+        const searchInput = document.getElementById('search-participants');
+        const participantsList = document.getElementById('participants-list');
+        const selectedParticipantInput = document.getElementById('selected-participant');
+        const registroDniInput = document.getElementById('registro-dni'); // Campo oculto para el DNI
+        const capacidadIdInput = document.getElementById('capacidad-id');
+        const poblacionInput = document.getElementById('poblacion');
+        const derechoPrioritarioInput = document.getElementById('derecho_generico');
+        const nombreIniciativaSelect = document.getElementById('nombre-iniciativa'); // Select de iniciativas
+        const nombreIniciativaDisplayInput = document.getElementById('nombre_iniciativa_display'); // Campo de texto para mostrar iniciativa
+        const numeroRegistroContainer = document.getElementById('numero_registro_container');
+        const numeroRegistroText = document.getElementById('numero_registro');
 
-            // Función para limpiar la lista de sugerencias
-            function limpiarSugerencias() {
-                participantsList.innerHTML = '';
+        // Función para limpiar la lista de sugerencias
+        function limpiarSugerencias() {
+            participantsList.innerHTML = '';
+        }
+
+        // Escuchar cambios en el input de búsqueda
+        searchInput.addEventListener('input', function () {
+            const query = this.value.trim().toLowerCase();
+            limpiarSugerencias();
+
+            if (!query) {
+                numeroRegistroContainer.style.display = 'none'; // Ocultar el contenedor
+                return;
             }
 
-            // Escuchar cambios en el input de búsqueda
-            searchInput.addEventListener('input', function () {
-                const query = this.value.trim().toLowerCase();
-                limpiarSugerencias();
+            // Realizar la búsqueda en el servidor
+            fetch(`/buscar_participante?q=${query}`)
+                .then(response => response.json())
+                .then(participants => {
+                    limpiarSugerencias(); // Limpiar resultados anteriores
 
-                if (!query) {
-                    numeroRegistroContainer.style.display = 'none'; // Ocultar el contenedor
-                    return;
-                }
+                    participants.forEach(participant => {
+                        // Crear un elemento de lista para cada participante
+                        const li = document.createElement('li');
+                        li.classList.add('list-group-item');
+                        li.textContent = `${participant.nombre} (DNI: ${participant.dni})`;
 
-                // Realizar la búsqueda en el servidor
-                fetch(`/buscar_participante?q=${query}`)
-                    .then(response => response.json())
-                    .then(participants => {
-                        limpiarSugerencias(); // Limpiar resultados anteriores
+                        // Al hacer clic en un participante
+                        li.addEventListener('click', () => {
+                            // Asignar valores seleccionados a los campos del formulario
+                            registroDniInput.value = participant.dni; // Asignar el DNI al campo oculto
+                            capacidadIdInput.value = participant.capacidad_id || ''; // Asignar capacidad_id
+                            poblacionInput.value = 'No especificado';
+                            derechoPrioritarioInput.value = 'No especificado';
+                            selectedParticipantInput.value = `${participant.nombre} (DNI: ${participant.dni})`;
 
-                        participants.forEach(participant => {
-                            // Crear un elemento de lista para cada participante
-                            const li = document.createElement('li');
-                            li.classList.add('list-group-item');
-                            li.textContent = `${participant.nombre} (DNI: ${participant.dni})`;
-
-                            // Al hacer clic en un participante
-                            li.addEventListener('click', () => {
-                                // Asignar valores seleccionados a los campos del formulario
-                                registroDniInput.value = participant.dni; // Asignar el DNI al campo oculto
-                                capacidadIdInput.value = participant.capacidad_id || ''; // Asignar capacidad_id
-                                poblacionInput.value = participant.poblacion || 'No especificado';
-                                derechoPrioritarioInput.value = participant.derecho_generico || 'No especificado';
-                                selectedParticipantInput.value = `${participant.nombre} (DNI: ${participant.dni})`;
-
-                                // Actualizar el select con las iniciativas asociadas al participante
-                                fetch(`/get_iniciativas_por_participante?dni=${participant.dni}`)
+                            // Actualizar el select con las iniciativas asociadas al participante
+                            // Consultar iniciativas asociadas y llenar el select
+                            fetch(`/buscar_iniciativas_participante?dni=${participant.dni}`)
                                     .then(response => response.json())
                                     .then(iniciativas => {
-                                        nombreIniciativaSelect.innerHTML = ''; // Limpiar el select
+                                        nombreIniciativaSelect.innerHTML = '<option value="" selected>Seleccione una iniciativa</option>';
                                         iniciativas.forEach(iniciativa => {
                                             const option = document.createElement('option');
-                                            option.value = iniciativa.nombre_iniciativa; // Usar el nombre de la iniciativa como valor
-                                            option.textContent = iniciativa.nombre_iniciativa; // Mostrar el nombre en el select
+                                            option.value = iniciativa.nombre_iniciativa;
+                                            option.textContent = iniciativa.nombre_iniciativa;
                                             nombreIniciativaSelect.appendChild(option);
                                         });
-
-                                        // Seleccionar la primera iniciativa por defecto si hay opciones
-                                        if (iniciativas.length > 0) {
-                                            nombreIniciativaSelect.value = iniciativas[0].nombre_iniciativa;
-                                            nombreIniciativaDisplayInput.value = iniciativas[0].nombre_iniciativa;
-                                            actualizarNumeroRegistro(participant.dni, iniciativas[0].nombre_iniciativa); // Actualizar número de registro
-                                        }
                                     })
-                                    .catch(error => console.error('Error al obtener iniciativas:', error));
+                                    .catch(error => {
+                                        console.error('Error al buscar iniciativas:', error);
+                                        nombreIniciativaSelect.innerHTML = '<option value="" selected>Error al cargar iniciativas</option>';
+                                    });
 
-
-                                limpiarSugerencias(); // Limpiar la lista de resultados para cerrar las sugerencias
-                                searchInput.value = ''; // Limpiar el campo de búsqueda
-                            });
-
-                            // Añadir el elemento a la lista de sugerencias
-                            participantsList.appendChild(li);
+                            limpiarSugerencias(); // Limpiar la lista de resultados para cerrar las sugerencias
+                            searchInput.value = ''; // Limpiar el campo de búsqueda
                         });
-                    })
-                    .catch(error => {
-                        console.error('Error al buscar participantes:', error);
-                        participantsList.innerHTML = '<li class="list-group-item text-danger">Error al buscar participantes</li>';
+
+                        // Añadir el elemento a la lista de sugerencias
+                        participantsList.appendChild(li);
                     });
-            });
+                })
+                .catch(error => {
+                    console.error('Error al buscar participantes:', error);
+                    participantsList.innerHTML = '<li class="list-group-item text-danger">Error al buscar participantes</li>';
+                });
+        });
 
-            // Cambiar el número de registro cuando se selecciona otra iniciativa
-            nombreIniciativaSelect.addEventListener('change', function () {
-                const iniciativaSeleccionada = this.value; // Obtener la iniciativa seleccionada
-                const registroDni = registroDniInput.value; // Obtener el DNI del participante seleccionado
+        // Cambiar el número de registro y actualizar datos de la iniciativa cuando se selecciona otra iniciativa
+        nombreIniciativaSelect.addEventListener('change', function () {
+            const iniciativaSeleccionada = this.value; // Obtener la iniciativa seleccionada
+            const registroDni = registroDniInput.value; // Obtener el DNI del participante seleccionado
 
-                if (registroDni && iniciativaSeleccionada) {
-                    nombreIniciativaDisplayInput.value = iniciativaSeleccionada; // Actualizar el display
-                    actualizarNumeroRegistro(registroDni, iniciativaSeleccionada); // Llamar a la función para actualizar
-                }
-            });
-
-            // Función para actualizar el número de registro
-            function actualizarNumeroRegistro(dni, iniciativa) {
-                fetch(`/get_numero_avances_por_iniciativa?dni=${dni}&iniciativa=${encodeURIComponent(iniciativa)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            alert(data.error);
-                            numeroRegistroContainer.style.display = 'none';
-                        } else {
-                            numeroRegistroText.textContent = data.proximo_registro;
-                            numeroRegistroContainer.style.display = 'block';
-                        }
-                    })
-                    .catch(error => console.error('Error al obtener número de registro:', error));
+            if (registroDni && iniciativaSeleccionada) {
+                nombreIniciativaDisplayInput.value = iniciativaSeleccionada; // Actualizar el display
+                actualizarNumeroRegistro(registroDni, iniciativaSeleccionada); // Llamar a la función para actualizar
+                actualizarDatosIniciativa(iniciativaSeleccionada); // Actualizar población y derecho
             }
         });
+
+        // Función para actualizar el número de registro
+        function actualizarNumeroRegistro(dni, iniciativa) {
+            fetch(`/get_numero_avances_por_iniciativa?dni=${dni}&iniciativa=${encodeURIComponent(iniciativa)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        numeroRegistroContainer.style.display = 'none';
+                    } else {
+                        numeroRegistroText.textContent = data.proximo_registro;
+                        numeroRegistroContainer.style.display = 'block';
+                    }
+                })
+                .catch(error => console.error('Error al obtener número de registro:', error));
+        }
+
+        // Función para actualizar los datos de población y derecho genérico de la iniciativa seleccionada
+        function actualizarDatosIniciativa(iniciativaSeleccionada) {
+            fetch(`/obtener_datos_iniciativa?nombre_iniciativa=${encodeURIComponent(iniciativaSeleccionada)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error(data.error);
+                        poblacionInput.value = 'Error al cargar';
+                        derechoPrioritarioInput.value = 'Error al cargar';
+                    } else {
+                        poblacionInput.value = data.poblacion || 'No especificado';
+                        derechoPrioritarioInput.value = data.derecho_generico || 'No especificado';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al obtener datos de la iniciativa:', error);
+                    poblacionInput.value = 'Error al cargar';
+                    derechoPrioritarioInput.value = 'Error al cargar';
+                });
+        }
+    });
+
 
 
     </script>

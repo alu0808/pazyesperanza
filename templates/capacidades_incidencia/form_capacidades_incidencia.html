@@ -302,8 +302,8 @@
                             li.addEventListener('click', () => {
                                 // Asignar valores seleccionados a los campos del formulario
                                 registroDniInput.value = participant.dni;
-                                poblacionInput.value = participant.poblacion || participant.otra_poblacion_detalle || 'No especificado';
-                                derechoPrioritarioInput.value = participant.derecho_generico || participant.otro_derecho_detalle || 'No especificado';
+                                poblacionInput.value = 'No especificado';
+                                derechoPrioritarioInput.value = 'No especificado';
                                 selectedParticipantInput.value = `${participant.nombre} (DNI: ${participant.dni})`;
                                 // nombreIniciativaInput.value = participant.iniciativa || '';
                                 // nombreIniciativaDisplayInput.value = participant.iniciativa || 'No especificado';    
@@ -337,6 +337,36 @@
                     .catch(error => {
                         console.error('Error al buscar participantes:', error);
                         participantsList.innerHTML = '<li class="list-group-item text-danger">Error al buscar participantes</li>';
+                    });
+            });
+
+            // Escuchar cambios en el select de iniciativas
+            nombreIniciativaSelect.addEventListener('change', function () {
+                const iniciativaSeleccionada = this.value;
+
+                if (!iniciativaSeleccionada) {
+                    poblacionInput.value = '';
+                    derechoPrioritarioInput.value = '';
+                    return;
+                }
+
+                // Consultar los datos de la iniciativa seleccionada
+                fetch(`/obtener_datos_iniciativa?nombre_iniciativa=${encodeURIComponent(iniciativaSeleccionada)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error(data.error);
+                            poblacionInput.value = 'Error al cargar';
+                            derechoPrioritarioInput.value = 'Error al cargar';
+                        } else {
+                            poblacionInput.value = data.poblacion;
+                            derechoPrioritarioInput.value = data.derecho_generico;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener datos de la iniciativa:', error);
+                        poblacionInput.value = 'Error al cargar';
+                        derechoPrioritarioInput.value = 'Error al cargar';
                     });
             });
         });

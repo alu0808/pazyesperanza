@@ -423,8 +423,15 @@
                         <h4>Referente de Trabajo Institucional</h4>
                         <div class="form-group">
                             <label class="label-principal" for="oficina_regional">Oficina Regional de referencia:</label>
-                            <input type="text" class="form-control" id="oficina_regional" name="oficina_regional" maxlength="60">
-                        </div>
+                            <select class="form-control" id="oficina_regional" name="oficina_regional">
+                                <option value="" selected>Seleccione una oficina</option>
+                                <option value="Oficina Nacional">Oficina Nacional</option>
+                                <option value="Oficina Reg. Apurímac">Oficina Reg. Apurímac</option>
+                                <option value="Oficina Reg. Huanuco">Oficina Reg. Huánuco</option>
+                                <option value="Oficina Reg. Ayacucho">Oficina Reg. Ayacucho</option>
+                                <option value="Oficina Reg. San Martín">Oficina Reg. San Martín</option>
+                            </select>
+                        </div>                        
                         <div class="form-group">
                             <label class="label-principal" for="proyectos">Proyecto/s en el/los que participa:</label>
                             <input type="text" class="form-control" id="proyectos" name="proyectos" maxlength="100">

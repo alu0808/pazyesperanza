@@ -424,8 +424,16 @@
                         <h4>Referente de Trabajo Institucional</h4>
                         <div class="form-group">
                             <label class="label-principal" for="oficina_regional">Oficina Regional de referencia:</label>
-                            <input type="text" class="form-control" id="oficina_regional" name="oficina_regional" maxlength="60" value="{{ iniciativa.oficina_regional }}">
+                            <select class="form-control" id="oficina_regional" name="oficina_regional">
+                                <option value="" {% if not iniciativa.oficina_regional %}selected{% endif %}>Seleccione una oficina</option>
+                                <option value="Oficina Nacional" {% if iniciativa.oficina_regional == "Oficina Nacional" %}selected{% endif %}>Oficina Nacional</option>
+                                <option value="Oficina Reg. Apurímac" {% if iniciativa.oficina_regional == "Oficina Reg. Apurímac" %}selected{% endif %}>Oficina Reg. Apurímac</option>
+                                <option value="Oficina Reg. Huanuco" {% if iniciativa.oficina_regional == "Oficina Reg. Huanuco" %}selected{% endif %}>Oficina Reg. Huánuco</option>
+                                <option value="Oficina Reg. Ayacucho" {% if iniciativa.oficina_regional == "Oficina Reg. Ayacucho" %}selected{% endif %}>Oficina Reg. Ayacucho</option>
+                                <option value="Oficina Reg. San Martín" {% if iniciativa.oficina_regional == "Oficina Reg. San Martín" %}selected{% endif %}>Oficina Reg. San Martín</option>
+                            </select>
                         </div>
+                        
                         <div class="form-group">
                             <label class="label-principal" for="proyectos">Proyecto/s en el/los que participa:</label>
                             <input type="text" class="form-control" id="proyectos" name="proyectos" maxlength="100" value="{{ iniciativa.proyectos }}">
