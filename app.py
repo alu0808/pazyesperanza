@@ -240,7 +240,7 @@ class Registro(db.Model):
     lugar_nacimiento = db.Column(db.String(60), nullable=True)
     calle = db.Column(db.String(60), nullable=True)
     comunidad = db.Column(db.String(60), nullable=True)
-    distrito = db.Column(db.String(60), nullable=True)
+    distrito = db.Column(db.String(100), nullable=True)
     provincia = db.Column(db.String(60), nullable=True)
     departamento = db.Column(db.String(60), nullable=True)
     estado = db.Column(db.String(3), nullable=True, default='ACT')  # Valor predeterminado "ACT"
