@@ -24,7 +24,7 @@ app.config['SECRET_KEY'] = 'fhg563235453663434576377355246362463634573t32erf'
 # Configuración de la conexión a la base de datos ewn heroku y en PC local
 
 if os.getenv('DATABASE_URL'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL').replace("postgres://", "postgresql+psycopg2://")
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL').replace("postgres://", "postgresql+psycopg2://") + "?options=-c%20timezone=America/Lima"
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres:Qsdxc.1221@localhost/pazyesperanza'
 
