@@ -244,7 +244,7 @@ class Registro(db.Model):
     provincia = db.Column(db.String(60), nullable=True)
     departamento = db.Column(db.String(60), nullable=True)
     estado = db.Column(db.String(3), nullable=True, default='ACT')  # Valor predeterminado "ACT"
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
 @app.route('/form_registro_inicial', methods=['GET', 'POST'])
 @login_required
@@ -493,7 +493,7 @@ class Iniciativa(db.Model):
     observaciones = db.Column(db.String(255), nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
     tipo_participacion_fe = db.Column(db.String(80), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
     # Relación con múltiples registros mediante tabla intermedia
     registros = db.relationship(
         'Registro',
@@ -925,7 +925,7 @@ class ProcesoIniciativa(db.Model):
     responsable_registro = db.Column(db.String(100), nullable=True)
 
     # Timestamp
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
     
     # Relación con registros a través de Iniciativa
     @property
@@ -1196,7 +1196,7 @@ class CapacidadIncidencia(db.Model):
     capacidad_5 = db.Column(db.Integer, nullable=True)
     otra_capacidad = db.Column(db.String(100), nullable=True)
     calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
     # Relación con Registro
     registro = db.relationship('Registro', backref='capacidades')
@@ -1405,7 +1405,7 @@ class AvanceCapacidadIncidencia(db.Model):
     capacidad_5 = db.Column(db.Integer, nullable=True)
     otra_capacidad = db.Column(db.String(100), nullable=True)
     calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
     # Relación con CapacidadIncidencia
     # capacidad_incidencia = db.relationship('CapacidadIncidencia', backref=db.backref('avances', lazy=True))
@@ -1659,7 +1659,7 @@ class CasoEmblematico(db.Model):
     objetivo_defensa = db.Column(db.String(300), nullable=True)
     situacion_caso = db.Column(db.String(300), nullable=True)
     otro_dato = db.Column(db.String(300), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
     # Relación con AvanceCasoEmblematico
     avances = db.relationship('AvanceCasoEmblematico', backref='caso', lazy=True, cascade="all, delete-orphan")
 
@@ -1784,7 +1784,7 @@ class AvanceCasoEmblematico(db.Model):
     recomendaciones = db.Column(db.String(350), nullable=True)
     otro_asunto = db.Column(db.String(350), nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
 @app.route('/form_avances_caso_emblematico', methods=['GET', 'POST'])
 @login_required
@@ -1905,7 +1905,7 @@ class PoliticaNacionalMemoria(db.Model):
     asunto_3 = db.Column(db.String(255), nullable=True)
     organizaciones_aliadas = db.Column(db.String(300), nullable=True)
     otro_dato = db.Column(db.String(255), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
     # Relación con AvancePoliticaMemoria
     avances = db.relationship('AvancePoliticaMemoria', backref='politica', lazy=True, cascade="all, delete-orphan")
 
@@ -2032,7 +2032,7 @@ class AvancePoliticaMemoria(db.Model):
     recomendaciones = db.Column(db.String(350), nullable=True)
     otro_asunto = db.Column(db.String(255), nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru)
+    fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
 @app.route('/form_avances_politica_nacional_memoria', methods=['GET', 'POST'])
 @login_required
