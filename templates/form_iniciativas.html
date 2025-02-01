@@ -562,50 +562,54 @@
                     <div class="section-box mt-3 flex-grow-1">
                         <h4>Fase de Implementación</h4>
                         <div class="form-group">
+                            <input type="hidden" id="fase_implementacion_valor" name="fase_implementacion_valor"> <!-- Guarda el valor numérico -->
+                            
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_gestacion_checkbox" name="fase_implementacion[]" value="Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_gestacion_checkbox" name="fase_implementacion" value="0">
                                 <label class="form-check-label" for="fase_gestacion_checkbox">Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_organizacion_checkbox" name="fase_implementacion[]" value="Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_organizacion_checkbox" name="fase_implementacion" value="1">
                                 <label class="form-check-label" for="fase_organizacion_checkbox">Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_coordinacion_checkbox" name="fase_implementacion[]" value="Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_coordinacion_checkbox" name="fase_implementacion" value="2">
                                 <label class="form-check-label" for="fase_coordinacion_checkbox">Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_dialogo_checkbox" name="fase_implementacion[]" value="Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_dialogo_checkbox" name="fase_implementacion" value="3">
                                 <label class="form-check-label" for="fase_dialogo_checkbox">Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_argumentacion_checkbox" name="fase_implementacion[]" value="Argumentación / fundamentación ante autoridades y funcionarios">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_argumentacion_checkbox" name="fase_implementacion" value="4">
                                 <label class="form-check-label" for="fase_argumentacion_checkbox">Argumentación / fundamentación ante autoridades y funcionarios</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_respuesta_checkbox" name="fase_implementacion[]" value="Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_respuesta_checkbox" name="fase_implementacion" value="5">
                                 <label class="form-check-label" for="fase_respuesta_checkbox">Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_formalizacion_checkbox" name="fase_implementacion[]" value="Formalización de los acuerdos con el organismo o instancia involucrada o competente">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_formalizacion_checkbox" name="fase_implementacion" value="6">
                                 <label class="form-check-label" for="fase_formalizacion_checkbox">Formalización de los acuerdos con el organismo o instancia involucrada o competente</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_normas_checkbox" name="fase_implementacion[]" value="Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente" onchange="toggleOther('fase_normas_checkbox', 'fase_normas_detalle')">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_normas_checkbox" name="fase_implementacion" value="7">
                                 <label class="form-check-label" for="fase_normas_checkbox">Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente (en cuál):</label>
                                 <input type="text" class="form-control mt-2" id="fase_normas_detalle" maxlength="100" name="fase_normas_detalle" placeholder="¿En cuál?" style="display:none;">
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_institucionalizacion_checkbox" name="fase_implementacion[]" value="Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión" onchange="toggleOther('fase_institucionalizacion_checkbox', 'fase_institucionalizacion_detalle')">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_institucionalizacion_checkbox" name="fase_implementacion" value="8">
                                 <label class="form-check-label" for="fase_institucionalizacion_checkbox">Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión (qué entidad):</label>
                                 <input type="text" class="form-control mt-2" id="fase_institucionalizacion_detalle" maxlength="100" name="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" style="display:none;">
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_monitoreo_checkbox" name="fase_implementacion[]" value="Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_monitoreo_checkbox" name="fase_implementacion" value="9">
                                 <label class="form-check-label" for="fase_monitoreo_checkbox">Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente</label>
                             </div>
+                            
+                            <!-- Opción "Otro" sin valor numérico -->
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_otro_checkbox" name="fase_implementacion[]" value="Otro" onchange="toggleOther('fase_otro_checkbox', 'fase_otro_detalle')">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_otro_checkbox" name="fase_implementacion" value="otro">
                                 <label class="form-check-label" for="fase_otro_checkbox">Otra fase (indicar cuál):</label>
                                 <input type="text" class="form-control mt-2" id="fase_otro_detalle" maxlength="100" name="fase_otro_detalle" placeholder="Indica cuál" style="display:none;">
                             </div>
@@ -708,6 +712,50 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const faseCheckboxes = document.querySelectorAll('.fase-checkbox');
+            const faseValorInput = document.getElementById('fase_implementacion_valor');
+
+            // Función para manejar la selección de opciones
+            function seleccionarFase(event) {
+                faseValorInput.value = event.target.value; // Asignar el valor seleccionado
+
+                // Si el checkbox seleccionado requiere un campo adicional, mostrarlo
+                toggleOther2(event.target);
+            }
+
+            // Añadir evento a todos los checkboxes
+            faseCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', seleccionarFase);
+            });
+
+            // Función para mostrar/ocultar input adicional si se selecciona una opción específica
+            function toggleOther2(selectedCheckbox) {
+                // Lista de checkboxes que tienen inputs adicionales
+                const opcionesConInput = {
+                    'fase_normas_checkbox': 'fase_normas_detalle',
+                    'fase_institucionalizacion_checkbox': 'fase_institucionalizacion_detalle',
+                    'fase_otro_checkbox': 'fase_otro_detalle'
+                };
+
+                // Iterar sobre las opciones y mostrar solo el input correspondiente al checkbox seleccionado
+                Object.keys(opcionesConInput).forEach(checkboxId => {
+                    const inputId = opcionesConInput[checkboxId];
+                    const input = document.getElementById(inputId);
+                    const checkbox = document.getElementById(checkboxId);
+
+                    if (checkbox.checked) {
+                        input.style.display = 'block';
+                    } else {
+                        input.style.display = 'none';
+                        input.value = ''; // Limpiar el campo si se deselecciona
+                    }
+                });
+            }
+        });
+
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Elementos del DOM

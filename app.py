@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Flask, jsonify, logging, render_template, request, redirect, url_for, flash, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -238,7 +238,7 @@ class Registro(db.Model):
     provincia = db.Column(db.String(60), nullable=True)
     departamento = db.Column(db.String(60), nullable=True)
     estado = db.Column(db.String(3), nullable=True, default='ACT')  # Valor predeterminado "ACT"
-    fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 @app.route('/form_registro_inicial', methods=['GET', 'POST'])
 @login_required
@@ -467,7 +467,7 @@ class Iniciativa(db.Model):
     contenido_7 = db.Column(db.Integer, nullable=True)
     contenido_otro = db.Column(db.String(80), nullable=True)
     calificacion_otro_contenido = db.Column(db.Integer, nullable=True)
-    fase_implementacion = db.Column(db.Text, nullable=True)
+    fase_implementacion = db.Column(db.Integer)  # Representa el valor 0-9 según la selección
     fase_normas_detalle = db.Column(db.String(100), nullable=True)
     fase_institucionalizacion_detalle = db.Column(db.String(100), nullable=True)
     fase_otro_detalle = db.Column(db.String(100), nullable=True)
@@ -487,7 +487,7 @@ class Iniciativa(db.Model):
     observaciones = db.Column(db.String(255), nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
     tipo_participacion_fe = db.Column(db.String(80), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     # Relación con múltiples registros mediante tabla intermedia
     registros = db.relationship(
         'Registro',
@@ -510,6 +510,15 @@ def form_iniciativas():
         if Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == nombre_iniciativa).first():
             flash('Esta Iniciativa ya ha sido registrada.', 'danger')
             return redirect(url_for('listar_iniciativas'))
+        
+        # Procesar la fase de implementación seleccionada
+        fase_implementacion = request.form.get('fase_implementacion', None)  # Valor de 0-9 o "otro"
+        if fase_implementacion == "":
+            fase_implementacion = None  # O usa un valor por defecto como 0
+
+        if not fase_implementacion:
+            flash('Debe seleccionar una fase de implementación.', 'danger')
+            return redirect(url_for('form_iniciativas'))
 
         nueva_iniciativa = Iniciativa(
             nombre_iniciativa=nombre_iniciativa,
@@ -570,7 +579,7 @@ def form_iniciativas():
             contenido_7=request.form.get('contenido_7', None) or None,
             contenido_otro=request.form.get('contenido_otro', ''),
             calificacion_otro_contenido=request.form.get('calificacion_otro_contenido', None) or None,
-            fase_implementacion="|".join(request.form.getlist('fase_implementacion[]')),
+            fase_implementacion=int(fase_implementacion) if fase_implementacion.isdigit() else None,
             fase_normas_detalle=request.form.get('fase_normas_detalle', ''),
             fase_institucionalizacion_detalle=request.form.get('fase_institucionalizacion_detalle', ''),
             fase_otro_detalle=request.form.get('fase_otro_detalle', ''),
@@ -678,8 +687,16 @@ def editar_iniciativa(nombre_iniciativa):
     if not iniciativa:
         flash('La iniciativa no existe.', 'danger')
         return redirect(url_for('listar_iniciativas'))
+    
 
     if request.method == 'POST':
+        fase_implementacion = request.form.get('fase_implementacion')
+        if fase_implementacion == "otro":
+            iniciativa.fase_implementacion = None  # No almacenar "otro", solo el detalle
+            iniciativa.fase_otro_detalle = request.form.get('fase_otro_detalle', '').strip()
+        else:
+            iniciativa.fase_implementacion = int(fase_implementacion) if fase_implementacion.isdigit() else None
+            iniciativa.fase_otro_detalle = ''  # Resetear si no es "otro"
         iniciativa.derecho_generico = request.form.get('derecho_generico', '')
         iniciativa.otro_derecho_detalle = request.form.get('otro_derecho_detalle', '')
         iniciativa.colectivo_organizacion = request.form.get('colectivo_organizacion', '')
@@ -737,10 +754,8 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.contenido_7 = request.form.get('contenido_7', None) or None
         iniciativa.contenido_otro = request.form.get('contenido_otro', '')
         iniciativa.calificacion_otro_contenido = request.form.get('calificacion_otro_contenido', None) or None
-        iniciativa.fase_implementacion = "|".join(request.form.getlist('fase_implementacion[]'))
         iniciativa.fase_normas_detalle = request.form.get('fase_normas_detalle', '')
         iniciativa.fase_institucionalizacion_detalle = request.form.get('fase_institucionalizacion_detalle', '')
-        iniciativa.fase_otro_detalle = request.form.get('fase_otro_detalle', '')
         iniciativa.actividad_1 = request.form.get('actividad_1', '')
         iniciativa.actividad_2 = request.form.get('actividad_2', '')
         iniciativa.actividad_3 = request.form.get('actividad_3', '')
@@ -843,7 +858,7 @@ class ProcesoIniciativa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre_iniciativa = db.Column(db.String(150), db.ForeignKey('iniciativa.nombre_iniciativa'), nullable=False)
     objetivo_especifico = db.Column(db.String(255), nullable=False)
-
+    
     # Logros
     logros = db.Column(db.String(80), nullable=True)
     sustento_logros = db.Column(db.String(255), nullable=True)
@@ -860,7 +875,7 @@ class ProcesoIniciativa(db.Model):
     calificacion_otro_contenido = db.Column(db.Integer, nullable=True)
 
     # Fase de implementación
-    fase_implementacion = db.Column(db.Text, nullable=True)
+    fase_implementacion = db.Column(db.Integer)  # Representa el valor 0-9 según la selección
     fase_normas_detalle = db.Column(db.String(100), nullable=True)
     fase_institucionalizacion_detalle = db.Column(db.String(100), nullable=True)
     fase_otro_detalle = db.Column(db.String(100), nullable=True)
@@ -876,15 +891,6 @@ class ProcesoIniciativa(db.Model):
     componente_3 = db.Column(db.String(100), nullable=True)
     calificacion_componente_3 = db.Column(db.Integer, nullable=True)
     sustento_valoracion = db.Column(db.String(255), nullable=True)
-
-    # # Desempeño de representantes y líderes
-    # capacidad_1 = db.Column(db.Integer, nullable=True)
-    # capacidad_2 = db.Column(db.Integer, nullable=True)
-    # capacidad_3 = db.Column(db.Integer, nullable=True)
-    # capacidad_4 = db.Column(db.Integer, nullable=True)
-    # capacidad_5 = db.Column(db.Integer, nullable=True)
-    # otra_capacidad = db.Column(db.String(80), nullable=True)
-    # calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
 
     # Competencias y participación
     reforzar_competencias = db.Column(db.String(255), nullable=True)
@@ -913,7 +919,7 @@ class ProcesoIniciativa(db.Model):
     responsable_registro = db.Column(db.String(100), nullable=True)
 
     # Timestamp
-    fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relación con registros a través de Iniciativa
     @property
@@ -929,10 +935,26 @@ class ProcesoIniciativa(db.Model):
 @roles_required('admin')
 def form_registro_proceso_iniciativa():
     if request.method == 'POST':
+        nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
+
+        # Obtener el número de registros existentes para esta iniciativa
+        numero_registros = ProcesoIniciativa.query.filter_by(
+            nombre_iniciativa=nombre_iniciativa
+        ).count()
+        
+        # Procesar la fase de implementación seleccionada
+        fase_implementacion = request.form.get('fase_implementacion', None)  # Valor de 0-9 o "otro"
+        if fase_implementacion == "":
+            fase_implementacion = None  # O usa un valor por defecto como 0
+
+        if not fase_implementacion:
+            flash('Debe seleccionar una fase de implementación.', 'danger')
+            return redirect(url_for('form_registro_proceso_iniciativa'))
+        
         # Crear un nuevo ProcesoIniciativa
         nuevo_proceso = ProcesoIniciativa(
             # Capturar los datos del formulario
-            nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower(),
+            nombre_iniciativa = nombre_iniciativa,
             objetivo_especifico = request.form.get('objetivo_especifico', ''),
             logros = request.form.get('logros', ''),
             sustento_logros = request.form.get('sustento_logros', ''),
@@ -945,7 +967,7 @@ def form_registro_proceso_iniciativa():
             contenido_7 = request.form.get('contenido_7', None) or None,
             contenido_otro = request.form.get('contenido_otro', ''),
             calificacion_otro_contenido = request.form.get('calificacion_otro_contenido', None) or None,
-            fase_implementacion = "|".join(request.form.getlist('fase_implementacion[]')),
+            fase_implementacion=int(fase_implementacion) if fase_implementacion.isdigit() else None,
             fase_normas_detalle = request.form.get('fase_normas_detalle', ''),
             fase_institucionalizacion_detalle = request.form.get('fase_institucionalizacion_detalle', ''),
             fase_otro_detalle = request.form.get('fase_otro_detalle', ''),
@@ -957,13 +979,6 @@ def form_registro_proceso_iniciativa():
             componente_3 = request.form.get('componente_3', ''),
             calificacion_componente_3 = request.form.get('calificacion_componente_3', None) or None,
             sustento_valoracion = request.form.get('sustento_valoracion', ''),
-            # capacidad_1 = request.form.get('capacidad_1', None) or None,
-            # capacidad_2 = request.form.get('capacidad_2', None) or None,
-            # capacidad_3 = request.form.get('capacidad_3', None) or None,
-            # capacidad_4 = request.form.get('capacidad_4', None) or None,
-            # capacidad_5 = request.form.get('capacidad_5', None) or None,
-            # otra_capacidad = request.form.get('otra_capacidad', ''),
-            # calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None,
             reforzar_competencias = request.form.get('reforzar_competencias', ''),
             participacion_comportamiento = request.form.get('participacion_comportamiento', None) or None,
             comentario_valoracion = request.form.get('comentario_valoracion', ''),
@@ -1007,32 +1022,30 @@ def form_registro_proceso_iniciativa():
 @login_required
 @roles_required('admin', 'editor', 'viewer')
 def listar_proceso_iniciativa():
-    # Consultar procesos ordenados por nombre de iniciativa y fecha de registro
+    # Consultar procesos ordenados correctamente
     procesos = ProcesoIniciativa.query.join(Iniciativa).order_by(
-        Iniciativa.nombre_iniciativa,  # Ordenar por el nombre de la iniciativa
-        ProcesoIniciativa.fecha_registro.desc()  # Luego por fecha de registro
+        Iniciativa.nombre_iniciativa.asc(),  # Ordenar alfabéticamente por nombre de iniciativa
+        ProcesoIniciativa.fecha_registro.asc()  # Ordenar cronológicamente
     ).all()
 
-    # Calcular el número de registro dinámico
-    procesos_con_numero = []
-    iniciativa_actual = None
-    numero_registro = 0
-
+    # Asignar número de registro dentro de cada iniciativa
+    registros_por_iniciativa = {}
+    
     for proceso in procesos:
-        # Si cambia la iniciativa, reinicia el contador
-        if iniciativa_actual != proceso.nombre_iniciativa:
-            iniciativa_actual = proceso.nombre_iniciativa
-            numero_registro = 1  # Reinicia el número de registro para cada nueva iniciativa
+        nombre_iniciativa = proceso.nombre_iniciativa
+        
+        # Si es la primera vez que encontramos esta iniciativa, inicializar el contador
+        if nombre_iniciativa not in registros_por_iniciativa:
+            registros_por_iniciativa[nombre_iniciativa] = 1
         else:
-            numero_registro += 1
+            registros_por_iniciativa[nombre_iniciativa] += 1
 
-        # Añadir el número de registro como un atributo dinámico
-        proceso.numero_registro = numero_registro
-        procesos_con_numero.append(proceso)
+        # Asignar el número de registro
+        proceso.numero_registro = registros_por_iniciativa[nombre_iniciativa]
 
     return render_template(
         'listar_proceso_iniciativa.html',
-        procesos=procesos_con_numero
+        procesos=procesos
     )
 
 
@@ -1049,6 +1062,15 @@ def editar_proceso_iniciativa(id):
         return redirect(url_for('listar_proceso_iniciativa'))  # Redirigir si no se encuentra
 
     if request.method == 'POST':
+        
+        fase_implementacion = request.form.get('fase_implementacion')
+        if fase_implementacion == "otro":
+            proceso_iniciativas.fase_implementacion = None  # No almacenar "otro", solo el detalle
+            proceso_iniciativas.fase_otro_detalle = request.form.get('fase_otro_detalle', '').strip()
+        else:
+            proceso_iniciativas.fase_implementacion = int(fase_implementacion) if fase_implementacion.isdigit() else None
+            proceso_iniciativas.fase_otro_detalle = ''  # Resetear si no es "otro"
+            
         # Asignar los valores recibidos desde el formulario
         proceso_iniciativas.nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
         proceso_iniciativas.objetivo_especifico = request.form.get('objetivo_especifico', '')
@@ -1067,10 +1089,8 @@ def editar_proceso_iniciativa(id):
         proceso_iniciativas.calificacion_otro_contenido = request.form.get('calificacion_otro_contenido', None) or None
 
         # Fase de Implementación
-        proceso_iniciativas.fase_implementacion = "|".join(request.form.getlist('fase_implementacion[]'))
         proceso_iniciativas.fase_normas_detalle = request.form.get('fase_normas_detalle', '')
         proceso_iniciativas.fase_institucionalizacion_detalle = request.form.get('fase_institucionalizacion_detalle', '')
-        proceso_iniciativas.fase_otro_detalle = request.form.get('fase_otro_detalle', '')
 
         # Nivel de avance y calificaciones
         proceso_iniciativas.nivel_avance_comentarios = request.form.get('nivel_avance_comentarios', '')
@@ -1081,15 +1101,6 @@ def editar_proceso_iniciativa(id):
         proceso_iniciativas.componente_3 = request.form.get('componente_3', '') # Corregido
         proceso_iniciativas.calificacion_componente_3 = request.form.get('calificacion_componente_3', None) or None
         proceso_iniciativas.sustento_valoracion = request.form.get('sustento_valoracion', '')
-
-        # Nivel de desempeño de los representantes y líderes
-        # proceso_iniciativas.capacidad_1 = request.form.get('capacidad_1', None) or None
-        # proceso_iniciativas.capacidad_2 = request.form.get('capacidad_2', None) or None
-        # proceso_iniciativas.capacidad_3 = request.form.get('capacidad_3', None) or None
-        # proceso_iniciativas.capacidad_4 = request.form.get('capacidad_4', None) or None
-        # proceso_iniciativas.capacidad_5 = request.form.get('capacidad_5', None) or None
-        # proceso_iniciativas.otra_capacidad = request.form.get('otra_capacidad', '')
-        # proceso_iniciativas.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
 
         # Reforzamiento de competencias
         proceso_iniciativas.reforzar_competencias = request.form.get('reforzar_competencias', '')
@@ -1179,7 +1190,7 @@ class CapacidadIncidencia(db.Model):
     capacidad_5 = db.Column(db.Integer, nullable=True)
     otra_capacidad = db.Column(db.String(100), nullable=True)
     calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relación con Registro
     registro = db.relationship('Registro', backref='capacidades')
@@ -1388,7 +1399,7 @@ class AvanceCapacidadIncidencia(db.Model):
     capacidad_5 = db.Column(db.Integer, nullable=True)
     otra_capacidad = db.Column(db.String(100), nullable=True)
     calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relación con CapacidadIncidencia
     # capacidad_incidencia = db.relationship('CapacidadIncidencia', backref=db.backref('avances', lazy=True))
@@ -1642,7 +1653,7 @@ class CasoEmblematico(db.Model):
     objetivo_defensa = db.Column(db.String(300), nullable=True)
     situacion_caso = db.Column(db.String(300), nullable=True)
     otro_dato = db.Column(db.String(300), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     # Relación con AvanceCasoEmblematico
     avances = db.relationship('AvanceCasoEmblematico', backref='caso', lazy=True, cascade="all, delete-orphan")
 
@@ -1767,7 +1778,7 @@ class AvanceCasoEmblematico(db.Model):
     recomendaciones = db.Column(db.String(350), nullable=True)
     otro_asunto = db.Column(db.String(350), nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 @app.route('/form_avances_caso_emblematico', methods=['GET', 'POST'])
 @login_required
@@ -1888,7 +1899,7 @@ class PoliticaNacionalMemoria(db.Model):
     asunto_3 = db.Column(db.String(255), nullable=True)
     organizaciones_aliadas = db.Column(db.String(300), nullable=True)
     otro_dato = db.Column(db.String(255), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     # Relación con AvancePoliticaMemoria
     avances = db.relationship('AvancePoliticaMemoria', backref='politica', lazy=True, cascade="all, delete-orphan")
 
@@ -2009,13 +2020,13 @@ class AvancePoliticaMemoria(db.Model):
     __tablename__ = 'avance_politica_memoria'
     id = db.Column(db.Integer, primary_key=True)
     nombre_politica_memoria = db.Column(db.String(200), db.ForeignKey('politica_nacional_memoria.nombre_politica_memoria'), nullable=False)
-    ocurrencias_periodo = db.Column(db.String(400), nullable=True)
+    ocurrencias_periodo = db.Column(db.String(401), nullable=True)
     actividades_realizadas = db.Column(db.String(400), nullable=True)
     estado_actual_gestion = db.Column(db.String(400), nullable=True)
     recomendaciones = db.Column(db.String(350), nullable=True)
     otro_asunto = db.Column(db.String(255), nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now())
+    fecha_registro = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 @app.route('/form_avances_politica_nacional_memoria', methods=['GET', 'POST'])
 @login_required
@@ -2132,19 +2143,18 @@ def eliminar_avances_politica_nacional_memoria(id):
 @roles_required('admin', 'editor')
 def get_objetivo_especifico(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
-
-    if iniciativa:
-        # Contar cuántos formularios de ProcesoIniciativa ya están asociados a esta iniciativa
-        numero_formularios = ProcesoIniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).count()
-
-        # Devolver el objetivo específico y el número de formularios
-        return jsonify({
-            'objetivo_especifico': iniciativa.objetivo_especifico,
-            'numero_formularios': numero_formularios + 1  # El siguiente formulario será el siguiente número
-        })
-    else:
-        # Si no se encuentra la iniciativa, devolver un error 404
+    if not iniciativa:
         return jsonify({'error': 'Iniciativa no encontrada'}), 404
+    
+    # Contar registros existentes y sumar 1 para el próximo número
+    numero_registros = ProcesoIniciativa.query.filter_by(
+        nombre_iniciativa=nombre_iniciativa
+    ).count()
+    
+    return jsonify({
+        'objetivo_especifico': iniciativa.objetivo_especifico,
+        'numero_formularios': numero_registros + 1  # +1 para el nuevo registro
+    })
 
 
 ########################################################################################################################################

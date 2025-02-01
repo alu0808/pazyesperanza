@@ -555,54 +555,88 @@
                     <div class="section-box mt-3">
                         <h4>Fase de Implementación</h4>
                         <div class="form-group">
+                            <input type="hidden" id="fase_implementacion_valor" name="fase_implementacion_valor" 
+                                   value="{{ iniciativa.fase_implementacion if iniciativa.fase_implementacion is not none else '0' }}">
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_gestacion_checkbox" name="fase_implementacion[]" value="Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar" {% if 'Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_gestacion_checkbox" name="fase_implementacion" value="0"
+                                       {% if iniciativa.fase_implementacion == 0 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_gestacion_checkbox">Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar</label>
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_organizacion_checkbox" name="fase_implementacion[]" value="Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta" {% if 'Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_organizacion_checkbox" name="fase_implementacion" value="1"
+                                       {% if iniciativa.fase_implementacion == 1 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_organizacion_checkbox">Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta</label>
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_coordinacion_checkbox" name="fase_implementacion[]" value="Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta" {% if 'Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_coordinacion_checkbox" name="fase_implementacion" value="2"
+                                       {% if iniciativa.fase_implementacion == 2 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_coordinacion_checkbox">Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta</label>
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_dialogo_checkbox" name="fase_implementacion[]" value="Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias" {% if 'Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_dialogo_checkbox" name="fase_implementacion" value="3"
+                                       {% if iniciativa.fase_implementacion == 3 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_dialogo_checkbox">Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias</label>
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_argumentacion_checkbox" name="fase_implementacion[]" value="Argumentación / fundamentación ante autoridades y funcionarios" {% if 'Argumentación / fundamentación ante autoridades y funcionarios' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_argumentacion_checkbox" name="fase_implementacion" value="4"
+                                       {% if iniciativa.fase_implementacion == 4 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_argumentacion_checkbox">Argumentación / fundamentación ante autoridades y funcionarios</label>
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_respuesta_checkbox" name="fase_implementacion[]" value="Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta" {% if 'Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_respuesta_checkbox" name="fase_implementacion" value="5"
+                                       {% if iniciativa.fase_implementacion == 5 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_respuesta_checkbox">Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta</label>
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_formalizacion_checkbox" name="fase_implementacion[]" value="Formalización de los acuerdos con el organismo o instancia involucrada o competente" {% if 'Formalización de los acuerdos con el organismo o instancia involucrada o competente' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_formalizacion_checkbox" name="fase_implementacion" value="6"
+                                       {% if iniciativa.fase_implementacion == 6 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_formalizacion_checkbox">Formalización de los acuerdos con el organismo o instancia involucrada o competente</label>
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_normas_checkbox" name="fase_implementacion[]" value="Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente" {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_normas_checkbox', 'fase_normas_detalle')">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_normas_checkbox" name="fase_implementacion" value="7"
+                                       {% if iniciativa.fase_implementacion == 7 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_normas_checkbox">Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente (en cuál):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_normas_detalle" maxlength="100" placeholder="¿En cuál?" name="fase_normas_detalle" value="{{ iniciativa.fase_normas_detalle }}">
+                                <input type="text" class="form-control mt-2" id="fase_normas_detalle" maxlength="100" name="fase_normas_detalle" placeholder="¿En cuál?" 
+                                       value="{{ iniciativa.fase_normas_detalle if iniciativa.fase_implementacion == 7 else '' }}" 
+                                       style="display: none;">
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_institucionalizacion_checkbox" name="fase_implementacion[]" value="Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión" {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_institucionalizacion_checkbox', 'fase_institucionalizacion_detalle')">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_institucionalizacion_checkbox" name="fase_implementacion" value="8"
+                                       {% if iniciativa.fase_implementacion == 8 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_institucionalizacion_checkbox">Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión (qué entidad):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_institucionalizacion_detalle" maxlength="100" placeholder="¿Qué entidad?" name="fase_institucionalizacion_detalle" value="{{ iniciativa.fase_institucionalizacion_detalle }}">
+                                <input type="text" class="form-control mt-2" id="fase_institucionalizacion_detalle" maxlength="100" name="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" 
+                                       value="{{ iniciativa.fase_institucionalizacion_detalle if iniciativa.fase_implementacion == 8 else '' }}" 
+                                       style="display: none;">
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_monitoreo_checkbox" name="fase_implementacion[]" value="Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente" {% if 'Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente' in iniciativa.fase_implementacion %}checked{% endif %}>
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_monitoreo_checkbox" name="fase_implementacion" value="9"
+                                       {% if iniciativa.fase_implementacion == 9 %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_monitoreo_checkbox">Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente</label>
                             </div>
+                        
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="fase_otro_checkbox" name="fase_implementacion[]" value="Otro" {% if 'Otro' in iniciativa.fase_implementacion %}checked{% endif %} onchange="toggleOther('fase_otro_checkbox', 'fase_otro_detalle')">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_otro_checkbox" name="fase_implementacion" value="otro"
+                                       {% if iniciativa.fase_implementacion == 'otro' %}checked{% endif %}>
                                 <label class="form-check-label" for="fase_otro_checkbox">Otra fase (indicar cuál):</label>
-                                <input type="text" class="form-control mt-2 {% if 'Otro' in iniciativa.fase_implementacion %}mostrar{% else %}ocultar{% endif %}" id="fase_otro_detalle" maxlength="100" placeholder="Indicar cual..." name="fase_otro_detalle" value="{{ iniciativa.fase_otro_detalle }}">
+                                <input type="text" class="form-control mt-2" id="fase_otro_detalle" maxlength="100" name="fase_otro_detalle" placeholder="Indica cuál"
+                                       value="{{ iniciativa.fase_otro_detalle if iniciativa.fase_implementacion == 'otro' else '' }}"
+                                       style="display: none;">
                             </div>
                         </div>
+                        
+
+
+
                     </div>
 
                     <!-- Actividades principales planificadas -->
@@ -693,6 +727,44 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const faseCheckboxes = document.querySelectorAll('.fase-checkbox');
+            const faseValorInput = document.getElementById('fase_implementacion_valor');
+
+            function seleccionarFase(event) {
+                faseValorInput.value = event.target.value;
+                toggleInputs();
+            }
+
+            faseCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', seleccionarFase);
+            });
+
+            function toggleInputs() {
+                const opcionesConInput = {
+                    'fase_normas_checkbox': 'fase_normas_detalle',
+                    'fase_institucionalizacion_checkbox': 'fase_institucionalizacion_detalle',
+                    'fase_otro_checkbox': 'fase_otro_detalle'
+                };
+
+                Object.keys(opcionesConInput).forEach(checkboxId => {
+                    const input = document.getElementById(opcionesConInput[checkboxId]);
+                    const checkbox = document.getElementById(checkboxId);
+
+                    if (checkbox.checked) {
+                        input.style.display = 'block';
+                    } else {
+                        input.style.display = 'none';
+                        input.value = '';
+                    }
+                });
+            }
+
+            toggleInputs();
+        });
+
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const searchInput = document.getElementById('search-participants');

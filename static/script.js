@@ -170,7 +170,7 @@ function toggleOtherRadio(radioId, inputId) {
 function fetchIniciativaData(nombre_iniciativa) {
     if (nombre_iniciativa) {
         // Fetch para el objetivo específico y el número de formularios
-        fetch('/get_objetivo_especifico/' + nombre_iniciativa)
+        fetch(`/get_objetivo_especifico/${encodeURIComponent(nombre_iniciativa)}`)
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
@@ -180,7 +180,7 @@ function fetchIniciativaData(nombre_iniciativa) {
                     document.getElementById('objetivo_especifico').value = data.objetivo_especifico || '';
                     
                     // Mostrar el número de formulario
-                    document.getElementById('numero_formulario').innerText = data.numero_formularios;
+                    document.getElementById('numero_formulario').textContent = data.numero_formularios;
                     document.getElementById('numero_formulario_container').style.display = 'block';
                 }
             })
