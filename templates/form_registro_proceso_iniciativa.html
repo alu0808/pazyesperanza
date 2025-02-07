@@ -150,11 +150,11 @@
             <div class="row mt-4">
                 <div class="col-md-6">
                     <div class="section-box mt-3">
-                        <h4>Contenido de la iniciativa o propuesta</h4>
+                        <h4>Nivel de formulación de los contenidos de la iniciativa o propuesta:</h4>
                     
                         <!-- Contenido 1 -->
                         <div class="form-group label-principal">
-                            <label for="contenido_1">No se ha iniciado aún la elaboración de la iniciativa o propuesta:</label>
+                            <label for="contenido_1">Definición de la problemática relacionada al derecho materia de la iniciativa o propuesta:</label>
                             <select class="form-control mt-1" id="contenido_1" name="contenido_1">
                                 <option value="" selected>Seleccione una calificación</option>
                                 <option value="0">0 - No se ha iniciado</option>
@@ -166,7 +166,7 @@
                     
                         <!-- Contenido 2 -->
                         <div class="form-group label-principal">
-                            <label for="contenido_2">Definición de la problemática relacionada al derecho materia de la iniciativa o propuesta:</label>
+                            <label for="contenido_2">Fundamentación / argumentación de la iniciativa o propuesta (normativa, estadística, política pública, etc.):</label>
                             <select class="form-control mt-1" id="contenido_2" name="contenido_2">
                                 <option value="" selected>Seleccione una calificación</option>
                                 <option value="0">0 - No se ha iniciado</option>
@@ -178,7 +178,7 @@
                     
                         <!-- Contenido 3 -->
                         <div class="form-group label-principal">
-                            <label for="contenido_3">Fundamentación / argumentación de la iniciativa o propuesta (normativa, estadística, política pública, etc.):</label>
+                            <label for="contenido_3">Formulación de los objetivos / propósitos /metas /o similares:</label>
                             <select class="form-control mt-1" id="contenido_3" name="contenido_3">
                                 <option value="" selected>Seleccione una calificación</option>
                                 <option value="0">0 - No se ha iniciado</option>
@@ -190,7 +190,7 @@
                     
                         <!-- Contenido 4 -->
                         <div class="form-group label-principal">
-                            <label for="contenido_4">Formulación de los objetivos / propósitos / metas / o similares:</label>
+                            <label for="contenido_4">Estimación de presupuesto y mecanismos y/o fuentes de financiamiento para la implementación de la iniciativa o propuesta:</label>
                             <select class="form-control mt-1" id="contenido_4" name="contenido_4">
                                 <option value="" selected>Seleccione una calificación</option>
                                 <option value="0">0 - No se ha iniciado</option>
@@ -202,32 +202,8 @@
                     
                         <!-- Contenido 5 -->
                         <div class="form-group label-principal">
-                            <label for="contenido_5">Definición de estrategias / lineamientos / o similares:</label>
+                            <label for="contenido_5">Propuesta de organización / implementación de la propuesta dentro del sistema en el que se inscribe:</label>
                             <select class="form-control mt-1" id="contenido_5" name="contenido_5">
-                                <option value="" selected>Seleccione una calificación</option>
-                                <option value="0">0 - No se ha iniciado</option>
-                                <option value="1">1 - Inicial</option>
-                                <option value="2">2 - En proceso de formulación</option>
-                                <option value="3">3 - Concluido</option>
-                            </select>
-                        </div>
-                    
-                        <!-- Contenido 6 -->
-                        <div class="form-group label-principal">
-                            <label for="contenido_6">Estimación de presupuesto y mecanismos y/o fuentes de financiamiento:</label>
-                            <select class="form-control mt-1" id="contenido_6" name="contenido_6">
-                                <option value="" selected>Seleccione una calificación</option>
-                                <option value="0">0 - No se ha iniciado</option>
-                                <option value="1">1 - Inicial</option>
-                                <option value="2">2 - En proceso de formulación</option>
-                                <option value="3">3 - Concluido</option>
-                            </select>
-                        </div>
-                    
-                        <!-- Contenido 7 -->
-                        <div class="form-group label-principal">
-                            <label for="contenido_7">Organización / implementación de la propuesta dentro del sistema en el que se inscribe:</label>
-                            <select class="form-control mt-1" id="contenido_7" name="contenido_7">
                                 <option value="" selected>Seleccione una calificación</option>
                                 <option value="0">0 - No se ha iniciado</option>
                                 <option value="1">1 - Inicial</option>
@@ -262,45 +238,49 @@
                             <input type="hidden" id="fase_implementacion_valor" name="fase_implementacion_valor"> <!-- Guarda el valor numérico -->
                             
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_gestacion_checkbox" name="fase_implementacion" value="0">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_noiniciado_checkbox" name="fase_implementacion" value="0">
+                                <label class="form-check-label" for="fase_noiniciado_checkbox">No se ha iniciado</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_gestacion_checkbox" name="fase_implementacion" value="1">
                                 <label class="form-check-label" for="fase_gestacion_checkbox">Actualmente se encuentra en proceso de gestación / situación embrionaria / estado preliminar</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_organizacion_checkbox" name="fase_implementacion" value="1">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_organizacion_checkbox" name="fase_implementacion" value="2">
                                 <label class="form-check-label" for="fase_organizacion_checkbox">Organización / formación de los actores claves para la producción y gestión de la iniciativa / Desarrollo de los contenidos de la propuesta</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_coordinacion_checkbox" name="fase_implementacion" value="2">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_coordinacion_checkbox" name="fase_implementacion" value="3">
                                 <label class="form-check-label" for="fase_coordinacion_checkbox">Coordinación preliminares con funcionarios y/o autoridades de las entidades destinatarias de la iniciativa o propuesta</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_dialogo_checkbox" name="fase_implementacion" value="3">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_dialogo_checkbox" name="fase_implementacion" value="4">
                                 <label class="form-check-label" for="fase_dialogo_checkbox">Diálogo / socialización / sensibilización con funcionarios y autoridades de las entidades destinatarias</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_argumentacion_checkbox" name="fase_implementacion" value="4">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_argumentacion_checkbox" name="fase_implementacion" value="5">
                                 <label class="form-check-label" for="fase_argumentacion_checkbox">Argumentación / fundamentación ante autoridades y funcionarios</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_respuesta_checkbox" name="fase_implementacion" value="5">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_respuesta_checkbox" name="fase_implementacion" value="6">
                                 <label class="form-check-label" for="fase_respuesta_checkbox">Respuesta / aprobación preliminar / acuerdos previos / compromisos iniciales para la implementación de la iniciativa o propuesta</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_formalizacion_checkbox" name="fase_implementacion" value="6">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_formalizacion_checkbox" name="fase_implementacion" value="7">
                                 <label class="form-check-label" for="fase_formalizacion_checkbox">Formalización de los acuerdos con el organismo o instancia involucrada o competente</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_normas_checkbox" name="fase_implementacion" value="7">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_normas_checkbox" name="fase_implementacion" value="8">
                                 <label class="form-check-label" for="fase_normas_checkbox">Desarrollo de normas / instrumentos para la gestión de la iniciativa por parte de la entidad competente (en cuál):</label>
                                 <input type="text" class="form-control mt-2" id="fase_normas_detalle" maxlength="100" name="fase_normas_detalle" placeholder="¿En cuál?" style="display:none;">
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_institucionalizacion_checkbox" name="fase_implementacion" value="8">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_institucionalizacion_checkbox" name="fase_implementacion" value="9">
                                 <label class="form-check-label" for="fase_institucionalizacion_checkbox">Institucionalización de la propuesta: aplicación de la norma, asignación de presupuesto, definición de instancia responsable, mecanismo de gestión (qué entidad):</label>
                                 <input type="text" class="form-control mt-2" id="fase_institucionalizacion_detalle" maxlength="100" name="fase_institucionalizacion_detalle" placeholder="¿Qué entidad?" style="display:none;">
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input fase-checkbox" type="radio" id="fase_monitoreo_checkbox" name="fase_implementacion" value="9">
+                                <input class="form-check-input fase-checkbox" type="radio" id="fase_monitoreo_checkbox" name="fase_implementacion" value="10">
                                 <label class="form-check-label" for="fase_monitoreo_checkbox">Monitoreo / supervisión / vigilancia de compromisos por parte de la entidad competente</label>
                             </div>
                             
