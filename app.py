@@ -407,7 +407,7 @@ def eliminar_registro(dni):
 
 @app.route('/dashboard', methods=['GET'])
 @login_required
-@roles_required('admin')  # Solo usuarios con estos roles pueden acceder
+@roles_required('admin', 'viewer')  # Solo usuarios con estos roles pueden acceder
 def dashboard():
     return render_template('dashboard.html')  # Renderiza el archivo HTML del dashboard
 
