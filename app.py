@@ -405,6 +405,12 @@ def eliminar_registro(dni):
 
     return redirect(url_for('listar_registros'))
 
+@app.route('/dashboard', methods=['GET'])
+@login_required
+@roles_required('admin')  # Solo usuarios con estos roles pueden acceder
+def dashboard():
+    return render_template('dashboard.html')  # Renderiza el archivo HTML del dashboard
+
 ########################################################################################################################################
 ########################################################################################################################################
 ##########              REGISTRO INICIATIVAS            ################################################################################
