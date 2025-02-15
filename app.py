@@ -10,6 +10,8 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from functools import wraps
 from urllib.parse import urlparse, urljoin
 import json 
+from sqlalchemy.inspection import inspect
+from sqlalchemy.sql import text 
 
 app = Flask(__name__)
 
@@ -2235,6 +2237,54 @@ def get_numero_formulario_politica(nombre_politica_memoria):
         })
     else:
         return jsonify({'error': 'Política y/o memoria no encontrada'}), 404
+
+# Función para convertir modelos a diccionario dinámicamente
+import email.utils
+def parse_rfc1123(date_str):
+    try:
+        dt = email.utils.parsedate_to_datetime(date_str)  # Convierte RFC 1123 a datetime
+        return dt.strftime("%Y-%m-%d %H:%M:%S")  # Devuelve en formato ISO 8601
+    except Exception:
+        return date_str  # Si falla, devuelve el valor original
+
+# 🔹 Función para convertir modelos a diccionario con fechas formateadas
+def model_to_dict(model):
+    data = {}
+    for column in inspect(model).mapper.column_attrs:
+        value = getattr(model, column.key)
+
+        # 🔹 Si es un datetime, lo convertimos a ISO 8601
+        if isinstance(value, datetime):
+            data[column.key] = value.strftime("%Y-%m-%d %H:%M:%S")
+
+        # 🔹 Si la columna es un string en formato RFC 1123, lo convertimos
+        elif isinstance(value, str) and "GMT" in value:
+            data[column.key] = parse_rfc1123(value)
+
+        # 🔹 Si no es una fecha, se mantiene el valor original
+        else:
+            data[column.key] = value
+
+    return data
+
+@app.route('/api/data', methods=['GET'])
+def get_data():
+    data = {}
+
+    # Obtener modelos de SQLAlchemy (excepto tablas intermedias)
+    for model_class in db.Model.__subclasses__():
+        try:
+            table_name = model_class.__tablename__
+            data[table_name] = [model_to_dict(instance) for instance in model_class.query.all()]
+        except Exception as e:
+            data[table_name] = {"error": str(e)}
+
+    # 🔹 Agregar tabla intermedia manualmente con `text()`
+    query = db.session.execute(text("SELECT * FROM iniciativa_registro")).fetchall()
+    columns = ["iniciativa_nombre", "registro_dni"]
+    data["iniciativa_registro"] = [dict(zip(columns, row)) for row in query]
+
+    return jsonify(data), 200, {'Content-Type': 'application/json; charset=utf-8'}
 
 
 if __name__ == '__main__':
