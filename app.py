@@ -1,17 +1,20 @@
+import logging
 import os
 from datetime import datetime, timezone
-from flask import Flask, jsonify, logging, render_template, request, redirect, url_for, flash, abort
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from sqlalchemy import func
-import logging
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from functools import wraps
 from urllib.parse import urlparse, urljoin
-import json 
+from sqlalchemy import and_, or_
+import pytz
+from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from sqlalchemy.inspection import inspect
-from sqlalchemy.sql import text 
+from sqlalchemy.sql import text
+from werkzeug.security import generate_password_hash, check_password_hash
+
+PERU_TZ = pytz.timezone("America/Lima")
 
 app = Flask(__name__)
 
@@ -42,9 +45,38 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'  # Redirige a la vista de login si no está autenticado
 
+def parse_datetime_local_peru(dt_str):
+    """
+    Recibe 'YYYY-MM-DDTHH:MM' de un <input type="datetime-local"> y lo convierte a tz America/Lima.
+    Devuelve datetime tz-aware o None si dt_str está vacío o es inválido.
+    """
+    if not dt_str:
+        return None
+    try:
+        naive = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
+        return PERU_TZ.localize(naive)
+    except Exception:
+        return None
+
+def format_for_datetime_local(dt):
+    """
+    Formatea un datetime (naive o tz-aware) para value= de <input type="datetime-local"> como 'YYYY-MM-DDTHH:MM'.
+    Si es tz-aware, lo lleva a America/Lima; si es naive, asume America/Lima.
+    """
+    if not dt:
+        return ""
+    try:
+        if dt.tzinfo:
+            dt = dt.astimezone(PERU_TZ)
+        else:
+            dt = PERU_TZ.localize(dt)
+        return dt.strftime("%Y-%m-%dT%H:%M")
+    except Exception:
+        return ""
+
 # Crear las tablas en la base de datos
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
     
 
 class User(UserMixin, db.Model):
@@ -226,8 +258,7 @@ iniciativa_registro = db.Table(
     db.Column('iniciativa_nombre', db.String(150), db.ForeignKey('iniciativa.nombre_iniciativa'), primary_key=True),
     db.Column('registro_dni', db.String(20), db.ForeignKey('registro.dni'), primary_key=True)
 )
-import pytz
-PERU_TZ = pytz.timezone("America/Lima")
+
 
 def obtener_hora_peru():
     # Obtener la hora actual en UTC y luego convertir a la zona horaria de Perú
@@ -255,6 +286,7 @@ def form_registro_inicial():
     if request.method == 'POST':
         # Validación del DNI y eliminación de espacios en blanco
         dni = request.form['dni'].strip()
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
 
         # Verificar si el DNI ya existe
         if Registro.query.filter_by(dni=dni).first():
@@ -274,23 +306,11 @@ def form_registro_inicial():
             provincia=request.form.get('provincia', ''),
             departamento=request.form.get('departamento', ''),
             estado=request.form.get('estado', 'ACT')
-            # poblacion_titular=", ".join(request.form.getlist('poblacion_titular')),
-            # otro_poblacion=request.form.get('otro_poblacion', ''),
-            # derecho_prioritario=", ".join(request.form.getlist('derecho_prioritario')),
-            # otro_derecho=request.form.get('otro_derecho', ''),
-            # oficina_regional=request.form.get('oficina_regional', ''),
-            # proyectos=request.form.get('proyectos', ''),
-            # tipo_servicios=", ".join(request.form.getlist('tipo_servicios')),
-            # servicio_actividad=request.form.get('servicio_actividad', ''),
-            # fecha_participacion=request.form.get('fecha_participacion', '') or None,  # Aplica solo para fechas
-            # propuesta_agenda=request.form.get('propuesta_agenda', ''),
-            # agenda_detalle=request.form.get('agenda_detalle', ''),
-            # red_colectivo=request.form.get('red_colectivo', ''),
-            # red_detalle=request.form.get('red_detalle', ''),
-            # comunidad_fe=request.form.get('comunidad_fe', ''),
-            # fe_detalle=request.form.get('fe_detalle', ''),
-            # tipo_participacion_fe=request.form.get('tipo_participacion_fe', '')
         )
+
+        if fecha_manual:
+            nuevo_registro.fecha_registro = fecha_manual
+
         # Guardar el nuevo registro en la base de datos
         db.session.add(nuevo_registro)
         db.session.commit()
@@ -325,6 +345,9 @@ def editar_registro(dni):
 
     if request.method == 'POST':
         # Actualizar los campos del registro con los datos enviados desde el formulario
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+        if fecha_manual:
+            registro.fecha_registro = fecha_manual
         registro.nombre = request.form['nombre']
         registro.edad = request.form.get('edad', None) or None
         registro.sexo = request.form.get('sexo', '')
@@ -335,29 +358,6 @@ def editar_registro(dni):
         registro.provincia = request.form.get('provincia', '')
         registro.departamento = request.form.get('departamento', '')
         registro.estado = request.form.get('estado', 'ACT')
-        # registro.poblacion_titular = ", ".join(request.form.getlist('poblacion_titular'))
-        # registro.otro_poblacion = request.form.get('otro_poblacion', '')
-        # registro.derecho_prioritario = ", ".join(request.form.getlist('derecho_prioritario'))
-        # registro.otro_derecho = request.form.get('otro_derecho', '')
-        # registro.oficina_regional = request.form.get('oficina_regional', '')
-        # registro.proyectos = request.form.get('proyectos', '')
-        # registro.tipo_servicios = ", ".join(request.form.getlist('tipo_servicios'))
-        # registro.servicio_actividad = request.form.get('servicio_actividad', '')
-        # registro.fecha_participacion = request.form.get('fecha_participacion', '') or None
-        # registro.propuesta_agenda = request.form.get('propuesta_agenda', '')
-        # registro.agenda_detalle = request.form.get('agenda_detalle', '')
-        # registro.red_colectivo = request.form.get('red_colectivo', '')
-        # registro.red_detalle = request.form.get('red_detalle', '')
-        # registro.comunidad_fe = request.form.get('comunidad_fe', '')
-        # registro.fe_detalle = request.form.get('fe_detalle', '')
-        # registro.tipo_participacion_fe = request.form.get('tipo_participacion_fe', '')
-        # registro.capacidad_1 = request.form.get('capacidad_1', None) or None
-        # registro.capacidad_2 = request.form.get('capacidad_2', None) or None
-        # registro.capacidad_3 = request.form.get('capacidad_3', None) or None
-        # registro.capacidad_4 = request.form.get('capacidad_4', None) or None
-        # registro.capacidad_5 = request.form.get('capacidad_5', None) or None
-        # registro.otra_capacidad = request.form.get('otra_capacidad', '')
-        # registro.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
 
         # Guardar los cambios en la base de datos
         db.session.commit()
@@ -365,8 +365,12 @@ def editar_registro(dni):
         flash('El registro ha sido actualizado con éxito.', 'success')
         return redirect(url_for('listar_registros'))
 
+    fecha_registro_value = format_for_datetime_local(registro.fecha_registro)
     # Renderizar el formulario con los datos del registro existente
-    return render_template('editar_registro.html', registro=registro)
+    return render_template('editar_registro.html',
+                           registro=registro,
+                           fecha_registro_value=fecha_registro_value
+                           )
 
 #ELIMINAR REGISTROS INICIALES
 @app.route('/eliminar_registro/<dni>', methods=['POST'])
@@ -520,6 +524,7 @@ def form_iniciativas():
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
         # Obtener los DNIs seleccionados
         registros_seleccionados = request.form.get('registros', '')  # Lista de DNIs seleccionados
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
 
         if Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == nombre_iniciativa).first():
             flash('Esta Iniciativa ya ha sido registrada.', 'danger')
@@ -539,7 +544,7 @@ def form_iniciativas():
             derecho_generico=request.form.get('derecho_generico', ''),
             otro_derecho_detalle=request.form.get('otro_derecho_detalle', ''),
             colectivo_organizacion=request.form.get('colectivo_organizacion', ''),
-            poblacion=request.form.get('poblacion', ''),
+            poblacion="|".join(request.form.getlist('poblacion[]')), #poblacion=request.form.get('poblacion', ''),
             total_hombres_ninos=request.form.get('total_hombres_ninos', None) or None,
             total_mujeres_ninos=request.form.get('total_mujeres_ninos', None) or None,
             total_hombres_adolescentes=request.form.get('total_hombres_adolescentes', None) or None,
@@ -618,7 +623,9 @@ def form_iniciativas():
         )
 
         # Asignar registros seleccionados
-       
+
+        if fecha_manual:
+            nueva_iniciativa.fecha_registro = fecha_manual
 
         db.session.add(nueva_iniciativa)
         db.session.flush()  # Realizar un flush para obtener el ID de la nueva iniciativa
@@ -714,7 +721,11 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.derecho_generico = request.form.get('derecho_generico', '')
         iniciativa.otro_derecho_detalle = request.form.get('otro_derecho_detalle', '')
         iniciativa.colectivo_organizacion = request.form.get('colectivo_organizacion', '')
-        iniciativa.poblacion = request.form.get('poblacion', '')
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+        if fecha_manual:
+            iniciativa.fecha_registro = fecha_manual
+        poblaciones_sel = request.form.getlist('poblacion[]')
+        iniciativa.poblacion = "|".join(poblaciones_sel)
         iniciativa.total_hombres_ninos = request.form.get('total_hombres_ninos', None) or None
         iniciativa.total_mujeres_ninos = request.form.get('total_mujeres_ninos', None) or None
         iniciativa.total_hombres_adolescentes = request.form.get('total_hombres_adolescentes', None) or None
@@ -733,7 +744,12 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.total_mujeres_periurbanas = request.form.get('total_mujeres_periurbanas', None) or None
         iniciativa.total_hombres_conflicto = request.form.get('total_hombres_conflicto', None) or None
         iniciativa.total_mujeres_conflicto = request.form.get('total_mujeres_conflicto', None) or None
-        iniciativa.otra_poblacion_detalle = request.form.get('otra_poblacion_detalle', '')
+        if 'Otra población' in poblaciones_sel:
+            iniciativa.otra_poblacion_detalle = request.form.get('otra_poblacion_detalle', '').strip()
+        else:
+            iniciativa.otra_poblacion_detalle = ''
+            iniciativa.total_hombres_otra = None
+            iniciativa.total_mujeres_otra = None
         iniciativa.total_hombres_otra = request.form.get('total_hombres_otra', None) or None
         iniciativa.total_mujeres_otra = request.form.get('total_mujeres_otra', None) or None
         iniciativa.tipo_naturaleza = "|".join(request.form.getlist('tipo_naturaleza[]'))
@@ -812,6 +828,9 @@ def editar_iniciativa(nombre_iniciativa):
         flash('La iniciativa ha sido actualizada con éxito.', 'success')
         return redirect(url_for('listar_iniciativas'))
 
+    # GET: armar value para el input datetime-local
+    fecha_registro_value = format_for_datetime_local(iniciativa.fecha_registro)
+
     # Registros disponibles para ser seleccionados
     registros_disponibles = Registro.query.filter(Registro.estado == "ACT").all()
 
@@ -830,7 +849,8 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa=iniciativa,
         registros_disponibles=registros_disponibles,
         registros_seleccionados=registros_seleccionados,
-        iniciativa_nombre=nombre_iniciativa
+        iniciativa_nombre=nombre_iniciativa,
+        fecha_registro_value=fecha_registro_value
     )
 
 # ELIMINAR INICIATIVA
@@ -934,6 +954,7 @@ class ProcesoIniciativa(db.Model):
 
     # Timestamp
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
+
     
     # Relación con registros a través de Iniciativa
     @property
@@ -950,6 +971,7 @@ class ProcesoIniciativa(db.Model):
 def form_registro_proceso_iniciativa():
     if request.method == 'POST':
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
 
         # Obtener el número de registros existentes para esta iniciativa
         numero_registros = ProcesoIniciativa.query.filter_by(
@@ -1012,6 +1034,9 @@ def form_registro_proceso_iniciativa():
             comentario_relevante = request.form.get('comentario_relevante', ''),
             responsable_registro = request.form.get('responsable_registro', '')
         )
+
+        if fecha_manual:
+            nuevo_proceso.fecha_registro = fecha_manual
 
         # Guardar el nuevo proceso en la base de datos
         db.session.add(nuevo_proceso)
@@ -1084,7 +1109,11 @@ def editar_proceso_iniciativa(id):
         else:
             proceso_iniciativas.fase_implementacion = int(fase_implementacion) if fase_implementacion.isdigit() else None
             proceso_iniciativas.fase_otro_detalle = ''  # Resetear si no es "otro"
-            
+
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+        if fecha_manual:
+            proceso_iniciativas.fecha_registro = fecha_manual
+
         # Asignar los valores recibidos desde el formulario
         proceso_iniciativas.nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
         proceso_iniciativas.objetivo_especifico = request.form.get('objetivo_especifico', '')
@@ -1157,10 +1186,37 @@ def editar_proceso_iniciativa(id):
             db.session.rollback()
             flash('Hubo un error al actualizar el proceso de iniciativa.', 'danger')
 
+    fecha_registro_value = format_for_datetime_local(proceso_iniciativas.fecha_registro)
+
     # Renderizar el formulario con los datos existentes
     iniciativas = Iniciativa.query.all()  # Asumiendo que hay un modelo de Iniciativas
     participantes = proceso_iniciativas.registros  # Participantes relacionados
-    return render_template('editar_proceso_iniciativa.html', proceso_iniciativas=proceso_iniciativas, iniciativas=iniciativas, participantes=participantes)
+
+    numero_registro = (db.session.query(ProcesoIniciativa.id)
+                       .filter(
+        ProcesoIniciativa.nombre_iniciativa == proceso_iniciativas.nombre_iniciativa,
+        or_(
+            ProcesoIniciativa.fecha_registro < proceso_iniciativas.fecha_registro,
+            and_(
+                ProcesoIniciativa.fecha_registro == proceso_iniciativas.fecha_registro,
+                ProcesoIniciativa.id <= proceso_iniciativas.id
+            )
+        )
+    )
+                       .count()
+                       )
+
+    # lo “inyectas” al objeto para que el template lo vea como .numero_registro
+    setattr(proceso_iniciativas, 'numero_registro', numero_registro)
+
+
+    return render_template(
+        'editar_proceso_iniciativa.html',
+        proceso_iniciativas=proceso_iniciativas,
+        iniciativas=iniciativas,
+        participantes=participantes,
+        fecha_registro_value=fecha_registro_value
+    )
 
 # ELIMINAR PROCESO INICIATIVAS
 @app.route('/eliminar_proceso_iniciativa/<int:id>', methods=['POST'])
@@ -1287,6 +1343,8 @@ def form_capacidades_incidencia():
     if request.method == 'POST':
         registro_dni = request.form['registro_dni']
         nombre_iniciativa = request.form['nombre_iniciativa']
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+
         
         if not registro_dni:
             flash('El participante buscado no está en el listado de Registro inicial.', 'danger')
@@ -1324,6 +1382,9 @@ def form_capacidades_incidencia():
             calificacion_otra_capacidad=request.form.get('calificacion_otra_capacidad', None) or None,
         )
 
+        if fecha_manual:
+            nueva_capacidad.fecha_registro = fecha_manual
+
         db.session.add(nueva_capacidad)
         db.session.commit()
         flash('Capacidades registradas exitosamente.', 'success')
@@ -1360,7 +1421,9 @@ def editar_capacidades_incidencia(id):
             capacidad.capacidad_5 = request.form.get('capacidad_5', None) or None
             capacidad.otra_capacidad = request.form.get('otra_capacidad', '').strip()
             capacidad.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
-
+            fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+            if fecha_manual:
+                capacidad.fecha_registro = fecha_manual
             # Guardar los cambios en la base de datos
             db.session.commit()
             flash('Capacidades actualizadas exitosamente.', 'success')
@@ -1371,8 +1434,14 @@ def editar_capacidades_incidencia(id):
             flash(f'Error al actualizar las capacidades: {str(e)}', 'danger')
             return redirect(url_for('listar_capacidades_incidencia'))
 
+    fecha_registro_value = format_for_datetime_local(capacidad.fecha_registro)
+
     # Si es GET, renderizar la página con los datos actuales
-    return render_template('capacidades_incidencia/editar_capacidades_incidencia.html', capacidad=capacidad)
+    return render_template(
+        'capacidades_incidencia/editar_capacidades_incidencia.html',
+        capacidad=capacidad,
+        fecha_registro_value=fecha_registro_value
+    )
 
 # ELIMINAR PROCESO INICIATIVAS
 @app.route('/eliminar_capacidades_incidencia/<int:id>', methods=['POST'])
@@ -1486,6 +1555,7 @@ def form_avances_capacidades_incidencia():
         capacidad_id = request.form.get('capacidad_id')  # ID de la capacidad seleccionada
         nombre_iniciativa = request.form.get('nombre_iniciativa')  # Nombre de la iniciativa
         registro_dni = request.form.get('registro_dni')  # DNI del participante seleccionado
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         print(f"Registro DNI: {registro_dni}, Nombre Iniciativa: {nombre_iniciativa}")  # Verifica estos valores en el terminal/log
         # Verificar que los datos esenciales existan
         if not registro_dni or not nombre_iniciativa:
@@ -1524,6 +1594,9 @@ def form_avances_capacidades_incidencia():
             otra_capacidad=otra_capacidad,
             calificacion_otra_capacidad=calificacion_otra_capacidad,
         )
+
+        if fecha_manual:
+            nuevo_avance.fecha_registro = fecha_manual
 
         try:
             # Guardar el avance en la base de datos
@@ -1610,6 +1683,9 @@ def editar_avances_capacidades_incidencia(avance_id):
         avance.capacidad_5 = request.form.get('capacidad_5', None) or None
         avance.otra_capacidad = request.form.get('otra_capacidad', '').strip()
         avance.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+        if fecha_manual:
+            avance.fecha_registro = fecha_manual
 
         try:
             # Guardar los cambios en la base de datos
@@ -1621,11 +1697,14 @@ def editar_avances_capacidades_incidencia(avance_id):
             flash(f'Error al actualizar el avance: {str(e)}', 'danger')
             return redirect(url_for('editar_avances_capacidades_incidencia', avance_id=avance_id))
 
+    fecha_registro_value = format_for_datetime_local(avance.fecha_registro)
+
     # Si es GET, renderizar el formulario con los valores actuales del avance
     return render_template(
         'capacidades_incidencia/editar_avances_capacidades_incidencia.html',
         avance=avance,
-        capacidad=avance.capacidad_incidencia  # Acceso a la capacidad relacionada
+        capacidad=avance.capacidad_incidencia,  # Acceso a la capacidad relacionada
+        fecha_registro_value=fecha_registro_value
     )
 
 @app.route('/eliminar_avances_capacidades_incidencia/<int:avance_id>', methods=['POST'])
@@ -1678,7 +1757,8 @@ class CasoEmblematico(db.Model):
 def form_registro_casos_emblematicos():
     if request.method == 'POST':
         # Validar que el nombre genérico del caso no exista
-        nombre_caso = request.form['nombre_caso'].strip().lower(),
+        nombre_caso = request.form['nombre_caso'].strip().lower()
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
 
         # Verificar si ya existe un caso con el mismo nombre
         # filter(func.lower(CasoEmblematico.nombre_caso) == nombre_caso).first():
@@ -1698,6 +1778,9 @@ def form_registro_casos_emblematicos():
             situacion_caso=request.form.get('situacion_caso', ''),
             otro_dato=request.form.get('otro_dato', '')
         )
+
+        if fecha_manual:
+            nuevo_caso.fecha_registro = fecha_manual
 
         # Guardar en la base de datos
         db.session.add(nuevo_caso)
@@ -1737,7 +1820,10 @@ def editar_caso_emblematico(nombre_caso):
         caso.objetivo_defensa = request.form.get('objetivo_defensa', '')  # Si no se proporciona, por defecto será un string vacío
         caso.situacion_caso = request.form.get('situacion_caso', '')  # Si no se proporciona, por defecto será un string vacío
         caso.otro_dato = request.form.get('otro_dato', '')  # Si no se proporciona, por defecto será un string vacío
-        
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+        if fecha_manual:
+            caso.fecha_registro = fecha_manual
+
         # Guardar los cambios en la base de datos
         try:
             db.session.commit()
@@ -1746,9 +1832,14 @@ def editar_caso_emblematico(nombre_caso):
         except Exception as e:
             db.session.rollback()
             flash(f'Error al actualizar el caso: {str(e)}', 'danger')
-    
+
+    fecha_registro_value = format_for_datetime_local(caso.fecha_registro)
+
     # Renderizar la plantilla con los datos del caso cargados
-    return render_template('editar_caso_emblematico.html', caso=caso)
+    return render_template(
+        'editar_caso_emblematico.html',
+        caso=caso,
+        fecha_registro_value=fecha_registro_value)
 
 # ELIMINAR CASO EMBLEMATICO
 @app.route('/eliminar_caso_emblematico/<nombre_caso>', methods=['POST'])
@@ -1799,6 +1890,7 @@ class AvanceCasoEmblematico(db.Model):
 @roles_required('admin')
 def form_avances_caso_emblematico():
     if request.method == 'POST':
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         # Crear un nuevo registro de avance del caso emblemático con todos los datos
         nuevo_avance_caso_emblematico = AvanceCasoEmblematico(
             nombre_caso=request.form['nombre_caso'].strip().lower(),
@@ -1810,6 +1902,9 @@ def form_avances_caso_emblematico():
             otro_asunto=request.form.get('otro_asunto', ''),
             responsable_registro=request.form.get('responsable_registro', '')
         )
+
+        if fecha_manual:
+            nuevo_avance_caso_emblematico.fecha_registro = fecha_manual
 
         # Guardar en la base de datos
         db.session.add(nuevo_avance_caso_emblematico)
@@ -1844,6 +1939,9 @@ def editar_avances_caso_emblematico(id):
         return redirect(url_for('listar_avances_caso_emblematico'))  # Redirigir si no se encuentra
 
     if request.method == 'POST':
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+        if fecha_manual:
+            avance_caso_emblematico.fecha_registro = fecha_manual
         # Asignar los valores recibidos desde el formulario
         avance_caso_emblematico.nombre_caso = request.form['nombre_caso'].strip().lower()
         avance_caso_emblematico.ocurrencias_periodo = request.form.get('ocurrencias_periodo', '')
@@ -1864,9 +1962,16 @@ def editar_avances_caso_emblematico(id):
             flash('Hubo un error al actualizar el avance de caso emblematico.', 'danger')
             return redirect(url_for('listar_avances_caso_emblematico'))  # Redirigir si no hay error
 
+    fecha_registro_value = format_for_datetime_local(avance_caso_emblematico.fecha_registro)
+
     # Renderizar el formulario con los datos existentes
     caso_emblematico = CasoEmblematico.query.all()  # Asumiendo que hay un modelo de Iniciativas
-    return render_template('editar_avances_caso_emblematico.html', avance_caso_emblematico=avance_caso_emblematico, caso_emblematico=caso_emblematico)
+    return render_template(
+        'editar_avances_caso_emblematico.html',
+        avance_caso_emblematico=avance_caso_emblematico,
+        caso_emblematico=caso_emblematico,
+        fecha_registro_value=fecha_registro_value
+    )
 
 # ELIMINAR AVANCES CASO EMBLEMATICO
 @app.route('/eliminar_avance_caso_emblematico/<int:id>', methods=['POST'])
@@ -1924,6 +2029,7 @@ def form_registro_politica_nacional_memoria():
     if request.method == 'POST':
         # Validar que el nombre de la política o sitio de memoria no exista
         nombre_politica_memoria = request.form['nombre_politica_memoria'].strip().lower()
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
 
         # Verificar si ya existe una política o sitio de memoria con el mismo nombre
         if PoliticaNacionalMemoria.query.filter(func.lower(PoliticaNacionalMemoria.nombre_politica_memoria) == nombre_politica_memoria).first():
@@ -1944,6 +2050,9 @@ def form_registro_politica_nacional_memoria():
             organizaciones_aliadas=request.form.get('organizaciones_aliadas', ''),
             otro_dato=request.form.get('otro_dato', '')
         )
+
+        if fecha_manual:
+            nueva_politica_nacional_memoria.fecha_registro = fecha_manual
 
         # Guardar en la base de datos
         db.session.add(nueva_politica_nacional_memoria)
@@ -1985,6 +2094,9 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
         politica_memoria.asunto_3 = request.form.get('asunto_3', '') 
         politica_memoria.organizaciones_aliadas = request.form.get('organizaciones_aliadas', '')  # Si no se proporciona, por defecto será un string vacío
         politica_memoria.otro_dato = request.form.get('otro_dato', '')
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+        if fecha_manual:
+            politica_memoria.fecha_registro = fecha_manual
         
         # Guardar los cambios en la base de datos
         try:
@@ -1994,9 +2106,15 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
         except Exception as e:
             db.session.rollback()
             flash(f'Error al actualizar la politica nacional y memoria: {str(e)}', 'danger')
-    
+
+    fecha_registro_value = format_for_datetime_local(politica_memoria.fecha_registro)
+
     # Renderizar la plantilla con los datos del caso cargados
-    return render_template('editar_politica_nacional_memoria.html', politica_memoria=politica_memoria)
+    return render_template(
+        'editar_politica_nacional_memoria.html',
+        politica_memoria=politica_memoria,
+        fecha_registro_value=fecha_registro_value
+    )
 
 # ELIMINAR Politica nacional Memoria
 @app.route('/eliminar_politica_nacional_memoria/<nombre_politica_memoria>', methods=['POST'])
@@ -2047,6 +2165,7 @@ class AvancePoliticaMemoria(db.Model):
 @roles_required('admin')
 def form_avances_politica_nacional_memoria():
     if request.method == 'POST':
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         # Crear un nuevo avance
         nuevo_avance_politica_memoria = AvancePoliticaMemoria(
             nombre_politica_memoria=request.form['nombre_politica_memoria'].strip().lower(),
@@ -2057,6 +2176,10 @@ def form_avances_politica_nacional_memoria():
             otro_asunto=request.form.get('otro_asunto', ''),
             responsable_registro=request.form.get('responsable_registro', '')
         )
+
+        if fecha_manual:
+            nuevo_avance_politica_memoria.fecha_registro = fecha_manual
+
         db.session.add(nuevo_avance_politica_memoria)
         db.session.commit()
 
@@ -2097,6 +2220,9 @@ def editar_avances_politica_nacional_memoria(id):
         avances_politica_memoria.estado_actual_gestion = request.form.get('estado_actual_gestion', '')
         avances_politica_memoria.recomendaciones = request.form.get('recomendaciones', '')
         avances_politica_memoria.otro_asunto = request.form.get('otro_asunto', '')
+        fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+        if fecha_manual:
+            avances_politica_memoria.fecha_registro = fecha_manual
         avances_politica_memoria.responsable_registro = request.form.get('responsable_registro', '')
 
         # Guardar cambios en la base de datos
@@ -2109,9 +2235,16 @@ def editar_avances_politica_nacional_memoria(id):
             flash('Hubo un error al actualizar el avance de politica nacional y/o memoria.', 'danger')
             return redirect(url_for('listar_avances_politica_nacional_memoria'))  # Redirigir si no hay error
 
+    fecha_registro_value = format_for_datetime_local(avances_politica_memoria.fecha_registro)
+
     # Renderizar el formulario con los datos existentes
     politica_memoria = PoliticaNacionalMemoria.query.all()  # Asumiendo que hay un modelo de Iniciativas
-    return render_template('editar_avances_politica_nacional_memoria.html', avances_politica_memoria=avances_politica_memoria, politica_memoria=politica_memoria)
+    return render_template(
+        'editar_avances_politica_nacional_memoria.html',
+        avances_politica_memoria=avances_politica_memoria,
+        politica_memoria=politica_memoria,
+        fecha_registro_value=fecha_registro_value
+    )
 
 # ELIMINAR AVANCES POLITICA Y MEMORIA
 @app.route('/eliminar_avances_politica_nacional_memoria/<int:id>', methods=['POST'])
@@ -2288,4 +2421,6 @@ def get_data():
 
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

@@ -159,6 +159,22 @@
                             <textarea id="otro_dato" name="otro_dato" maxlength="255" class="form-control" rows="3">{{ politica_memoria.otro_dato }}</textarea>
                         </div>
                     </div>
+                    <div class="section-box mt-3">
+                      <h4>Fecha y hora del registro (opcional)</h4>
+                      <div class="form-group">
+                        <label class="label-principal" for="fecha_registro">Fecha y hora (America/Lima):</label>
+                        <input
+                          type="datetime-local"
+                          class="form-control"
+                          id="fecha_registro"
+                          name="fecha_registro"
+                          value="{{ fecha_registro_value }}"
+                        >
+                        <small class="form-text text-muted">
+                          Si lo dejas vacío, se conserva la fecha actual (o la previamente registrada).
+                        </small>
+                      </div>
+                    </div>
                 </div>
             </div>
 
