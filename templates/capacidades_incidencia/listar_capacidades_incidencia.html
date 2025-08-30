@@ -174,6 +174,7 @@
                         <th>Capacidad 5</th>
                         <th>Otra Capacidad</th>
                         <th>Calificación Otra Capacidad</th>
+                        <th>Responsable Registro</th>
                         <th>Fecha Registro</th>
                     </tr>
                 </thead>
@@ -204,6 +205,7 @@
                         <td>{{ capacidad.capacidad_5 }}</td>
                         <td>{{ capacidad.otra_capacidad }}</td>
                         <td>{{ capacidad.calificacion_otra_capacidad }}</td>
+                        <td>{{ capacidad.responsable_registro }}</td>
                         <td>{{ capacidad.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     </tr>
                     {% endfor %}

@@ -175,6 +175,7 @@
                         <th>Objetivo Defensa</th>
                         <th>Situación Caso</th>
                         <th>Otro Dato</th>
+                        <th>Responsable Registro</th>
                         <th>Fecha Registro</th>
                     </tr>
                 </thead>
@@ -204,6 +205,7 @@
                         <td>{{ caso.objetivo_defensa }}</td>
                         <td>{{ caso.situacion_caso }}</td>
                         <td>{{ caso.otro_dato }}</td>
+                        <td>{{ caso.responsable_registro }}</td>
                         <td>{{ caso.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     </tr>
                     {% endfor %}

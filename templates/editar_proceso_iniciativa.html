@@ -512,7 +512,7 @@
                         <!-- Responsable del registro -->
                         <div class="form-group">
                             <label for="responsable_registro">3. Responsable del registro:</label>
-                            <input type="text" class="form-control" maxlength="100" id="responsable_registro" name="responsable_registro" placeholder="Nombre del responsable" value="{{ proceso_iniciativas.responsable_registro }}">
+                            <input type="text" class="form-control" id="responsable_registro" name="responsable_registro" maxlength="100" value="{{ current_user.username }}" readonly>
                         </div>
                     </div>
                 </div>

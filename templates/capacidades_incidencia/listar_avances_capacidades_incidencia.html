@@ -175,6 +175,7 @@
                         <th>Capacidad 5</th>
                         <th>Otra Capacidad</th>
                         <th>Calificación Otra Capacidad</th>
+                        <th>Responsable Registro</th>
                         <th>Fecha Registro</th>
                     </tr>
                 </thead>
@@ -206,6 +207,7 @@
                         <td>{{ avance.capacidad_5 }}</td>
                         <td>{{ avance.otra_capacidad }}</td>
                         <td>{{ avance.calificacion_otra_capacidad }}</td>
+                        <td>{{ avance.responsable_registro }}</td>
                         <td>{{ avance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     </tr>
                     {% endfor %}

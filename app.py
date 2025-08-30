@@ -13,6 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.inspection import inspect
 from sqlalchemy.sql import text
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import current_user
 
 PERU_TZ = pytz.timezone("America/Lima")
 
@@ -277,6 +278,7 @@ class Registro(db.Model):
     provincia = db.Column(db.String(60), nullable=True)
     departamento = db.Column(db.String(60), nullable=True)
     estado = db.Column(db.String(3), nullable=True, default='ACT')  # Valor predeterminado "ACT"
+    responsable_registro = db.Column(db.String(100), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
 @app.route('/form_registro_inicial', methods=['GET', 'POST'])
@@ -305,7 +307,8 @@ def form_registro_inicial():
             distrito=request.form.get('distrito', ''),
             provincia=request.form.get('provincia', ''),
             departamento=request.form.get('departamento', ''),
-            estado=request.form.get('estado', 'ACT')
+            estado=request.form.get('estado', 'ACT'),
+            responsable_registro=current_user.username
         )
 
         if fecha_manual:
@@ -358,6 +361,7 @@ def editar_registro(dni):
         registro.provincia = request.form.get('provincia', '')
         registro.departamento = request.form.get('departamento', '')
         registro.estado = request.form.get('estado', 'ACT')
+        registro.responsable_registro = current_user.username
 
         # Guardar los cambios en la base de datos
         db.session.commit()
@@ -619,7 +623,7 @@ def form_iniciativas():
             oficina_regional=request.form.get('oficina_regional', ''),
             proyectos=request.form.get('proyectos', ''),
             tipo_participacion_fe=request.form.get('tipo_participacion_fe', ''),                
-            responsable_registro=request.form.get('responsable_registro', '')
+            responsable_registro=current_user.username
         )
 
         # Asignar registros seleccionados
@@ -800,7 +804,7 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.financiamiento_2 = request.form.get('financiamiento_2', None) or None
         iniciativa.periodo_financiamiento_2 = request.form.get('periodo_financiamiento_2', '')
         iniciativa.observaciones = request.form.get('observaciones', '')
-        iniciativa.responsable_registro = request.form.get('responsable_registro', '')
+        iniciativa.responsable_registro = current_user.username
         iniciativa.oficina_regional=request.form.get('oficina_regional', '')
         iniciativa.proyectos=request.form.get('proyectos', '')
         iniciativa.tipo_participacion_fe=request.form.get('tipo_participacion_fe', '')
@@ -1032,7 +1036,7 @@ def form_registro_proceso_iniciativa():
             aporte_5 = request.form.get('aporte_5', ''),
             cambios_estrategia = request.form.get('cambios_estrategia', ''),
             comentario_relevante = request.form.get('comentario_relevante', ''),
-            responsable_registro = request.form.get('responsable_registro', '')
+            responsable_registro=current_user.username
         )
 
         if fecha_manual:
@@ -1171,7 +1175,7 @@ def editar_proceso_iniciativa(id):
         # Cambios en la estrategia institucional
         proceso_iniciativas.cambios_estrategia = request.form.get('cambios_estrategia', '')
         proceso_iniciativas.comentario_relevante = request.form.get('comentario_relevante', '')
-        proceso_iniciativas.responsable_registro = request.form.get('responsable_registro', '')
+        proceso_iniciativas.responsable_registro = current_user.username
 
         # Validar y acceder a los participantes
         participantes = proceso_iniciativas.registros  # Relación indirecta ya configurada
@@ -1260,6 +1264,7 @@ class CapacidadIncidencia(db.Model):
     capacidad_5 = db.Column(db.Integer, nullable=True)
     otra_capacidad = db.Column(db.String(100), nullable=True)
     calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
+    responsable_registro = db.Column(db.String(100), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
     # Relación con Registro
@@ -1380,6 +1385,7 @@ def form_capacidades_incidencia():
             capacidad_5=request.form.get('capacidad_5', None) or None,
             otra_capacidad=request.form.get('otra_capacidad', ''),
             calificacion_otra_capacidad=request.form.get('calificacion_otra_capacidad', None) or None,
+            responsable_registro=current_user.username
         )
 
         if fecha_manual:
@@ -1421,6 +1427,7 @@ def editar_capacidades_incidencia(id):
             capacidad.capacidad_5 = request.form.get('capacidad_5', None) or None
             capacidad.otra_capacidad = request.form.get('otra_capacidad', '').strip()
             capacidad.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
+            capacidad.responsable_registro = current_user.username
             fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
             if fecha_manual:
                 capacidad.fecha_registro = fecha_manual
@@ -1482,6 +1489,7 @@ class AvanceCapacidadIncidencia(db.Model):
     capacidad_5 = db.Column(db.Integer, nullable=True)
     otra_capacidad = db.Column(db.String(100), nullable=True)
     calificacion_otra_capacidad = db.Column(db.Integer, nullable=True)
+    responsable_registro = db.Column(db.String(100), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
     # Relación con CapacidadIncidencia
@@ -1593,6 +1601,7 @@ def form_avances_capacidades_incidencia():
             capacidad_5=capacidad_5,
             otra_capacidad=otra_capacidad,
             calificacion_otra_capacidad=calificacion_otra_capacidad,
+            responsable_registro=current_user.username
         )
 
         if fecha_manual:
@@ -1682,6 +1691,7 @@ def editar_avances_capacidades_incidencia(avance_id):
         avance.capacidad_4 = request.form.get('capacidad_4', None) or None
         avance.capacidad_5 = request.form.get('capacidad_5', None) or None
         avance.otra_capacidad = request.form.get('otra_capacidad', '').strip()
+        avance.responsable_registro = current_user.username
         avance.calificacion_otra_capacidad = request.form.get('calificacion_otra_capacidad', None) or None
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         if fecha_manual:
@@ -1747,6 +1757,7 @@ class CasoEmblematico(db.Model):
     situacion_caso = db.Column(db.String(300), nullable=True)
     otro_dato = db.Column(db.String(300), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
+    responsable_registro = db.Column(db.String(100), nullable=True)
     # Relación con AvanceCasoEmblematico
     avances = db.relationship('AvanceCasoEmblematico', backref='caso', lazy=True, cascade="all, delete-orphan")
 
@@ -1776,7 +1787,8 @@ def form_registro_casos_emblematicos():
             numero_afectados=request.form.get('numero_afectados', None) or None,  # Valor predeterminado None si no es proporcionado
             objetivo_defensa=request.form.get('objetivo_defensa', ''),
             situacion_caso=request.form.get('situacion_caso', ''),
-            otro_dato=request.form.get('otro_dato', '')
+            otro_dato=request.form.get('otro_dato', ''),
+            responsable_registro=current_user.username
         )
 
         if fecha_manual:
@@ -1820,6 +1832,7 @@ def editar_caso_emblematico(nombre_caso):
         caso.objetivo_defensa = request.form.get('objetivo_defensa', '')  # Si no se proporciona, por defecto será un string vacío
         caso.situacion_caso = request.form.get('situacion_caso', '')  # Si no se proporciona, por defecto será un string vacío
         caso.otro_dato = request.form.get('otro_dato', '')  # Si no se proporciona, por defecto será un string vacío
+        caso.responsable_registro = current_user.username
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         if fecha_manual:
             caso.fecha_registro = fecha_manual
@@ -1900,7 +1913,7 @@ def form_avances_caso_emblematico():
             estado_actual=request.form.get('estado_actual', ''),
             recomendaciones=request.form.get('recomendaciones', ''),
             otro_asunto=request.form.get('otro_asunto', ''),
-            responsable_registro=request.form.get('responsable_registro', '')
+            responsable_registro=current_user.username
         )
 
         if fecha_manual:
@@ -1950,7 +1963,7 @@ def editar_avances_caso_emblematico(id):
         avance_caso_emblematico.estado_actual = request.form.get('estado_actual', '')
         avance_caso_emblematico.recomendaciones = request.form.get('recomendaciones', '')
         avance_caso_emblematico.otro_asunto = request.form.get('otro_asunto', '')
-        avance_caso_emblematico.responsable_registro = request.form.get('responsable_registro', '')
+        avance_caso_emblematico.responsable_registro = current_user.username
 
         # Guardar cambios en la base de datos
         try:
@@ -2019,6 +2032,7 @@ class PoliticaNacionalMemoria(db.Model):
     organizaciones_aliadas = db.Column(db.String(300), nullable=True)
     otro_dato = db.Column(db.String(255), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
+    responsable_registro = db.Column(db.String(100), nullable=True)
     # Relación con AvancePoliticaMemoria
     avances = db.relationship('AvancePoliticaMemoria', backref='politica', lazy=True, cascade="all, delete-orphan")
 
@@ -2048,7 +2062,8 @@ def form_registro_politica_nacional_memoria():
             institucion_3=request.form.get('institucion_3', ''),
             asunto_3=request.form.get('asunto_3', ''),
             organizaciones_aliadas=request.form.get('organizaciones_aliadas', ''),
-            otro_dato=request.form.get('otro_dato', '')
+            otro_dato=request.form.get('otro_dato', ''),
+            responsable_registro=current_user.username
         )
 
         if fecha_manual:
@@ -2094,6 +2109,7 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
         politica_memoria.asunto_3 = request.form.get('asunto_3', '') 
         politica_memoria.organizaciones_aliadas = request.form.get('organizaciones_aliadas', '')  # Si no se proporciona, por defecto será un string vacío
         politica_memoria.otro_dato = request.form.get('otro_dato', '')
+        politica_memoria.responsable_registro = current_user.username
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         if fecha_manual:
             politica_memoria.fecha_registro = fecha_manual
@@ -2174,7 +2190,7 @@ def form_avances_politica_nacional_memoria():
             estado_actual_gestion=request.form.get('estado_actual_gestion', ''),
             recomendaciones=request.form.get('recomendaciones', ''),
             otro_asunto=request.form.get('otro_asunto', ''),
-            responsable_registro=request.form.get('responsable_registro', '')
+            responsable_registro=current_user.username
         )
 
         if fecha_manual:
@@ -2223,7 +2239,7 @@ def editar_avances_politica_nacional_memoria(id):
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         if fecha_manual:
             avances_politica_memoria.fecha_registro = fecha_manual
-        avances_politica_memoria.responsable_registro = request.form.get('responsable_registro', '')
+        avances_politica_memoria.responsable_registro = current_user.username
 
         # Guardar cambios en la base de datos
         try:
@@ -2421,6 +2437,6 @@ def get_data():
 
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+    # with app.app_context():
+    #     db.create_all()
     app.run(debug=True)
