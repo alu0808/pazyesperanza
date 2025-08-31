@@ -201,9 +201,11 @@
                         {% if current_user.role in ['admin', 'gestor'] %}
                         <td>
                             <div class="btn-group">
-                                <a href="/editar_registro/{{ registro.dni }}" class="btn btn-primary btn-icon">
+                                {% if current_user.role == 'admin' or (current_user.role == 'gestor' and registro.responsable_registro == current_user.username) %}
+                                  <a href="/editar_registro/{{ registro.dni }}" class="btn btn-primary btn-icon" title="Editar">
                                     <i class="fas fa-edit"></i>
-                                </a>
+                                  </a>
+                                {% endif %}
                                 {% if current_user.role == 'admin' %}
                                 <form method="POST"
                                       action="/eliminar_registro/{{ registro.dni }}"

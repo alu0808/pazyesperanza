@@ -456,6 +456,11 @@ def editar_registro(dni):
         flash('El registro no existe.', 'danger')
         return redirect(url_for('listar_registros'))
 
+    if current_user.role == 'gestor' and (registro.responsable_registro or '').strip() != (
+            current_user.username or '').strip():
+        flash('No puedes editar un registro creado por otro usuario.', 'danger')
+        return redirect(url_for('listar_registros'))
+
     if request.method == 'POST':
         # Actualizar los campos del registro con los datos enviados desde el formulario
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
