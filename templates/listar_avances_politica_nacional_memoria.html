@@ -153,9 +153,10 @@
         </div>
 
         <!-- Botón en la parte superior derecha -->
-        {% if current_user.role in ['admin'] %}
+        {% if current_user.role in ['admin', 'gestor'] %}
         <div class="button-container">
-            <a href="/form_avances_politica_nacional_memoria" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nuevo Avance Politica nacional y/o memoria</a>
+          <a href="/form_avances_politica_nacional_memoria" style="margin-bottom: 15px;"
+             class="btn btn-success label-principal">Nuevo Avance Politica nacional y/o memoria</a>
         </div>
         {% endif %}
 
@@ -164,7 +165,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        {% if current_user.role in ['admin', 'editor'] %}
+                        {% if current_user.role in ['admin', 'gestor'] %}
                         <th>Acciones</th>
                         {% endif %}
                         <th>Nombre Política Nacional y/o Sitio de Memoria</th>
@@ -180,17 +181,22 @@
                 <tbody>
                     {% for poli_mem in avances_politica_memoria %}
                     <tr>
-                        {% if current_user.role in ['admin', 'editor'] %}
+                        {% if current_user.role in ['admin', 'gestor'] %}
                         <td>
                             <div class="btn-group">
                                 <a href="/editar_avances_politica_nacional_memoria/{{ poli_mem.id }}" class="btn btn-primary btn-icon">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form method="POST" action="/eliminar_avances_politica_nacional_memoria/{{ poli_mem.id }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este caso?');" style="display:inline;">
-                                    <button type="submit" class="btn btn-danger btn-icon">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                {% if current_user.role == 'admin' %}
+                                <form method="POST"
+                                      action="/eliminar_avances_politica_nacional_memoria/{{ poli_mem.id }}"
+                                      onsubmit="return confirm('¿Estás seguro de que deseas eliminar este avance?');"
+                                      style="display:inline;">
+                                  <button type="submit" class="btn btn-danger btn-icon" title="Eliminar">
+                                    <i class="fas fa-trash-alt"></i>
+                                  </button>
                                 </form>
+                                {% endif %}
                             </div>
                         </td>
                         {% endif %}

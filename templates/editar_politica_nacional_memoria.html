@@ -167,6 +167,7 @@
                           type="datetime-local"
                           class="form-control"
                           id="fecha_registro"
+                          step="1"
                           name="fecha_registro"
                           value="{{ fecha_registro_value }}"
                         >
@@ -178,6 +179,30 @@
                 </div>
             </div>
 
+            <div class="row mt-4">
+                <div class="col-md-6 label-principal">
+                    <div class="section-box mt-3">
+                        <h4>Referente de Trabajo Institucional</h4>
+                        <div class="form-group">
+                            <label class="label-principal" for="oficina_regional">Oficina Regional de referencia:</label>
+                              {% if current_user.role == 'admin' %}
+                                <select class="form-control" id="oficina_regional" name="oficina_regional">
+                                  <option value="" {% if not politica_memoria.oficina_regional %}selected{% endif %}>Seleccione una oficina</option>
+                                  {% for or_name in OR_CHOICES %}
+                                    <option value="{{ or_name }}" {% if politica_memoria.oficina_regional == or_name %}selected{% endif %}>
+                                      {{ or_name }}
+                                    </option>
+                                  {% endfor %}
+                                </select>
+                              {% else %}
+                                <!-- Solo lectura para no-admin: muestra y conserva el valor -->
+                                <input type="text" class="form-control" value="{{ politica_memoria.oficina_regional or '—' }}" disabled>
+                                <input type="hidden" name="oficina_regional" value="{{ politica_memoria.oficina_regional or '' }}">
+                              {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Botones de navegación -->
             <div class="row justify-content-end mt-3 mb-5">
                 <div class="col-md-3 d-flex justify-content-end">

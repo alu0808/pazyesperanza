@@ -14,7 +14,7 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.sql import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import current_user
-
+from sqlalchemy.orm import joinedload
 PERU_TZ = pytz.timezone("America/Lima")
 
 app = Flask(__name__)
@@ -54,7 +54,7 @@ def parse_datetime_local_peru(dt_str):
     if not dt_str:
         return None
     try:
-        naive = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
+        naive = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
         return PERU_TZ.localize(naive)
     except Exception:
         return None
@@ -71,7 +71,7 @@ def format_for_datetime_local(dt):
             dt = dt.astimezone(PERU_TZ)
         else:
             dt = PERU_TZ.localize(dt)
-        return dt.strftime("%Y-%m-%dT%H:%M")
+        return dt.strftime("%Y-%m-%dT%H:%M:%S")
     except Exception:
         return ""
 
@@ -85,14 +85,76 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(100), nullable=False)  # Rol: admin, editor, viewer
+    role = db.Column(db.String(50), nullable=False)  # 'admin' | 'gestor' | 'viewer'
+    oficina_regional = db.Column(db.String(60), nullable=True, index=True)
 
-    def set_password(self, password):
+    iniciativas_asignadas = db.relationship(
+        'Iniciativa',
+        secondary='user_iniciativa',
+        backref=db.backref('gestores', lazy='dynamic'),
+        lazy='dynamic'
+    )
+
+    def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
 
-    def check_password(self, password):
+    def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
 
+# --- TABLA DE ASIGNACIÓN USER <-> INICIATIVA ---
+user_iniciativa = db.Table(
+    'user_iniciativa',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('iniciativa_nombre', db.String(150), db.ForeignKey('iniciativa.nombre_iniciativa'), primary_key=True),
+    #db.UniqueConstraint('user_id', 'iniciativa_nombre', name='uq_user_iniciativa')
+)
+
+from flask import abort
+
+def is_admin():
+    return current_user.is_authenticated and current_user.role == 'admin'
+
+def is_gestor():
+    return current_user.is_authenticated and current_user.role == 'gestor'
+
+def is_viewer():
+    return current_user.is_authenticated and current_user.role == 'viewer'
+
+def iniciativas_visibles_q():
+    q = Iniciativa.query
+    if is_gestor():
+        return q.filter(Iniciativa.oficina_regional == current_user.oficina_regional)
+    # admin y viewer ven tod0
+    return q
+
+def procesos_visibles_q():
+    # Une ProcesoIniciativa con Iniciativa por nombre
+    q = (ProcesoIniciativa.query
+         .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(ProcesoIniciativa.nombre_iniciativa)))
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        # Si el usuario no tiene OR, no permitimos ver nada y avisamos en cada vista
+        if or_user:
+            q = q.filter(Iniciativa.oficina_regional == or_user)
+    return q
+
+def can_edit_iniciativa(nombre_iniciativa: str) -> bool:
+    if is_admin():
+        return True
+    if is_gestor():
+        return (Iniciativa.query
+                .filter(Iniciativa.nombre_iniciativa == nombre_iniciativa)
+                .filter(Iniciativa.oficina_regional == current_user.oficina_regional)
+                .join(user_iniciativa, user_iniciativa.c.iniciativa_nombre == Iniciativa.nombre_iniciativa)
+                .filter(user_iniciativa.c.user_id == current_user.id)
+                .count() > 0)
+    # viewer no edita
+    return False
+
+def enforce_edit_perm(nombre_iniciativa: str):
+    if not can_edit_iniciativa(nombre_iniciativa):
+        flash('No tiene permisos para editar este proyecto.', 'danger')
+        abort(403)
 
 
 
@@ -178,19 +240,47 @@ def admin_dashboard():
 @roles_required('admin')
 def create_user():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        role = request.form['role']
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        role = request.form['role'].strip()
+        oficina_regional = request.form.get('oficina_regional', '').strip()
 
-        new_user = User(username=username, role=role)
-        new_user.set_password(password)
+        # Validaciones básicas
+        if role not in ('admin', 'gestor', 'viewer'):
+            flash('Rol inválido.', 'danger')
+            return redirect(url_for('create_user'))
+
+        if role == 'gestor' and not oficina_regional:
+            flash('Debe seleccionar una oficina regional para el rol Gestor.', 'danger')
+            return redirect(url_for('create_user'))
+
+        if not username or not password:
+            flash('Usuario y contraseña son obligatorios.', 'danger')
+            return redirect(url_for('create_user'))
+
+        # Crear
+        new_user = User(
+            username=username,
+            role=role,
+            oficina_regional=oficina_regional or None
+        )
+        new_user.set_password(password)  # asumiendo que ya tienes este método
 
         db.session.add(new_user)
         db.session.commit()
         flash('Usuario creado exitosamente.', 'success')
         return redirect(url_for('admin_dashboard'))
 
-    return render_template('create_user.html')
+    # GET
+    # Opcional: pasar la lista de OR desde backend
+    oficinas = [
+        "Oficina Nacional",
+        "Oficina Reg. Apurímac",
+        "Oficina Reg. Huánuco",
+        "Oficina Reg. Ayacucho",
+        "Oficina Reg. San Martín",
+    ]
+    return render_template('create_user.html', oficinas=oficinas)
 
 # Ruta para editar un usuario
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
@@ -203,8 +293,20 @@ def edit_user(user_id):
         return redirect(url_for('admin_dashboard'))
 
     if request.method == 'POST':
-        user.username = request.form['username']
-        user.role = request.form['role']
+        user.username = request.form['username'].strip()
+        user.role = request.form['role'].strip()
+        oficina_regional = request.form.get('oficina_regional', '').strip()
+
+        if user.role not in ('admin', 'gestor', 'viewer'):
+            flash('Rol inválido.', 'danger')
+            return redirect(url_for('edit_user', user_id=user.id))
+
+        if user.role == 'gestor' and not oficina_regional:
+            flash('Debe seleccionar una oficina regional para el rol Gestor.', 'danger')
+            return redirect(url_for('edit_user', user_id=user.id))
+
+        user.oficina_regional = oficina_regional or None
+
         if request.form['password']:
             user.set_password(request.form['password'])
 
@@ -212,7 +314,15 @@ def edit_user(user_id):
         flash('Usuario actualizado exitosamente.', 'success')
         return redirect(url_for('admin_dashboard'))
 
-    return render_template('edit_user.html', user=user)
+    oficinas = [
+        "Oficina Nacional",
+        "Oficina Reg. Apurímac",
+        "Oficina Reg. Huánuco",
+        "Oficina Reg. Ayacucho",
+        "Oficina Reg. San Martín",
+    ]
+    return render_template('edit_user.html', user=user, oficinas=oficinas)
+
 
 # Ruta para eliminar un usuario
 @app.route('/delete_user/<int:user_id>', methods=['POST'])
@@ -237,7 +347,7 @@ def delete_user(user_id):
 ########################################################################################################################################
 @app.route('/', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor', 'viewer')  # Solo los usuarios con rol 'admin' pueden acceder
+@roles_required('admin', 'gestor', 'viewer')  # Solo los usuarios con rol 'admin' pueden acceder
 def index():
     return render_template('index.html')  # Nuevo index.html con opciones para navegar
 
@@ -283,7 +393,7 @@ class Registro(db.Model):
 
 @app.route('/form_registro_inicial', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_registro_inicial():
     if request.method == 'POST':
         # Validación del DNI y eliminación de espacios en blanco
@@ -326,7 +436,7 @@ def form_registro_inicial():
 # LISTAR REGISTROS
 @app.route('/listar_registros', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_registros():
     registros = Registro.query.order_by(Registro.fecha_registro.desc()).all()  # Ordenar por fecha de registro (descendente)
     return render_template('listar_registros.html', registros=registros)
@@ -337,7 +447,7 @@ def listar_registros():
 #EDITAR REGISTROS INICIALES
 @app.route('/editar_registro/<dni>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_registro(dni):
     # Obtener el registro existente usando el DNI
     registro = Registro.query.filter_by(dni=dni).first()
@@ -417,7 +527,7 @@ def eliminar_registro(dni):
 
 @app.route('/dashboard', methods=['GET'])
 @login_required
-@roles_required('admin', 'viewer')  # Solo usuarios con estos roles pueden acceder
+@roles_required('admin', 'gestor', 'viewer')  # Solo usuarios con estos roles pueden acceder
 def dashboard():
     return render_template('dashboard.html')  # Renderiza el archivo HTML del dashboard
 
@@ -477,7 +587,7 @@ class Iniciativa(db.Model):
     componente_1 = db.Column(db.String(100), nullable=True)
     componente_2 = db.Column(db.String(100), nullable=True)
     componente_3 = db.Column(db.String(100), nullable=True)
-    oficina_regional = db.Column(db.String(60), nullable=True)
+    oficina_regional = db.Column(db.String(60), nullable=True, index=True)
     proyectos = db.Column(db.String(100), nullable=True)
     tipo_participacion_fe = db.Column(db.String(80), nullable=True)
     contenido_1 = db.Column(db.Integer, nullable=True)
@@ -508,7 +618,6 @@ class Iniciativa(db.Model):
     periodo_financiamiento_2 = db.Column(db.String(100), nullable=True)
     observaciones = db.Column(db.String(255), nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
-    tipo_participacion_fe = db.Column(db.String(80), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
     # Relación con múltiples registros mediante tabla intermedia
     registros = db.relationship(
@@ -520,15 +629,38 @@ class Iniciativa(db.Model):
     # Relación con ProcesoIniciativa
     procesos = db.relationship('ProcesoIniciativa', backref='iniciativa', lazy=True, cascade="all, delete-orphan")
 
+
+OR_CHOICES = [
+    "Oficina Nacional",
+    "Oficina Reg. Apurímac",
+    "Oficina Reg. Huánuco",
+    "Oficina Reg. Ayacucho",
+    "Oficina Reg. San Martín",
+]
+
 @app.route('/form_iniciativas', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_iniciativas():
     if request.method == 'POST':
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
         # Obtener los DNIs seleccionados
         registros_seleccionados = request.form.get('registros', '')  # Lista de DNIs seleccionados
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+
+        # --- OR según rol ---
+        if is_admin():
+            oficina_regional = request.form.get('oficina_regional', '').strip()
+            # (opcional) normaliza a una de las opciones válidas
+            if oficina_regional and oficina_regional not in OR_CHOICES:
+                flash('La oficina regional enviada no es válida.', 'danger')
+                return redirect(url_for('form_iniciativas'))
+        else:
+            # Gestor: OR fija del usuario
+            oficina_regional = (current_user.oficina_regional or '').strip()
+            if not oficina_regional:
+                flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+                return redirect(url_for('form_iniciativas'))
 
         if Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == nombre_iniciativa).first():
             flash('Esta Iniciativa ya ha sido registrada.', 'danger')
@@ -620,7 +752,7 @@ def form_iniciativas():
             financiamiento_2=request.form.get('financiamiento_2', None) or None,
             periodo_financiamiento_2=request.form.get('periodo_financiamiento_2', ''),
             observaciones=request.form.get('observaciones', ''),
-            oficina_regional=request.form.get('oficina_regional', ''),
+            oficina_regional=oficina_regional,
             proyectos=request.form.get('proyectos', ''),
             tipo_participacion_fe=request.form.get('tipo_participacion_fe', ''),                
             responsable_registro=current_user.username
@@ -658,7 +790,11 @@ def form_iniciativas():
         ~Registro.iniciativas.any()  # Registros que no están asociados a ninguna iniciativa
     ).all()
 
-    return render_template('form_iniciativas.html', registros_disponibles=registros_disponibles)
+    return render_template(
+        'form_iniciativas.html',
+        registros_disponibles=registros_disponibles,
+        OR_CHOICES=OR_CHOICES
+    )
 
 @app.route('/get_seleccionados/<nombre_iniciativa>', methods=['GET'])
 @login_required
@@ -695,24 +831,38 @@ def get_registros():
     return jsonify(registros_json)
 
 # LISTAR INICIATIVAS
+
 @app.route('/listado_iniciativas', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_iniciativas():
-    iniciativas = Iniciativa.query.all()  # Obtener todas las iniciativas de la base de datos
+    iniciativas = iniciativas_visibles_q().all()
     return render_template('listar_iniciativas.html', iniciativas=iniciativas)
 
 # EDITAR INICIATIVAS
 @app.route('/editar_iniciativa/<nombre_iniciativa>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_iniciativa(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
 
     if not iniciativa:
         flash('La iniciativa no existe.', 'danger')
         return redirect(url_for('listar_iniciativas'))
-    
+
+    # --- OR según rol ---
+    if is_admin():
+      oficina_regional = request.form.get('oficina_regional', '').strip()
+      # (opcional) normaliza a una de las opciones válidas
+      if oficina_regional and oficina_regional not in OR_CHOICES:
+        flash('La oficina regional enviada no es válida.', 'danger')
+        return redirect(url_for('form_iniciativas'))
+    else:
+      # Gestor: OR fija del usuario
+      oficina_regional = (current_user.oficina_regional or '').strip()
+      if not oficina_regional:
+          flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+          return redirect(url_for('form_iniciativas'))
 
     if request.method == 'POST':
         fase_implementacion = request.form.get('fase_implementacion')
@@ -805,7 +955,7 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.periodo_financiamiento_2 = request.form.get('periodo_financiamiento_2', '')
         iniciativa.observaciones = request.form.get('observaciones', '')
         iniciativa.responsable_registro = current_user.username
-        iniciativa.oficina_regional=request.form.get('oficina_regional', '')
+        iniciativa.oficina_regional=oficina_regional
         iniciativa.proyectos=request.form.get('proyectos', '')
         iniciativa.tipo_participacion_fe=request.form.get('tipo_participacion_fe', '')
         
@@ -854,7 +1004,8 @@ def editar_iniciativa(nombre_iniciativa):
         registros_disponibles=registros_disponibles,
         registros_seleccionados=registros_seleccionados,
         iniciativa_nombre=nombre_iniciativa,
-        fecha_registro_value=fecha_registro_value
+        fecha_registro_value=fecha_registro_value,
+        OR_CHOICES=OR_CHOICES
     )
 
 # ELIMINAR INICIATIVA
@@ -971,11 +1122,28 @@ class ProcesoIniciativa(db.Model):
 
 @app.route('/form_registro_proceso_iniciativa', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_registro_proceso_iniciativa():
     if request.method == 'POST':
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+
+        # Trae la iniciativa real y valida OR
+        iniciativa_obj = (Iniciativa.query
+                          .filter(func.lower(Iniciativa.nombre_iniciativa) == nombre_iniciativa)
+                          .first())
+        if not iniciativa_obj:
+            flash('La iniciativa seleccionada no existe.', 'danger')
+            return redirect(url_for('form_registro_proceso_iniciativa'))
+
+        if not is_admin():
+            or_user = (current_user.oficina_regional or '').strip()
+            if not or_user:
+                flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+                return redirect(url_for('form_registro_proceso_iniciativa'))
+            if iniciativa_obj.oficina_regional != or_user:
+                flash('No puedes registrar procesos para una iniciativa de otra Oficina Regional.', 'danger')
+                return redirect(url_for('form_registro_proceso_iniciativa'))
 
         # Obtener el número de registros existentes para esta iniciativa
         numero_registros = ProcesoIniciativa.query.filter_by(
@@ -994,7 +1162,7 @@ def form_registro_proceso_iniciativa():
         # Crear un nuevo ProcesoIniciativa
         nuevo_proceso = ProcesoIniciativa(
             # Capturar los datos del formulario
-            nombre_iniciativa = nombre_iniciativa,
+            nombre_iniciativa = iniciativa_obj.nombre_iniciativa,
             objetivo_especifico = request.form.get('objetivo_especifico', ''),
             logros = request.form.get('logros', ''),
             sustento_logros = request.form.get('sustento_logros', ''),
@@ -1057,45 +1225,57 @@ def form_registro_proceso_iniciativa():
         return redirect(url_for('listar_proceso_iniciativa'))
 
     # Obtener todas las iniciativas para el formulario
-    iniciativas = Iniciativa.query.all()
+    # Obtener iniciativas visibles según OR
+    if is_admin():
+        iniciativas = Iniciativa.query.order_by(Iniciativa.nombre_iniciativa.asc()).all()
+    else:
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return redirect(url_for('listar_proceso_iniciativa'))
+        iniciativas = (Iniciativa.query
+                       .filter(Iniciativa.oficina_regional == or_user)
+                       .order_by(Iniciativa.nombre_iniciativa.asc())
+                       .all())
+
     return render_template('form_registro_proceso_iniciativa.html', iniciativas=iniciativas)
 
 # LISTAR PROCESO INICIATIVAS
 @app.route('/listar_proceso_iniciativa', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_proceso_iniciativa():
-    # Consultar procesos ordenados correctamente
-    procesos = ProcesoIniciativa.query.join(Iniciativa).order_by(
-        Iniciativa.nombre_iniciativa.asc(),  # Ordenar alfabéticamente por nombre de iniciativa
-        ProcesoIniciativa.fecha_registro.asc()  # Ordenar cronológicamente
-    ).all()
+    if is_admin() or is_viewer():
+        procesos_q = (ProcesoIniciativa.query
+                      .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(ProcesoIniciativa.nombre_iniciativa)))
+    else:
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return redirect(url_for('index'))
+        procesos_q = (ProcesoIniciativa.query
+                      .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(ProcesoIniciativa.nombre_iniciativa))
+                      .filter(Iniciativa.oficina_regional == or_user))
 
-    # Asignar número de registro dentro de cada iniciativa
+    procesos = (procesos_q
+                .order_by(Iniciativa.nombre_iniciativa.asc(),
+                          ProcesoIniciativa.fecha_registro.asc())
+                .all())
+
+    # Numeración por iniciativa (igual que ya tienes)
     registros_por_iniciativa = {}
-    
-    for proceso in procesos:
-        nombre_iniciativa = proceso.nombre_iniciativa
-        
-        # Si es la primera vez que encontramos esta iniciativa, inicializar el contador
-        if nombre_iniciativa not in registros_por_iniciativa:
-            registros_por_iniciativa[nombre_iniciativa] = 1
-        else:
-            registros_por_iniciativa[nombre_iniciativa] += 1
+    for p in procesos:
+        clave = p.nombre_iniciativa
+        registros_por_iniciativa[clave] = registros_por_iniciativa.get(clave, 0) + 1
+        p.numero_registro = registros_por_iniciativa[clave]
 
-        # Asignar el número de registro
-        proceso.numero_registro = registros_por_iniciativa[nombre_iniciativa]
-
-    return render_template(
-        'listar_proceso_iniciativa.html',
-        procesos=procesos
-    )
+    return render_template('listar_proceso_iniciativa.html', procesos=procesos)
 
 
 # EDITAR PROCESO DE INICIATIVA
 @app.route('/editar_proceso_iniciativa/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_proceso_iniciativa(id):
     # Buscar el proceso de iniciativa por id usando filter_by y first()
     proceso_iniciativas = ProcesoIniciativa.query.filter_by(id=id).first()
@@ -1103,6 +1283,17 @@ def editar_proceso_iniciativa(id):
     if not proceso_iniciativas:
         flash('El proceso de iniciativa no existe.', 'danger')
         return redirect(url_for('listar_proceso_iniciativa'))  # Redirigir si no se encuentra
+
+    # 🚦 Validación OR en GET/POST para no-admin
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return redirect(url_for('listar_proceso_iniciativa'))
+        ini_actual = Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == func.lower(proceso_iniciativas.nombre_iniciativa)).first()
+        if not ini_actual or ini_actual.oficina_regional != or_user:
+            flash('No puedes acceder a procesos de iniciativas de otra Oficina Regional.', 'danger')
+            return redirect(url_for('listar_proceso_iniciativa'))
 
     if request.method == 'POST':
         
@@ -1179,7 +1370,20 @@ def editar_proceso_iniciativa(id):
 
         # Validar y acceder a los participantes
         participantes = proceso_iniciativas.registros  # Relación indirecta ya configurada
-        print(f"Participantes asociados al proceso: {[p.nombre for p in participantes]}")  # Debug opcional
+
+        nuevo_nombre_lower = request.form['nombre_iniciativa'].strip().lower()
+        ini_nueva = Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == nuevo_nombre_lower).first()
+        if not ini_nueva:
+            flash('La iniciativa seleccionada no existe.', 'danger')
+            return redirect(url_for('editar_proceso_iniciativa', id=id))
+
+        if not is_admin():
+            if ini_nueva.oficina_regional != or_user:
+                flash('No puedes mover este proceso a una iniciativa de otra Oficina Regional.', 'danger')
+                return redirect(url_for('editar_proceso_iniciativa', id=id))
+
+        # Usar nombre canónico
+        proceso_iniciativas.nombre_iniciativa = ini_nueva.nombre_iniciativa
 
         # Guardar cambios en la base de datos
         try:
@@ -1193,7 +1397,13 @@ def editar_proceso_iniciativa(id):
     fecha_registro_value = format_for_datetime_local(proceso_iniciativas.fecha_registro)
 
     # Renderizar el formulario con los datos existentes
-    iniciativas = Iniciativa.query.all()  # Asumiendo que hay un modelo de Iniciativas
+    if is_admin():
+        iniciativas = Iniciativa.query.order_by(Iniciativa.nombre_iniciativa.asc()).all()
+    else:
+        iniciativas = (Iniciativa.query
+                       .filter(Iniciativa.oficina_regional == or_user)
+                       .order_by(Iniciativa.nombre_iniciativa.asc())
+                       .all())
     participantes = proceso_iniciativas.registros  # Participantes relacionados
 
     numero_registro = (db.session.query(ProcesoIniciativa.id)
@@ -1275,6 +1485,22 @@ class CapacidadIncidencia(db.Model):
     
     avances = db.relationship('AvanceCapacidadIncidencia', backref='capacidad_incidencia', lazy=True, cascade="all, delete-orphan")
     
+# @app.route('/obtener_datos_iniciativa', methods=['GET'])
+# @login_required
+# def obtener_datos_iniciativa():
+#     nombre_iniciativa = request.args.get('nombre_iniciativa', '').strip()
+#     if not nombre_iniciativa:
+#         return jsonify({'error': 'Debe proporcionar el nombre de la iniciativa.'}), 400
+#
+#     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
+#     if not iniciativa:
+#         return jsonify({'error': 'Iniciativa no encontrada.'}), 404
+#
+#     return jsonify({
+#         'poblacion': iniciativa.poblacion or iniciativa.otra_poblacion_detalle,
+#         'derecho_generico': iniciativa.derecho_generico or iniciativa.otro_derecho_detalle
+#     })
+
 @app.route('/obtener_datos_iniciativa', methods=['GET'])
 @login_required
 def obtener_datos_iniciativa():
@@ -1282,45 +1508,121 @@ def obtener_datos_iniciativa():
     if not nombre_iniciativa:
         return jsonify({'error': 'Debe proporcionar el nombre de la iniciativa.'}), 400
 
-    iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
-    if not iniciativa:
+    ini = Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == func.lower(nombre_iniciativa)).first()
+    if not ini:
         return jsonify({'error': 'Iniciativa no encontrada.'}), 404
 
+    # 🔐 Filtrar por OR si no es admin
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user or ini.oficina_regional != or_user:
+            return jsonify({'error': 'No autorizado para acceder a esta iniciativa.'}), 403
+
     return jsonify({
-        'poblacion': iniciativa.poblacion or iniciativa.otra_poblacion_detalle,
-        'derecho_generico': iniciativa.derecho_generico or iniciativa.otro_derecho_detalle
+        'poblacion': ini.poblacion or ini.otra_poblacion_detalle,
+        'derecho_generico': ini.derecho_generico or ini.otro_derecho_detalle
     })
 
 
+
 # BUSCAR PARTICIPANTE
+# @app.route('/buscar_participante', methods=['GET'])
+# @login_required
+# def buscar_participante():
+#     search = request.args.get('q', '').strip().lower()  # Captura el término de búsqueda
+#     if not search:
+#         return jsonify([])  # Retorna una lista vacía si no hay término de búsqueda
+#
+#     # Buscar coincidencias por DNI o nombre, asegurarse de que tengan iniciativas relacionadas y estén activos
+#     registros = Registro.query.filter(
+#         ((Registro.dni.ilike(f'%{search}%')) | (Registro.nombre.ilike(f'%{search}%'))) &  # Coincidencia en búsqueda
+#         (Registro.iniciativas.any()) &  # Tengan al menos una iniciativa relacionada
+#         (Registro.estado == 'ACT')  # El estado del participante sea ACT
+#     ).all()
+#
+#     # Construir el resultado con lógica robusta para campos opcionales
+#     resultado = []
+#     for registro in registros:
+#         iniciativa = registro.iniciativas[0] if registro.iniciativas else None  # Tomar la primera iniciativa relacionada, si existe
+#         resultado.append({
+#             "dni": registro.dni or "",
+#             "nombre": registro.nombre or "",
+#             "poblacion": iniciativa.poblacion or iniciativa.otra_poblacion_detalle if iniciativa else "No especificado",
+#             "derecho_generico": iniciativa.derecho_generico or iniciativa.otro_derecho_detalle if iniciativa else "No especificado",
+#             "iniciativa": iniciativa.nombre_iniciativa if iniciativa else "No especificado",
+#             "capacidad_id": registro.capacidades[0].id if registro.capacidades else None
+#         })
+#
+#     return jsonify(resultado)
+
 @app.route('/buscar_participante', methods=['GET'])
 @login_required
 def buscar_participante():
-    search = request.args.get('q', '').strip().lower()  # Captura el término de búsqueda
+    search = request.args.get('q', '').strip().lower()
     if not search:
-        return jsonify([])  # Retorna una lista vacía si no hay término de búsqueda
+        return jsonify([])
 
-    # Buscar coincidencias por DNI o nombre, asegurarse de que tengan iniciativas relacionadas y estén activos
+    # OR del usuario (si no hay, devolvemos vacío para no filtrar mal)
+    or_user = (current_user.oficina_regional or '').strip()
+    if not is_admin() and not or_user:
+        return jsonify([])
+
+    # Participantes que coinciden + están ACT + tienen iniciativas
     registros = Registro.query.filter(
-        ((Registro.dni.ilike(f'%{search}%')) | (Registro.nombre.ilike(f'%{search}%'))) &  # Coincidencia en búsqueda
-        (Registro.iniciativas.any()) &  # Tengan al menos una iniciativa relacionada
-        (Registro.estado == 'ACT')  # El estado del participante sea ACT
-    ).all()
+        ((Registro.dni.ilike(f'%{search}%')) | (Registro.nombre.ilike(f'%{search}%'))) &
+        (Registro.estado == 'ACT') &
+        (Registro.iniciativas.any())  # al menos una iniciativa
+    ).options(joinedload(Registro.iniciativas)).all()
 
-    # Construir el resultado con lógica robusta para campos opcionales
     resultado = []
     for registro in registros:
-        iniciativa = registro.iniciativas[0] if registro.iniciativas else None  # Tomar la primera iniciativa relacionada, si existe
+        # Iniciativas accesibles por el usuario
+        if is_admin():
+            iniciativas_visibles = registro.iniciativas
+        else:
+            iniciativas_visibles = [i for i in registro.iniciativas if i.oficina_regional == or_user]
+
+        if not iniciativas_visibles:
+            continue  # este participante no tiene iniciativas en la OR del usuario
+
+        # Tomamos una iniciativa “visible” (la primera)
+        ini = iniciativas_visibles[0]
+
+        # Si existe una CapacidadIncidencia para ESTE registro en ESTA iniciativa, devuélvela
+        cap = (CapacidadIncidencia.query
+               .filter(CapacidadIncidencia.registro_dni == registro.dni,
+                       func.lower(CapacidadIncidencia.nombre_iniciativa) == func.lower(ini.nombre_iniciativa))
+               .first())
+
         resultado.append({
             "dni": registro.dni or "",
             "nombre": registro.nombre or "",
-            "poblacion": iniciativa.poblacion or iniciativa.otra_poblacion_detalle if iniciativa else "No especificado",
-            "derecho_generico": iniciativa.derecho_generico or iniciativa.otro_derecho_detalle if iniciativa else "No especificado",
-            "iniciativa": iniciativa.nombre_iniciativa if iniciativa else "No especificado",
-            "capacidad_id": registro.capacidades[0].id if registro.capacidades else None
+            "poblacion": ini.poblacion or ini.otra_poblacion_detalle or "No especificado",
+            "derecho_generico": ini.derecho_generico or ini.otro_derecho_detalle or "No especificado",
+            "iniciativa": ini.nombre_iniciativa,
+            "capacidad_id": cap.id if cap else None
         })
 
     return jsonify(resultado)
+
+
+# @app.route('/buscar_iniciativas_participante', methods=['GET'])
+# @login_required
+# def buscar_iniciativas_participante():
+#     dni = request.args.get('dni', '').strip()
+#     if not dni:
+#         return jsonify([])
+#
+#     # Buscar las iniciativas asociadas al participante por su DNI
+#     participante = Registro.query.filter_by(dni=dni).first()
+#     if not participante:
+#         return jsonify([])
+#
+#     iniciativas = [
+#         {"nombre_iniciativa": iniciativa.nombre_iniciativa}
+#         for iniciativa in participante.iniciativas
+#     ]
+#     return jsonify(iniciativas)
 
 @app.route('/buscar_iniciativas_participante', methods=['GET'])
 @login_required
@@ -1329,47 +1631,70 @@ def buscar_iniciativas_participante():
     if not dni:
         return jsonify([])
 
-    # Buscar las iniciativas asociadas al participante por su DNI
-    participante = Registro.query.filter_by(dni=dni).first()
+    participante = Registro.query.filter_by(dni=dni).options(joinedload(Registro.iniciativas)).first()
     if not participante:
         return jsonify([])
 
-    iniciativas = [
-        {"nombre_iniciativa": iniciativa.nombre_iniciativa}
-        for iniciativa in participante.iniciativas
-    ]
+    if is_admin():
+        iniciativas = [{"nombre_iniciativa": i.nombre_iniciativa} for i in participante.iniciativas]
+    else:
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            return jsonify([])
+        iniciativas = [{"nombre_iniciativa": i.nombre_iniciativa}
+                       for i in participante.iniciativas
+                       if i.oficina_regional == or_user]
+
     return jsonify(iniciativas)
 
 
 @app.route('/form_capacidades_incidencia', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_capacidades_incidencia():
     if request.method == 'POST':
-        registro_dni = request.form['registro_dni']
-        nombre_iniciativa = request.form['nombre_iniciativa']
+        registro_dni = request.form['registro_dni'].strip()
+        nombre_iniciativa_in = request.form['nombre_iniciativa'].strip()
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
 
         
         if not registro_dni:
             flash('El participante buscado no está en el listado de Registro inicial.', 'danger')
             return redirect(url_for('form_capacidades_incidencia'))
-        
-        if not Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first():
-            flash('La iniciativa seleccionada no existe o no está asociada al participante.', 'danger')
+
+        if not nombre_iniciativa_in:
+            flash('El participante debe pertenecer a una iniciativa. Debe crear la iniciativa y asignar al usuario.', 'danger')
             return redirect(url_for('form_capacidades_incidencia'))
 
-        
-        if not nombre_iniciativa:
-            flash('El participante debe pertenecer a una iniciativa. Debe crear la iniciativa y asignar al usuario.', 'danger')
+        participante = Registro.query.filter_by(dni=registro_dni).first()
+        if not participante or participante.estado != 'ACT':
+            flash('El participante no existe o no está activo.', 'danger')
+            return redirect(url_for('form_capacidades_incidencia'))
+
+        ini = (Iniciativa.query
+               .filter(func.lower(Iniciativa.nombre_iniciativa) == func.lower(nombre_iniciativa_in))
+               .first())
+        if not ini:
+            flash('La iniciativa seleccionada no existe.', 'danger')
+            return redirect(url_for('form_capacidades_incidencia'))
+
+        if not is_admin():
+            or_user = (current_user.oficina_regional or '').strip()
+            if not or_user or ini.oficina_regional != or_user:
+                flash('No puedes registrar capacidades para una iniciativa de otra Oficina Regional.', 'danger')
+                return redirect(url_for('form_capacidades_incidencia'))
+
+        # Validar que el participante esté vinculado a la iniciativa
+        if ini not in participante.iniciativas:
+            flash('El participante no está asociado a la iniciativa seleccionada.', 'danger')
             return redirect(url_for('form_capacidades_incidencia'))
         
         # Verificar si ya existe una capacidad registrada para el participante en esa iniciativa
-        capacidad_existente = CapacidadIncidencia.query.filter_by(
-            registro_dni=registro_dni,
-            nombre_iniciativa=nombre_iniciativa
-        ).first()
-
+        capacidad_existente = (CapacidadIncidencia.query
+                               .filter(CapacidadIncidencia.registro_dni == registro_dni,
+                                       func.lower(CapacidadIncidencia.nombre_iniciativa) == func.lower(
+                                           ini.nombre_iniciativa))
+                               .first())
         if capacidad_existente:
             flash('Ya existe un registro inicial de capacidades para este participante en esta iniciativa.', 'danger')
             return redirect(url_for('listar_capacidades_incidencia'))
@@ -1377,7 +1702,7 @@ def form_capacidades_incidencia():
 
         nueva_capacidad = CapacidadIncidencia(
             registro_dni=registro_dni,
-            nombre_iniciativa=nombre_iniciativa,
+            nombre_iniciativa=ini.nombre_iniciativa,
             capacidad_1=request.form.get('capacidad_1', None) or None,
             capacidad_2=request.form.get('capacidad_2', None) or None,
             capacidad_3=request.form.get('capacidad_3', None) or None,
@@ -1399,16 +1724,40 @@ def form_capacidades_incidencia():
     # Si es GET
     return render_template('capacidades_incidencia/form_capacidades_incidencia.html')
 
+# @app.route('/listar_capacidades_incidencia', methods=['GET'])
+# @login_required
+# @roles_required('admin', 'gestor', 'viewer')
+# def listar_capacidades_incidencia():
+#     capacidades = CapacidadIncidencia.query.order_by(CapacidadIncidencia.fecha_registro.desc()).all()
+#     return render_template('capacidades_incidencia/listar_capacidades_incidencia.html', capacidades=capacidades)
+
 @app.route('/listar_capacidades_incidencia', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_capacidades_incidencia():
-    capacidades = CapacidadIncidencia.query.order_by(CapacidadIncidencia.fecha_registro.desc()).all()
+    if is_admin() or is_viewer():
+        capacidades_q = (CapacidadIncidencia.query
+                         .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(CapacidadIncidencia.nombre_iniciativa)))
+    else:
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return redirect(url_for('index'))
+        capacidades_q = (CapacidadIncidencia.query
+                         .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(CapacidadIncidencia.nombre_iniciativa))
+                         .filter(Iniciativa.oficina_regional == or_user))
+
+    capacidades = (capacidades_q
+                   .options(joinedload(CapacidadIncidencia.iniciativa), joinedload(CapacidadIncidencia.registro))
+                   .order_by(CapacidadIncidencia.fecha_registro.desc())
+                   .all())
+
     return render_template('capacidades_incidencia/listar_capacidades_incidencia.html', capacidades=capacidades)
+
 
 @app.route('/editar_capacidades_incidencia/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_capacidades_incidencia(id):
     # Buscar la capacidad en la base de datos por ID
     capacidad = CapacidadIncidencia.query.filter_by(id=id).first()
@@ -1416,6 +1765,17 @@ def editar_capacidades_incidencia(id):
     if not capacidad:
         flash('El registro de capacidad de incidencia no existe.', 'danger')
         return redirect(url_for('listar_capacidades_incidencia'))  # Redirigir si no se encuentra
+
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return redirect(url_for('listar_capacidades_incidencia'))
+
+        # capacidad.iniciativa está disponible por la relación
+        if not capacidad.iniciativa or capacidad.iniciativa.oficina_regional != or_user:
+            flash('No puedes acceder/editar capacidades de iniciativas de otra Oficina Regional.', 'danger')
+            return redirect(url_for('listar_capacidades_incidencia'))
 
     if request.method == 'POST':
         try:
@@ -1495,6 +1855,17 @@ class AvanceCapacidadIncidencia(db.Model):
     # Relación con CapacidadIncidencia
     # capacidad_incidencia = db.relationship('CapacidadIncidencia', backref=db.backref('avances', lazy=True))
 
+# @app.route('/get_iniciativas_por_participante', methods=['GET'])
+# @login_required
+# def get_iniciativas_por_participante():
+#     dni = request.args.get('dni')
+#     if not dni:
+#         return jsonify([])
+#
+#     # Obtener todas las iniciativas asociadas al participante
+#     iniciativas = Iniciativa.query.join(iniciativa_registro).filter_by(registro_dni=dni).all()
+#
+#     return jsonify([{'nombre_iniciativa': iniciativa.nombre_iniciativa} for iniciativa in iniciativas])
 @app.route('/get_iniciativas_por_participante', methods=['GET'])
 @login_required
 def get_iniciativas_por_participante():
@@ -1502,11 +1873,39 @@ def get_iniciativas_por_participante():
     if not dni:
         return jsonify([])
 
-    # Obtener todas las iniciativas asociadas al participante
-    iniciativas = Iniciativa.query.join(iniciativa_registro).filter_by(registro_dni=dni).all()
+    q = (Iniciativa.query
+         .join(iniciativa_registro, iniciativa_registro.c.iniciativa_nombre == Iniciativa.nombre_iniciativa)
+         .filter(iniciativa_registro.c.registro_dni == dni))
 
-    return jsonify([{'nombre_iniciativa': iniciativa.nombre_iniciativa} for iniciativa in iniciativas])
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            return jsonify([])  # o 400/flash, como prefieras
+        q = q.filter(Iniciativa.oficina_regional == or_user)
 
+    iniciativas = q.all()
+    return jsonify([{'nombre_iniciativa': ini.nombre_iniciativa} for ini in iniciativas])
+
+# @app.route('/get_numero_avances_por_iniciativa', methods=['GET'])
+# @login_required
+# def get_numero_avances_por_iniciativa():
+#     dni = request.args.get('dni')
+#     nombre_iniciativa = request.args.get('iniciativa')
+#
+#     if not dni or not nombre_iniciativa:
+#         return jsonify({'error': 'DNI o iniciativa no especificados.'})
+#
+#     # Buscar la capacidad específica para el participante y la iniciativa
+#     capacidad = CapacidadIncidencia.query.filter_by(registro_dni=dni, nombre_iniciativa=nombre_iniciativa).first()
+#     if not capacidad:
+#         return jsonify({'error': 'No existe capacidad para esta combinación de participante e iniciativa.'})
+#
+#     # Contar los avances asociados a esta capacidad
+#     numero_avances = AvanceCapacidadIncidencia.query.filter_by(capacidad_id=capacidad.id).count()
+#
+#     # El próximo registro será el actual número de avances + 1
+#     proximo_registro = numero_avances + 1
+#     return jsonify({'proximo_registro': proximo_registro})
 
 @app.route('/get_numero_avances_por_iniciativa', methods=['GET'])
 @login_required
@@ -1517,23 +1916,47 @@ def get_numero_avances_por_iniciativa():
     if not dni or not nombre_iniciativa:
         return jsonify({'error': 'DNI o iniciativa no especificados.'})
 
-    # Buscar la capacidad específica para el participante y la iniciativa
-    capacidad = CapacidadIncidencia.query.filter_by(registro_dni=dni, nombre_iniciativa=nombre_iniciativa).first()
+    q = (CapacidadIncidencia.query
+         .join(Iniciativa, CapacidadIncidencia.nombre_iniciativa == Iniciativa.nombre_iniciativa)
+         .filter(CapacidadIncidencia.registro_dni == dni,
+                 CapacidadIncidencia.nombre_iniciativa == nombre_iniciativa))
+
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            return jsonify({'error': 'Tu usuario no tiene Oficina Regional asignada.'})
+        q = q.filter(Iniciativa.oficina_regional == or_user)
+
+    capacidad = q.first()
     if not capacidad:
-        return jsonify({'error': 'No existe capacidad para esta combinación de participante e iniciativa.'})
+        return jsonify({'error': 'No existe capacidad para esta combinación o no pertenece a tu OR.'})
 
-    # Contar los avances asociados a esta capacidad
     numero_avances = AvanceCapacidadIncidencia.query.filter_by(capacidad_id=capacidad.id).count()
-
-    # El próximo registro será el actual número de avances + 1
-    proximo_registro = numero_avances + 1
-    return jsonify({'proximo_registro': proximo_registro})
+    return jsonify({'proximo_registro': numero_avances + 1})
 
 
 
 
 
 
+
+# @app.route('/buscar_iniciativas_participante_avances', methods=['GET'])
+# @login_required
+# def buscar_iniciativas_participante_avances():
+#     dni = request.args.get('dni', '').strip()
+#     if not dni:
+#         return jsonify([])
+#
+#     # Buscar las iniciativas asociadas al participante por su DNI
+#     participante = Registro.query.filter_by(dni=dni).first()
+#     if not participante:
+#         return jsonify([])
+#
+#     iniciativas = [
+#         {"nombre_iniciativa": iniciativa.nombre_iniciativa}
+#         for iniciativa in participante.iniciativas
+#     ]
+#     return jsonify(iniciativas)
 
 @app.route('/buscar_iniciativas_participante_avances', methods=['GET'])
 @login_required
@@ -1542,21 +1965,23 @@ def buscar_iniciativas_participante_avances():
     if not dni:
         return jsonify([])
 
-    # Buscar las iniciativas asociadas al participante por su DNI
-    participante = Registro.query.filter_by(dni=dni).first()
-    if not participante:
-        return jsonify([])
+    q = (Iniciativa.query
+         .join(iniciativa_registro, iniciativa_registro.c.iniciativa_nombre == Iniciativa.nombre_iniciativa)
+         .filter(iniciativa_registro.c.registro_dni == dni))
 
-    iniciativas = [
-        {"nombre_iniciativa": iniciativa.nombre_iniciativa}
-        for iniciativa in participante.iniciativas
-    ]
-    return jsonify(iniciativas)
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            return jsonify([])
+        q = q.filter(Iniciativa.oficina_regional == or_user)
+
+    iniciativas = q.all()
+    return jsonify([{"nombre_iniciativa": ini.nombre_iniciativa} for ini in iniciativas])
 
 
 @app.route('/form_avances_capacidades_incidencia', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_avances_capacidades_incidencia():
     if request.method == 'POST':
         # Obtener datos del formulario
@@ -1564,20 +1989,26 @@ def form_avances_capacidades_incidencia():
         nombre_iniciativa = request.form.get('nombre_iniciativa')  # Nombre de la iniciativa
         registro_dni = request.form.get('registro_dni')  # DNI del participante seleccionado
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
-        print(f"Registro DNI: {registro_dni}, Nombre Iniciativa: {nombre_iniciativa}")  # Verifica estos valores en el terminal/log
-        # Verificar que los datos esenciales existan
         if not registro_dni or not nombre_iniciativa:
             flash('El participante o la iniciativa no son válidos.', 'danger')
             return redirect(url_for('form_avances_capacidades_incidencia'))
-        
-        # Buscar la capacidad en la base de datos usando el DNI y la iniciativa
-        capacidad = CapacidadIncidencia.query.filter_by(
-            registro_dni=registro_dni,
-            nombre_iniciativa=nombre_iniciativa
-        ).first()
-        
+
+            # Buscar capacidad asegurando que la Iniciativa sea de la misma OR
+        q = (CapacidadIncidencia.query
+             .join(Iniciativa, CapacidadIncidencia.nombre_iniciativa == Iniciativa.nombre_iniciativa)
+             .filter(CapacidadIncidencia.registro_dni == registro_dni,
+                     CapacidadIncidencia.nombre_iniciativa == nombre_iniciativa))
+
+        if not is_admin():
+            or_user = (current_user.oficina_regional or '').strip()
+            if not or_user:
+                flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+                return redirect(url_for('form_avances_capacidades_incidencia'))
+            q = q.filter(Iniciativa.oficina_regional == or_user)
+
+        capacidad = q.first()
         if not capacidad:
-            flash('La iniciativa seleccionada no está asociada a este participante.', 'danger')
+            flash('La iniciativa no está asociada a este participante en tu OR.', 'danger')
             return redirect(url_for('form_avances_capacidades_incidencia'))
                 
         # Calificaciones y datos específicos del avance
@@ -1621,32 +2052,73 @@ def form_avances_capacidades_incidencia():
     # Si es GET, renderizar el formulario vacío
     return render_template('capacidades_incidencia/form_avances_capacidades_incidencia.html')
 
+# @app.route('/get_capacidad_avances/<participant_dni>', methods=['GET'])
+# @login_required
+# def get_capacidad_avances(participant_dni):
+#     # Buscar la capacidad asociada al participante
+#     capacidad = CapacidadIncidencia.query.filter_by(registro_dni=participant_dni).first()
+#     if not capacidad:
+#         return jsonify({"error": "No se encontró una capacidad para este participante."})
+#
+#     # Contar los avances asociados a esta capacidad
+#     numero_registros = len(capacidad.avances)
+#
+#     return jsonify({
+#         "capacidad_id": capacidad.id,
+#         "numero_registros": numero_registros
+#     })
+
 @app.route('/get_capacidad_avances/<participant_dni>', methods=['GET'])
 @login_required
 def get_capacidad_avances(participant_dni):
-    # Buscar la capacidad asociada al participante
-    capacidad = CapacidadIncidencia.query.filter_by(registro_dni=participant_dni).first()
-    if not capacidad:
-        return jsonify({"error": "No se encontró una capacidad para este participante."})
+    q = (CapacidadIncidencia.query
+         .join(Iniciativa, CapacidadIncidencia.nombre_iniciativa == Iniciativa.nombre_iniciativa)
+         .filter(CapacidadIncidencia.registro_dni == participant_dni))
 
-    # Contar los avances asociados a esta capacidad
-    numero_registros = len(capacidad.avances)
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            return jsonify({"error": "Tu usuario no tiene Oficina Regional asignada."})
+        q = q.filter(Iniciativa.oficina_regional == or_user)
+
+    # Si hubiera varias capacidades para el mismo DNI, puedes escoger la más reciente:
+    capacidad = q.order_by(CapacidadIncidencia.fecha_registro.desc()).first()
+
+    if not capacidad:
+        return jsonify({"error": "No se encontró una capacidad en tu OR para este participante."})
 
     return jsonify({
         "capacidad_id": capacidad.id,
-        "numero_registros": numero_registros
+        "numero_registros": len(capacidad.avances)
     })
 
 @app.route('/listar_avances_capacidades_incidencia', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_avances_capacidades_incidencia():
     # Obtener todos los avances ordenados por capacidad y fecha de registro
-    avances = db.session.query(AvanceCapacidadIncidencia).join(CapacidadIncidencia).order_by(
-        CapacidadIncidencia.registro_dni,  # Ordenar por DNI del participante
-        AvanceCapacidadIncidencia.capacidad_id,  # Asegurar orden dentro de la capacidad
-        AvanceCapacidadIncidencia.fecha_registro  # Ordenar por fecha dentro de la capacidad
-    ).all()
+    q = (AvanceCapacidadIncidencia.query
+    .join(CapacidadIncidencia, AvanceCapacidadIncidencia.capacidad_id == CapacidadIncidencia.id)
+    .join(Iniciativa, CapacidadIncidencia.nombre_iniciativa == Iniciativa.nombre_iniciativa)
+    .options(
+        joinedload(AvanceCapacidadIncidencia.capacidad_incidencia)
+        .joinedload(CapacidadIncidencia.iniciativa),
+        joinedload(AvanceCapacidadIncidencia.capacidad_incidencia)
+        .joinedload(CapacidadIncidencia.registro)
+    ))
+
+    if not (is_admin() or is_viewer()):
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return render_template('capacidades_incidencia/listar_avances_capacidades_incidencia.html', avances=[])
+        q = q.filter(Iniciativa.oficina_regional == or_user)
+
+    avances = (q.order_by(
+        CapacidadIncidencia.registro_dni.asc(),
+        AvanceCapacidadIncidencia.capacidad_id.asc(),
+        AvanceCapacidadIncidencia.fecha_registro.asc()
+    ).all())
 
     # Añadir el número de registro (índice) para cada avance en su capacidad
     avances_con_numero = []
@@ -1659,12 +2131,9 @@ def listar_avances_capacidades_incidencia():
             numero_registro = 1  # Reiniciar el conteo para cada nueva capacidad
         else:
             numero_registro += 1
-
-        # Añadir el número de registro como un atributo dinámico
         avance.numero_registro = numero_registro
         avances_con_numero.append(avance)
 
-    # Pasar los avances con el número de registro al template
     return render_template(
         'capacidades_incidencia/listar_avances_capacidades_incidencia.html',
         avances=avances_con_numero
@@ -1673,14 +2142,30 @@ def listar_avances_capacidades_incidencia():
 
 @app.route('/editar_avances_capacidades_incidencia/<int:avance_id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_avances_capacidades_incidencia(avance_id):
     # Buscar el avance por ID
-    avance = AvanceCapacidadIncidencia.query.filter_by(id=avance_id).first()
+    q = (AvanceCapacidadIncidencia.query
+         .join(CapacidadIncidencia, AvanceCapacidadIncidencia.capacidad_id == CapacidadIncidencia.id)
+         .join(Iniciativa, CapacidadIncidencia.nombre_iniciativa == Iniciativa.nombre_iniciativa)
+         .options(
+        joinedload(AvanceCapacidadIncidencia.capacidad_incidencia)
+        .joinedload(CapacidadIncidencia.iniciativa),
+        joinedload(AvanceCapacidadIncidencia.capacidad_incidencia)
+        .joinedload(CapacidadIncidencia.registro)
+    )
+         .filter(AvanceCapacidadIncidencia.id == avance_id))
 
-    # Validar si el avance existe
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada.', 'danger')
+            return redirect(url_for('listar_avances_capacidades_incidencia'))
+        q = q.filter(Iniciativa.oficina_regional == or_user)
+
+    avance = q.first()
     if not avance:
-        flash('El avance no existe.', 'danger')
+        flash('El avance no existe o no pertenece a tu OR.', 'danger')
         return redirect(url_for('listar_avances_capacidades_incidencia'))
 
     if request.method == 'POST':
@@ -1758,18 +2243,32 @@ class CasoEmblematico(db.Model):
     otro_dato = db.Column(db.String(300), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
+    oficina_regional = db.Column(db.String(60), nullable=True, index=True)
     # Relación con AvanceCasoEmblematico
     avances = db.relationship('AvanceCasoEmblematico', backref='caso', lazy=True, cascade="all, delete-orphan")
 
 
 @app.route('/form_registro_casos_emblematicos', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_registro_casos_emblematicos():
     if request.method == 'POST':
         # Validar que el nombre genérico del caso no exista
         nombre_caso = request.form['nombre_caso'].strip().lower()
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+
+        if is_admin():
+            oficina_regional = request.form.get('oficina_regional', '').strip()
+            # (opcional) normaliza a una de las opciones válidas
+            if oficina_regional and oficina_regional not in OR_CHOICES:
+                flash('La oficina regional enviada no es válida.', 'danger')
+                return redirect(url_for('form_registro_casos_emblematicos'))
+        else:
+            # Gestor: OR fija del usuario
+            oficina_regional = (current_user.oficina_regional or '').strip()
+            if not oficina_regional:
+                flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+                return redirect(url_for('form_registro_casos_emblematicos'))
 
         # Verificar si ya existe un caso con el mismo nombre
         # filter(func.lower(CasoEmblematico.nombre_caso) == nombre_caso).first():
@@ -1788,6 +2287,7 @@ def form_registro_casos_emblematicos():
             objetivo_defensa=request.form.get('objetivo_defensa', ''),
             situacion_caso=request.form.get('situacion_caso', ''),
             otro_dato=request.form.get('otro_dato', ''),
+            oficina_regional=oficina_regional,
             responsable_registro=current_user.username
         )
 
@@ -1801,26 +2301,47 @@ def form_registro_casos_emblematicos():
         flash('Caso Emblemático registrado exitosamente.', 'success')
         return redirect(url_for('listar_casos_emblematicos'))
 
-    return render_template('form_registro_casos_emblematicos.html')
+    return render_template(
+        'form_registro_casos_emblematicos.html',
+        OR_CHOICES=OR_CHOICES)
 
 # LISTAR CASOS EMBLEMÁTICOS
 @app.route('/listar_casos_emblematicos')
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_casos_emblematicos():
-    casos = CasoEmblematico.query.order_by(CasoEmblematico.fecha_registro.desc()).all()
+    q = CasoEmblematico.query
+    if not (is_admin() or is_viewer()):
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return render_template('listar_casos_emblematicos.html', casos=[])
+        q = q.filter(CasoEmblematico.oficina_regional == or_user)
+    casos = q.order_by(CasoEmblematico.fecha_registro.desc()).all()
     return render_template('listar_casos_emblematicos.html', casos=casos)
-
 # EDITAR CASO EMBLEMATICO
 @app.route('/editar_caso_emblematico/<nombre_caso>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_caso_emblematico(nombre_caso):
     caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
 
     if not caso:
         flash('El caso emblematico no existe.', 'danger')
         return redirect(url_for('listar_casos_emblematicos'))
+
+    if is_admin():
+      oficina_regional = request.form.get('oficina_regional', '').strip()
+      # (opcional) normaliza a una de las opciones válidas
+      if oficina_regional and oficina_regional not in OR_CHOICES:
+        flash('La oficina regional enviada no es válida.', 'danger')
+        return redirect(url_for('form_registro_casos_emblematicos'))
+    else:
+      # Gestor: OR fija del usuario
+      oficina_regional = (current_user.oficina_regional or '').strip()
+      if not oficina_regional:
+          flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+          return redirect(url_for('form_registro_casos_emblematicos'))
     
     if request.method == 'POST':
         # Actualizar solo los campos que no son llave primaria, verificando si están vacíos o nulos
@@ -1833,6 +2354,7 @@ def editar_caso_emblematico(nombre_caso):
         caso.situacion_caso = request.form.get('situacion_caso', '')  # Si no se proporciona, por defecto será un string vacío
         caso.otro_dato = request.form.get('otro_dato', '')  # Si no se proporciona, por defecto será un string vacío
         caso.responsable_registro = current_user.username
+        caso.oficina_regional = oficina_regional
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         if fecha_manual:
             caso.fecha_registro = fecha_manual
@@ -1852,7 +2374,8 @@ def editar_caso_emblematico(nombre_caso):
     return render_template(
         'editar_caso_emblematico.html',
         caso=caso,
-        fecha_registro_value=fecha_registro_value)
+        fecha_registro_value=fecha_registro_value,
+        OR_CHOICES=OR_CHOICES)
 
 # ELIMINAR CASO EMBLEMATICO
 @app.route('/eliminar_caso_emblematico/<nombre_caso>', methods=['POST'])
@@ -1900,13 +2423,28 @@ class AvanceCasoEmblematico(db.Model):
 
 @app.route('/form_avances_caso_emblematico', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_avances_caso_emblematico():
     if request.method == 'POST':
+        nombre_caso = (request.form.get('nombre_caso') or '').strip().lower()
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+
+        # Validar que el caso existe
+        caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
+        if not caso:
+            flash('El caso seleccionado no existe.', 'danger')
+            return redirect(url_for('form_avances_caso_emblematico'))
+
+        # Restringir por OR si no es admin
+        if not is_admin():
+            or_user = (current_user.oficina_regional or '').strip()
+            if not or_user or caso.oficina_regional != or_user:
+                flash('No puedes registrar avances para un caso de otra Oficina Regional.', 'danger')
+                return redirect(url_for('form_avances_caso_emblematico'))
+
         # Crear un nuevo registro de avance del caso emblemático con todos los datos
         nuevo_avance_caso_emblematico = AvanceCasoEmblematico(
-            nombre_caso=request.form['nombre_caso'].strip().lower(),
+            nombre_caso=nombre_caso,
             ocurrencias_periodo=request.form.get('ocurrencias_periodo', ''),
             actividades_realizadas=request.form.get('actividades_realizadas', ''),
             presencia_participacion=request.form.get('presencia_participacion', ''),
@@ -1926,30 +2464,72 @@ def form_avances_caso_emblematico():
         flash('Avance del Caso Emblemático registrado exitosamente.', 'success')
         return redirect(url_for('listar_avances_caso_emblematico'))
 
-    # Obtener la lista de todos los casos emblemáticos
-    casos = CasoEmblematico.query.all()
+    # GET: listar casos filtrados por OR si no es admin
+    casos_q = CasoEmblematico.query
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return render_template('form_avances_caso_emblematico.html', casos=[])
+        casos_q = casos_q.filter(CasoEmblematico.oficina_regional == or_user)
+    casos = casos_q.order_by(CasoEmblematico.nombre_caso.asc()).all()
+
     return render_template('form_avances_caso_emblematico.html', casos=casos)
 
 # LISTAR AVANCES CASO EMBLEMATICO
 @app.route('/listar_avances_caso_emblematico')
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_avances_caso_emblematico():
     # Obtener los registros en orden descendente por la fecha de registro
-    avances_caso_emblematico = AvanceCasoEmblematico.query.order_by(AvanceCasoEmblematico.fecha_registro.desc()).all()
-    return render_template('listar_avances_caso_emblematico.html', avances_caso_emblematico=avances_caso_emblematico)
+    q = (db.session.query(AvanceCasoEmblematico)
+         .join(CasoEmblematico, AvanceCasoEmblematico.nombre_caso == CasoEmblematico.nombre_caso)
+         .options(joinedload(AvanceCasoEmblematico.caso)))
+
+    if not (is_admin() or is_viewer()):
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return render_template('listar_avances_caso_emblematico.html', avances_caso_emblematico=[])
+
+        q = q.filter(CasoEmblematico.oficina_regional == or_user)
+
+        # Orden “estilo proceso”: por caso (A-Z) y por fecha (asc)
+    avances = q.order_by(
+        CasoEmblematico.nombre_caso.asc(),
+        AvanceCasoEmblematico.fecha_registro.asc()
+    ).all()
+
+    # Numeración dentro de cada caso (1,2,3,...)
+    contador_por_caso = {}
+    for av in avances:
+        key = av.nombre_caso
+        contador_por_caso[key] = contador_por_caso.get(key, 0) + 1
+        av.numero_registro = contador_por_caso[key]
+
+    return render_template('listar_avances_caso_emblematico.html', avances_caso_emblematico=avances)
 
 # EDITAR AVANCES CASO EMBLEMATICO
 @app.route('/editar_avances_caso_emblematico/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_avances_caso_emblematico(id):
     # Buscar el proceso de iniciativa por id usando filter_by y first()
-    avance_caso_emblematico = AvanceCasoEmblematico.query.filter_by(id=id).first()
+    avance_caso_emblematico = (AvanceCasoEmblematico.query
+              .options(joinedload(AvanceCasoEmblematico.caso))
+              .filter_by(id=id)
+              .first())
 
     if not avance_caso_emblematico:
-        flash('El avance del caso emblematico no existe.', 'danger')
-        return redirect(url_for('listar_avances_caso_emblematico'))  # Redirigir si no se encuentra
+        flash('El avance del caso emblemático no existe.', 'danger')
+        return redirect(url_for('listar_avances_caso_emblematico'))
+
+        # Si NO es admin: el avance debe pertenecer a un caso de su OR
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user or (avance_caso_emblematico.caso and avance_caso_emblematico.caso.oficina_regional != or_user):
+            flash('No puedes editar un avance de un caso de otra Oficina Regional.', 'danger')
+            return redirect(url_for('listar_avances_caso_emblematico'))
 
     if request.method == 'POST':
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
@@ -1977,8 +2557,16 @@ def editar_avances_caso_emblematico(id):
 
     fecha_registro_value = format_for_datetime_local(avance_caso_emblematico.fecha_registro)
 
-    # Renderizar el formulario con los datos existentes
-    caso_emblematico = CasoEmblematico.query.all()  # Asumiendo que hay un modelo de Iniciativas
+    # Casos disponibles para el select (admin todos; gestor sólo su OR)
+    q = CasoEmblematico.query
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return redirect(url_for('listar_avances_caso_emblematico'))
+        q = q.filter(CasoEmblematico.oficina_regional == or_user)
+    caso_emblematico = q.order_by(CasoEmblematico.nombre_caso.asc()).all()
+
     return render_template(
         'editar_avances_caso_emblematico.html',
         avance_caso_emblematico=avance_caso_emblematico,
@@ -2033,17 +2621,31 @@ class PoliticaNacionalMemoria(db.Model):
     otro_dato = db.Column(db.String(255), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
     responsable_registro = db.Column(db.String(100), nullable=True)
+    oficina_regional = db.Column(db.String(60), nullable=True, index=True)
     # Relación con AvancePoliticaMemoria
     avances = db.relationship('AvancePoliticaMemoria', backref='politica', lazy=True, cascade="all, delete-orphan")
 
 @app.route('/form_registro_politica_nacional_memoria', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_registro_politica_nacional_memoria():
     if request.method == 'POST':
         # Validar que el nombre de la política o sitio de memoria no exista
         nombre_politica_memoria = request.form['nombre_politica_memoria'].strip().lower()
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+
+        if is_admin():
+            oficina_regional = request.form.get('oficina_regional', '').strip()
+            # (opcional) normaliza a una de las opciones válidas
+            if oficina_regional and oficina_regional not in OR_CHOICES:
+                flash('La oficina regional enviada no es válida.', 'danger')
+                return redirect(url_for('form_registro_casos_emblematicos'))
+        else:
+            # Gestor: OR fija del usuario
+            oficina_regional = (current_user.oficina_regional or '').strip()
+            if not oficina_regional:
+                flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+                return redirect(url_for('form_registro_casos_emblematicos'))
 
         # Verificar si ya existe una política o sitio de memoria con el mismo nombre
         if PoliticaNacionalMemoria.query.filter(func.lower(PoliticaNacionalMemoria.nombre_politica_memoria) == nombre_politica_memoria).first():
@@ -2063,6 +2665,7 @@ def form_registro_politica_nacional_memoria():
             asunto_3=request.form.get('asunto_3', ''),
             organizaciones_aliadas=request.form.get('organizaciones_aliadas', ''),
             otro_dato=request.form.get('otro_dato', ''),
+            oficina_regional=oficina_regional,
             responsable_registro=current_user.username
         )
 
@@ -2076,26 +2679,46 @@ def form_registro_politica_nacional_memoria():
         flash('Política Nacional y/o Sitio de Memoria registrado exitosamente.', 'success')
         return redirect(url_for('listar_politica_nacional_memoria'))
 
-    return render_template('form_registro_politica_nacional_memoria.html')
+    return render_template('form_registro_politica_nacional_memoria.html',OR_CHOICES=OR_CHOICES)
 
 # LISTAR Politica nacional Memoria
 @app.route('/listar_politica_nacional_memoria')
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_politica_nacional_memoria():
-    politica_memoria = PoliticaNacionalMemoria.query.order_by(PoliticaNacionalMemoria.fecha_registro.desc()).all()
+    q = PoliticaNacionalMemoria.query
+    if not (is_admin() or is_viewer()):
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return render_template('listar_politica_nacional_memoria.html', politica_memoria=[])
+        q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+    politica_memoria = q.order_by(PoliticaNacionalMemoria.fecha_registro.desc()).all()
     return render_template('listar_politica_nacional_memoria.html', politica_memoria=politica_memoria)
 
 # EDITAR Politica nacional Memoria
 @app.route('/editar_politica_nacional_memoria/<nombre_politica_memoria>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_politica_nacional_memoria(nombre_politica_memoria):
     politica_memoria = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
 
     if not politica_memoria:
         flash('La politica nacional y memoria no existe.', 'danger')
         return redirect(url_for('listar_politica_nacional_memoria'))
+
+    if is_admin():
+      oficina_regional = request.form.get('oficina_regional', '').strip()
+      # (opcional) normaliza a una de las opciones válidas
+      if oficina_regional and oficina_regional not in OR_CHOICES:
+        flash('La oficina regional enviada no es válida.', 'danger')
+        return redirect(url_for('form_registro_casos_emblematicos'))
+    else:
+      # Gestor: OR fija del usuario
+      oficina_regional = (current_user.oficina_regional or '').strip()
+      if not oficina_regional:
+          flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+          return redirect(url_for('form_registro_casos_emblematicos'))
     
     if request.method == 'POST':
         # Actualizar solo los campos que no son llave primaria, verificando si están vacíos o nulos
@@ -2109,6 +2732,7 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
         politica_memoria.asunto_3 = request.form.get('asunto_3', '') 
         politica_memoria.organizaciones_aliadas = request.form.get('organizaciones_aliadas', '')  # Si no se proporciona, por defecto será un string vacío
         politica_memoria.otro_dato = request.form.get('otro_dato', '')
+        politica_memoria.oficina_regional = oficina_regional
         politica_memoria.responsable_registro = current_user.username
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         if fecha_manual:
@@ -2129,7 +2753,8 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
     return render_template(
         'editar_politica_nacional_memoria.html',
         politica_memoria=politica_memoria,
-        fecha_registro_value=fecha_registro_value
+        fecha_registro_value=fecha_registro_value,
+        OR_CHOICES=OR_CHOICES
     )
 
 # ELIMINAR Politica nacional Memoria
@@ -2178,13 +2803,27 @@ class AvancePoliticaMemoria(db.Model):
 
 @app.route('/form_avances_politica_nacional_memoria', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'gestor')
 def form_avances_politica_nacional_memoria():
     if request.method == 'POST':
+        nombre_politica_memoria = (request.form.get('nombre_politica_memoria') or '').strip().lower()
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
+
+        # Validar que el caso existe
+        politica = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
+        if not politica:
+            flash('La politica seleccionado no existe.', 'danger')
+            return redirect(url_for('form_avances_politica_nacional_memoria'))
+
+        # Restringir por OR si no es admin
+        if not is_admin():
+            or_user = (current_user.oficina_regional or '').strip()
+            if not or_user or politica.oficina_regional != or_user:
+                flash('No puedes registrar avances para una politica de otra Oficina Regional.', 'danger')
+                return redirect(url_for('form_avances_politica_nacional_memoria'))
         # Crear un nuevo avance
         nuevo_avance_politica_memoria = AvancePoliticaMemoria(
-            nombre_politica_memoria=request.form['nombre_politica_memoria'].strip().lower(),
+            nombre_politica_memoria=nombre_politica_memoria,
             ocurrencias_periodo=request.form.get('ocurrencias_periodo', ''),
             actividades_realizadas=request.form.get('actividades_realizadas', ''),
             estado_actual_gestion=request.form.get('estado_actual_gestion', ''),
@@ -2203,30 +2842,71 @@ def form_avances_politica_nacional_memoria():
         return redirect(url_for('listar_avances_politica_nacional_memoria'))
 
     # Obtener la lista de todas las políticas nacionales o sitios de memoria
-    politicas = PoliticaNacionalMemoria.query.all()
+    politicas_q = PoliticaNacionalMemoria.query
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return render_template('form_avances_politica_nacional_memoria.html', politicas=[])
+        politicas_q = politicas_q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+    politicas = politicas_q.order_by(PoliticaNacionalMemoria.nombre_politica_memoria.asc()).all()
+
     return render_template('form_avances_politica_nacional_memoria.html', politicas=politicas)
 
 
 # LISTAR AVANCES POLITICA Y MEMORIA
 @app.route('/listar_avances_politica_nacional_memoria')
 @login_required
-@roles_required('admin', 'editor', 'viewer')
+@roles_required('admin', 'gestor', 'viewer')
 def listar_avances_politica_nacional_memoria():
     # Obtener los registros en orden descendente por la fecha de registro
-    avances_politica_memoria = AvancePoliticaMemoria.query.order_by(AvancePoliticaMemoria.fecha_registro.desc()).all()
-    return render_template('listar_avances_politica_nacional_memoria.html', avances_politica_memoria=avances_politica_memoria)
+    q = (db.session.query(AvancePoliticaMemoria)
+         .join(PoliticaNacionalMemoria, AvancePoliticaMemoria.nombre_politica_memoria == PoliticaNacionalMemoria.nombre_politica_memoria)
+         .options(joinedload(AvancePoliticaMemoria.politica)))
+
+    if not (is_admin() or is_viewer()):
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return render_template('listar_avances_politica_nacional_memoria.html', avances_politica_memoria=[])
+
+        q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+
+        # Orden “estilo proceso”: por caso (A-Z) y por fecha (asc)
+    avances = q.order_by(
+        PoliticaNacionalMemoria.nombre_politica_memoria.asc(),
+        AvancePoliticaMemoria.fecha_registro.asc()
+    ).all()
+
+    # Numeración dentro de cada caso (1,2,3,...)
+    contador_por_caso = {}
+    for av in avances:
+        key = av.nombre_politica_memoria
+        contador_por_caso[key] = contador_por_caso.get(key, 0) + 1
+        av.numero_registro = contador_por_caso[key]
+
+    return render_template('listar_avances_politica_nacional_memoria.html', avances_politica_memoria=avances)
 
 # EDITAR AVANCES POLITICA Y MEMORIA
 @app.route('/editar_avances_politica_nacional_memoria/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def editar_avances_politica_nacional_memoria(id):
-    # Buscar el proceso de iniciativa por id usando filter_by y first()
-    avances_politica_memoria = AvancePoliticaMemoria.query.filter_by(id=id).first()
+    avances_politica_memoria = (AvancePoliticaMemoria.query
+                               .options(joinedload(AvancePoliticaMemoria.politica))
+                               .filter_by(id=id)
+                               .first())
 
     if not avances_politica_memoria:
         flash('El avance de politica nacional y/o memoria no existe.', 'danger')
-        return redirect(url_for('listar_avances_politica_nacional_memoria'))  # Redirigir si no se encuentra
+        return redirect(url_for('listar_avances_politica_nacional_memoria'))
+
+        # Si NO es admin: el avance debe pertenecer a un caso de su OR
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user or (avances_politica_memoria.politica and avances_politica_memoria.politica.oficina_regional != or_user):
+            flash('No puedes editar un avance de una politica de otra Oficina Regional.', 'danger')
+            return redirect(url_for('listar_avances_politica_nacional_memoria'))
 
     if request.method == 'POST':
         # Asignar los valores recibidos desde el formulario
@@ -2253,8 +2933,16 @@ def editar_avances_politica_nacional_memoria(id):
 
     fecha_registro_value = format_for_datetime_local(avances_politica_memoria.fecha_registro)
 
-    # Renderizar el formulario con los datos existentes
-    politica_memoria = PoliticaNacionalMemoria.query.all()  # Asumiendo que hay un modelo de Iniciativas
+    # Casos disponibles para el select (admin todos; gestor sólo su OR)
+    q = PoliticaNacionalMemoria.query
+    if not is_admin():
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return redirect(url_for('listar_avances_politica_nacional_memoria'))
+        q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+    politica_memoria = q.order_by(PoliticaNacionalMemoria.nombre_politica_memoria.asc()).all()
+
     return render_template(
         'editar_avances_politica_nacional_memoria.html',
         avances_politica_memoria=avances_politica_memoria,
@@ -2303,7 +2991,7 @@ def eliminar_avances_politica_nacional_memoria(id):
 
 @app.route('/get_objetivo_especifico/<nombre_iniciativa>', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def get_objetivo_especifico(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
     if not iniciativa:
@@ -2327,7 +3015,7 @@ def get_objetivo_especifico(nombre_iniciativa):
 ########################################################################################################################################
 @app.route('/get_componentes/<nombre_iniciativa>', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def get_componentes(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
     if iniciativa:
@@ -2347,7 +3035,7 @@ def get_componentes(nombre_iniciativa):
 ########################################################################################################################################
 @app.route('/get_numero_formulario/<nombre_caso>', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def get_numero_formulario(nombre_caso):
     # Buscar el caso emblemático en la base de datos
     caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
@@ -2372,7 +3060,7 @@ def get_numero_formulario(nombre_caso):
 ########################################################################################################################################
 @app.route('/get_numero_formulario_politica/<nombre_politica_memoria>', methods=['GET'])
 @login_required
-@roles_required('admin', 'editor')
+@roles_required('admin', 'gestor')
 def get_numero_formulario_politica(nombre_politica_memoria):
     politica = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
 

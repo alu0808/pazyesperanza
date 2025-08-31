@@ -153,17 +153,18 @@
         </div>
 
         <!-- Botón en la parte superior derecha -->
-        {% if current_user.role in ['admin'] %}
+        {% if current_user.role in ['admin', 'gestor'] %}
         <div class="button-container">
-            <a href="/form_registro_politica_nacional_memoria" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nueva Politica nacional y/o memoria</a>
+          <a href="/form_registro_politica_nacional_memoria" style="margin-bottom: 15px;"
+             class="btn btn-success label-principal">Nueva Politica nacional y/o memoria</a>
         </div>
-        {% endif %}    
+        {% endif %}
         <!-- Tabla de registros -->
         <div class="table-responsive mb-5">
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        {% if current_user.role in ['admin', 'editor'] %}
+                        {% if current_user.role in ['admin', 'gestor'] %}
                         <th>Acciones</th>
                         {% endif %}
                         <th>Nombre Política Nacional y/o Sitio de Memoria</th>
@@ -177,6 +178,7 @@
                         <th>Asunto 3</th>
                         <th>Organizaciones Aliadas</th>
                         <th>Otro Dato</th>
+                        <th>Oficina Regional</th>
                         <th>Responsable Registro</th>
                         <th>Fecha Registro</th>
                     </tr>
@@ -184,17 +186,22 @@
                 <tbody>
                     {% for poli_mem in politica_memoria %}
                     <tr>
-                        {% if current_user.role in ['admin', 'editor'] %}
+                        {% if current_user.role in ['admin', 'gestor'] %}
                         <td>
                             <div class="btn-group">
                                 <a href="/editar_politica_nacional_memoria/{{ poli_mem.nombre_politica_memoria }}" class="btn btn-primary btn-icon">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form method="POST" action="/eliminar_politica_nacional_memoria/{{ poli_mem.nombre_politica_memoria }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este caso?');" style="display:inline;">
-                                    <button type="submit" class="btn btn-danger btn-icon">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                {% if current_user.role == 'admin' %}
+                                <form method="POST"
+                                      action="/eliminar_politica_nacional_memoria/{{ poli_mem.nombre_politica_memoria }}"
+                                      onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta politica?');"
+                                      style="display:inline;">
+                                  <button type="submit" class="btn btn-danger btn-icon" title="Eliminar">
+                                    <i class="fas fa-trash-alt"></i>
+                                  </button>
                                 </form>
+                                {% endif %}
                             </div>
                         </td>
                         {% endif %}
@@ -209,6 +216,7 @@
                         <td>{{ poli_mem.asunto_3 }}</td>
                         <td>{{ poli_mem.organizaciones_aliadas }}</td>
                         <td>{{ poli_mem.otro_dato }}</td>
+                        <td>{{ poli_mem.oficina_regional or '—' }}</td>
                         <td>{{ poli_mem.responsable_registro }}</td>
                         <td>{{ poli_mem.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     </tr>

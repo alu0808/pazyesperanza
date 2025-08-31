@@ -163,13 +163,36 @@
                       <h4>Fecha y hora del registro (opcional)</h4>
                       <div class="form-group">
                         <label class="label-principal" for="fecha_registro">Fecha y hora (America/Lima):</label>
-                        <input type="datetime-local" class="form-control" id="fecha_registro" name="fecha_registro">
+                        <input type="datetime-local" step="1" class="form-control" id="fecha_registro" name="fecha_registro">
                         <small class="form-text text-muted">Si lo dejas vacío, se usará automáticamente la fecha/hora actual de Perú.</small>
                       </div>
                     </div>
                 </div>
             </div>
 
+            <div class="row mt-4">
+                <div class="col-md-6 label-principal">
+                   <div class="section-box mt-3">
+                        <h4>Referente de Trabajo Institucional</h4>
+                        <div class="form-group">
+                            <label class="label-principal" for="oficina_regional">Oficina Regional de referencia:</label>
+                            {% if current_user.role == 'admin' %}
+                              <select class="form-control" id="oficina_regional" name="oficina_regional" required>
+                                  <option value="" selected>Seleccione una oficina</option>
+                                  {% for or_name in OR_CHOICES %}
+                                    <option value="{{ or_name }}">{{ or_name }}</option>
+                                  {% endfor %}
+                              </select>
+                            {% else %}
+                              <!-- Gestor: solo ver, no editar -->
+                              <input type="text" class="form-control" value="{{ current_user.oficina_regional or '—' }}" disabled>
+                              <!-- Importante: como los inputs disabled NO se envían, manda un hidden con el valor -->
+                              <input type="hidden" name="oficina_regional" value="{{ current_user.oficina_regional or '' }}">
+                            {% endif %}
+                        </div>
+                   </div>
+                </div>
+            </div>
             <!-- Botones de navegación -->
             <div class="row justify-content-end mt-3 mb-5">
                 <div class="col-md-3 d-flex justify-content-end">

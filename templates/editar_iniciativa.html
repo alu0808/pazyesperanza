@@ -465,14 +465,20 @@
                         <h4>Referente de Trabajo Institucional</h4>
                         <div class="form-group">
                             <label class="label-principal" for="oficina_regional">Oficina Regional de referencia:</label>
-                            <select class="form-control" id="oficina_regional" name="oficina_regional">
-                                <option value="" {% if not iniciativa.oficina_regional %}selected{% endif %}>Seleccione una oficina</option>
-                                <option value="Oficina Nacional" {% if iniciativa.oficina_regional == "Oficina Nacional" %}selected{% endif %}>Oficina Nacional</option>
-                                <option value="Oficina Reg. Apurímac" {% if iniciativa.oficina_regional == "Oficina Reg. Apurímac" %}selected{% endif %}>Oficina Reg. Apurímac</option>
-                                <option value="Oficina Reg. Huanuco" {% if iniciativa.oficina_regional == "Oficina Reg. Huanuco" %}selected{% endif %}>Oficina Reg. Huánuco</option>
-                                <option value="Oficina Reg. Ayacucho" {% if iniciativa.oficina_regional == "Oficina Reg. Ayacucho" %}selected{% endif %}>Oficina Reg. Ayacucho</option>
-                                <option value="Oficina Reg. San Martín" {% if iniciativa.oficina_regional == "Oficina Reg. San Martín" %}selected{% endif %}>Oficina Reg. San Martín</option>
-                            </select>
+                              {% if current_user.role == 'admin' %}
+                                <select class="form-control" id="oficina_regional" name="oficina_regional">
+                                  <option value="" {% if not iniciativa.oficina_regional %}selected{% endif %}>Seleccione una oficina</option>
+                                  {% for or_name in OR_CHOICES %}
+                                    <option value="{{ or_name }}" {% if iniciativa.oficina_regional == or_name %}selected{% endif %}>
+                                      {{ or_name }}
+                                    </option>
+                                  {% endfor %}
+                                </select>
+                              {% else %}
+                                <!-- Solo lectura para no-admin: muestra y conserva el valor -->
+                                <input type="text" class="form-control" value="{{ iniciativa.oficina_regional or '—' }}" disabled>
+                                <input type="hidden" name="oficina_regional" value="{{ iniciativa.oficina_regional or '' }}">
+                              {% endif %}
                         </div>
 
                         <div class="form-group">
@@ -738,6 +744,7 @@
                           type="datetime-local"
                           class="form-control"
                           id="fecha_registro"
+                          step="1"
                           name="fecha_registro"
                           value="{{ fecha_registro_value }}"
                         >
