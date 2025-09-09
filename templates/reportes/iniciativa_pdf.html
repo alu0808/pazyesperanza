@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Ficha de Iniciativa — {{ iniciativa.nombre_iniciativa }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* ===== Design tokens ===== */
+        :root {
+            --ink: #1f2937; /* gris oscuro */
+            --muted: #6b7280; /* gris medio */
+            --line: #e5e7eb; /* línea tabla */
+            --brand: #1d7c3a; /* verde institucional */
+            --bg-head: #f5f7f4; /* cabecera tabla */
+            --chip: #eef4f0; /* fondo chips */
+            --paper: #ffffff;
+        }
+
+        /* ===== Ajustes para PDF ===== */
+        @page {
+            size: A4;
+            margin: 18mm 14mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Roboto", Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 .5rem 0;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        h2 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        h3.section__title {
+            font-size: 12.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--brand);
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .small {
+            font-size: 10.5px;
+        }
+
+        .mb {
+            margin-bottom: .6rem;
+        }
+
+        .mb2 {
+            margin-bottom: 1rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+            border-bottom: 1.5px solid var(--line);
+        }
+
+        header img {
+            height: 40px;
+        }
+
+        footer {
+            border-top: 1.5px solid var(--line);
+            margin-top: 16px;
+            padding-top: 8px;
+            color: var(--muted);
+        }
+
+        .section {
+            margin-top: 14px;
+            /* Evitar cortes feos en impresión */
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* ===== Tabla base ===== */
+        table.tbl {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--paper);
+        }
+
+        .tbl th, .tbl td {
+            border: 1px solid var(--line);
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        .tbl thead th {
+            background: var(--bg-head);
+            font-weight: 700;
+        }
+
+        .tbl--compact th, .tbl--compact td {
+            padding: 4px 6px;
+        }
+
+        .tbl--borderless th, .tbl--borderless td {
+            border: 0;
+            padding: 2px 4px;
+        }
+
+        .tbl--striped tbody tr:nth-child(odd) {
+            background: #fafafa;
+        }
+
+        .tbl .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Ancho cómodo para celdas "clave" en tablas tipo ficha */
+        .kv th {
+            width: 36%;
+            white-space: nowrap;
+        }
+
+        /* ===== Chips / etiquetas ===== */
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+        }
+
+        .chip {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--chip);
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div>
+        <h1>Ficha de Iniciativa</h1>
+        <div class="muted small">Generado por el sistema</div>
+    </div>
+</header>
+
+<div class="section">
+    <h2>{{ iniciativa.nombre_iniciativa }}</h2>
+    <table class="tbl tbl--borderless small">
+        <tr>
+            <td><strong>Oficina Regional:</strong> {{ iniciativa.oficina_regional or '—' }}</td>
+            <td><strong>Proyectos:</strong> {{ iniciativa.proyectos or '—' }}</td>
+            <td><strong>Responsable:</strong> {{ iniciativa.responsable_registro or '—' }}</td>
+        </tr>
+        <tr>
+            <td colspan="3"><strong>Fecha Registro:</strong>
+                {{ iniciativa.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if iniciativa.fecha_registro else '—' }}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Derecho genérico</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Derecho</th>
+            <td>{{ iniciativa.derecho_generico or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Detalle (si “Otro”)</th>
+            <td>{{ iniciativa.otro_derecho_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Colectivo / Organización</th>
+            <td>{{ iniciativa.colectivo_organizacion or '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Participantes vinculados</h3>
+    {% if iniciativa.registros %}
+        <table class="tbl tbl--striped">
+            <thead>
+            <tr>
+                <th>DNI</th>
+                <th>Nombre</th>
+                <th>Estado</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for r in iniciativa.registros %}
+                <tr>
+                    <td>{{ r.dni }}</td>
+                    <td>{{ r.nombre }}</td>
+                    <td>{{ r.estado or '—' }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="muted">Sin participantes asociados.</div>
+    {% endif %}
+</div>
+
+<div class="section">
+    <h3 class="section__title">Cobertura de atención (cantidades)</h3>
+    <table class="tbl tbl--compact">
+        <thead>
+        <tr>
+            <th>Grupo</th>
+            <th>Hombres</th>
+            <th>Mujeres</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Niños y niñas</td>
+            <td class="num">{{ iniciativa.total_hombres_ninos or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_ninos or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Adolescentes</td>
+            <td class="num">{{ iniciativa.total_hombres_adolescentes or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_adolescentes or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Jóvenes</td>
+            <td class="num">{{ iniciativa.total_hombres_jovenes or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_jovenes or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Mujeres</td>
+            <td class="num">{{ iniciativa.total_hombres_mujeres or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_mujeres or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Discapacidad</td>
+            <td class="num">{{ iniciativa.total_hombres_discapacidad or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_discapacidad or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Migrantes y desplazados</td>
+            <td class="num">{{ iniciativa.total_hombres_migrantes or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_migrantes or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Pobl. amazónicas / campesinas</td>
+            <td class="num">{{ iniciativa.total_hombres_amazonicas or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_amazonicas or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Periurbanas</td>
+            <td class="num">{{ iniciativa.total_hombres_periurbanas or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_periurbanas or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Afectadas por conflicto</td>
+            <td class="num">{{ iniciativa.total_hombres_conflicto or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_conflicto or 0 }}</td>
+        </tr>
+        <tr>
+            <td>Otra población ({{ iniciativa.otra_poblacion_detalle or '—' }})</td>
+            <td class="num">{{ iniciativa.total_hombres_otra or 0 }}</td>
+            <td class="num">{{ iniciativa.total_mujeres_otra or 0 }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Tipo / Naturaleza</h3>
+    {% set tipo_nats = (iniciativa.tipo_naturaleza or '').split('|') %}
+    <div class="chips mb">
+        {% for item in tipo_nats if item %}
+            <span class="chip">{{ item }}</span>
+        {% else %}
+            <span class="muted">—</span>
+        {% endfor %}
+    </div>
+
+    <table class="tbl kv">
+        <tr>
+            <th>Política pública (detalle)</th>
+            <td>{{ iniciativa.cambio_politica_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Marcos / procedimientos (detalle)</th>
+            <td>{{ iniciativa.cambio_marcos_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Prácticas privadas (detalle)</th>
+            <td>{{ iniciativa.cambio_practicas_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Sensibilidad social (detalle)</th>
+            <td>{{ iniciativa.cambio_sensibilidad_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Otro tipo (detalle)</th>
+            <td>
+                {{ iniciativa.otro_naturaleza_detalle or '—' }}
+                {% if iniciativa.otro_naturaleza_particular %} — {{ iniciativa.otro_naturaleza_particular }}{% endif %}
+            </td>
+        </tr>
+    </table>
+</div>
+
+{% if FASES_MAP is not defined %}
+    {% set FASES_MAP = {} %}
+{% endif %}
+
+<div class="section">
+    <h3 class="section__title">Fase de implementación</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Fase</th>
+            <td>
+                {% if iniciativa.fase_implementacion is not none %}
+                    {{ FASES_MAP.get(iniciativa.fase_implementacion, iniciativa.fase_implementacion) }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Normas (detalle si fase=8)</th>
+            <td>{{ iniciativa.fase_normas_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Institucionalización (detalle si fase=9)</th>
+            <td>{{ iniciativa.fase_institucionalizacion_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Otra fase (detalle)</th>
+            <td>{{ iniciativa.fase_otro_detalle or '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Entidad competente</h3>
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>Sector público competente</th>
+            <th>Dependencia / instancia</th>
+            <th>Alcance / escala</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ iniciativa.sector_publico_competente_1 or '—' }}</td>
+            <td>{{ iniciativa.dependencia_instancia_1 or '—' }}</td>
+            <td>{{ iniciativa.alcance_escala_1 or '—' }}</td>
+        </tr>
+        <tr>
+            <td>{{ iniciativa.sector_publico_competente_2 or '—' }}</td>
+            <td>{{ iniciativa.dependencia_instancia_2 or '—' }}</td>
+            <td>{{ iniciativa.alcance_escala_2 or '—' }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Localidades</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Localidad 1</th>
+            <td>{{ iniciativa.localidad_1 or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Localidad 2</th>
+            <td>{{ iniciativa.localidad_2 or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Localidad 3</th>
+            <td>{{ iniciativa.localidad_3 or '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Población titular seleccionada</h3>
+    {% set poblaciones = (iniciativa.poblacion or '').split('|') %}
+    <div class="chips mb">
+        {% for p in poblaciones if p %}
+            <span class="chip">
+          {% if p == 'Otra población' %}
+              Otra población: {{ iniciativa.otra_poblacion_detalle or '—' }}
+          {% else %}
+              {{ p }}
+          {% endif %}
+        </span>
+        {% else %}
+            <span class="muted">—</span>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Descripción de la situación</h3>
+    <div class="chips mb"><span class="chip">{{ iniciativa.descripcion_situacion or '—' }}</span></div>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Objetivo específico</h3>
+    <div class="chips mb"><span class="chip">{{ iniciativa.objetivo_especifico or '—' }}</span></div>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Campos a los que se dirige</h3>
+    {% set campos_list = (iniciativa.campos or '').split('|') %}
+    <div class="chips mb">
+        {% for c in campos_list if c %}
+            <span class="chip">
+          {% if c == 'Otro' %}
+              Otro: {{ iniciativa.campo_otro_detalle or '—' }}
+          {% else %}
+              {{ c }}
+          {% endif %}
+        </span>
+        {% else %}
+            <span class="muted">—</span>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Componentes clave</h3>
+    {% if iniciativa.componente_1 or iniciativa.componente_2 or iniciativa.componente_3 %}
+        <ul class="small">
+            {% if iniciativa.componente_1 %}
+                <li>{{ iniciativa.componente_1 }}</li>{% endif %}
+            {% if iniciativa.componente_2 %}
+                <li>{{ iniciativa.componente_2 }}</li>{% endif %}
+            {% if iniciativa.componente_3 %}
+                <li>{{ iniciativa.componente_3 }}</li>{% endif %}
+        </ul>
+    {% else %}
+        <div class="muted">—</div>
+    {% endif %}
+</div>
+
+<div class="section">
+    <h3 class="section__title">Participación en comunidad de fe</h3>
+    <div class="chips mb"><span class="chip">{{ iniciativa.tipo_participacion_fe or '—' }}</span></div>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Actividades principales planificadas</h3>
+    {% if iniciativa.actividad_1 or iniciativa.actividad_2 or iniciativa.actividad_3 or iniciativa.actividad_4 or iniciativa.actividad_5 %}
+        <ol class="small">
+            {% if iniciativa.actividad_1 %}
+                <li>{{ iniciativa.actividad_1 }}</li>{% endif %}
+            {% if iniciativa.actividad_2 %}
+                <li>{{ iniciativa.actividad_2 }}</li>{% endif %}
+            {% if iniciativa.actividad_3 %}
+                <li>{{ iniciativa.actividad_3 }}</li>{% endif %}
+            {% if iniciativa.actividad_4 %}
+                <li>{{ iniciativa.actividad_4 }}</li>{% endif %}
+            {% if iniciativa.actividad_5 %}
+                <li>{{ iniciativa.actividad_5 }}</li>{% endif %}
+        </ol>
+    {% else %}
+        <div class="muted">—</div>
+    {% endif %}
+</div>
+
+{# Mapa de calificaciones -> etiqueta #}
+{% set CAL_MAP = {
+    0:'No se ha iniciado', 1:'Inicial', 2:'En proceso de formulación', 3:'Concluido',
+    '0':'No se ha iniciado', '1':'Inicial', '2':'En proceso de formulación', '3':'Concluido'
+  } %}
+
+<div class="section">
+    <h3 class="section__title">Contenidos (nivel de formulación)</h3>
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>Item</th>
+            <th>Calificación</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Problemática</td>
+            <td>{{ CAL_MAP.get(iniciativa.contenido_1, '—') if iniciativa.contenido_1 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>Fundamentación</td>
+            <td>{{ CAL_MAP.get(iniciativa.contenido_2, '—') if iniciativa.contenido_2 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>Objetivos / metas</td>
+            <td>{{ CAL_MAP.get(iniciativa.contenido_3, '—') if iniciativa.contenido_3 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>Presupuesto / financiamiento</td>
+            <td>{{ CAL_MAP.get(iniciativa.contenido_4, '—') if iniciativa.contenido_4 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>Organización / implementación</td>
+            <td>{{ CAL_MAP.get(iniciativa.contenido_5, '—') if iniciativa.contenido_5 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>Otro ({{ iniciativa.contenido_otro or '—' }})</td>
+            <td>{{ CAL_MAP.get(iniciativa.calificacion_otro_contenido, '—') if iniciativa.calificacion_otro_contenido is not none else '—' }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Proyectos de referencia</h3>
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>Proyecto</th>
+            <th>Fuente</th>
+            <th>US$</th>
+            <th>Período</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ iniciativa.proyecto_1 or '—' }}</td>
+            <td>{{ iniciativa.fuente_financiamiento_1 or '—' }}</td>
+            <td class="num">{{ iniciativa.financiamiento_1 if iniciativa.financiamiento_1 is not none else '—' }}</td>
+            <td>{{ iniciativa.periodo_financiamiento_1 or '—' }}</td>
+        </tr>
+        <tr>
+            <td>{{ iniciativa.proyecto_2 or '—' }}</td>
+            <td>{{ iniciativa.fuente_financiamiento_2 or '—' }}</td>
+            <td class="num">{{ iniciativa.financiamiento_2 if iniciativa.financiamiento_2 is not none else '—' }}</td>
+            <td>{{ iniciativa.periodo_financiamiento_2 or '—' }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section__title">Observaciones</h3>
+    <div class="chips mb"><span class="chip">{{ iniciativa.observaciones or '—' }}</span></div>
+</div>
+
+<footer class="section small muted">
+    Generado el {{ iniciativa.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if iniciativa.fecha_registro else '' }}
+</footer>
+</body>
+</html>

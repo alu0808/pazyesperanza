@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Ficha de Registro – {{ registro.dni }}</title>
+  <style>
+    /* Unos estilos mínimos para PDF (además de styles.css si lo agregaste) */
+    body { font-family: Roboto, Arial, sans-serif; font-size: 12px; color: #222; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .header .brand { font-weight: 700; font-size: 16px; color:#18834d; }
+    .box { border: 1px solid #ccc; border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+    h2 { font-size: 16px; margin: 0 0 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { border: 1px solid #e5e5e5; padding: 6px; text-align: left; vertical-align: top; }
+    .label { width: 35%; background: #f8f8f8; font-weight: 600; }
+    .muted { color: #666; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">Paz y Esperanza — Ficha de Registro</div>
+    <div class="muted">Generado: {{ (registro.fecha_registro or '').strftime('%d/%m/%Y %H:%M:%S') if registro.fecha_registro else '-' }}</div>
+  </div>
+
+  <div class="box">
+    <h2>Datos Generales</h2>
+    <table>
+      <tr><td class="label">DNI</td><td>{{ registro.dni }}</td></tr>
+      <tr><td class="label">Nombre y Apellido</td><td>{{ registro.nombre }}</td></tr>
+      <tr><td class="label">Estado</td><td>{{ registro.estado or '-' }}</td></tr>
+      <tr><td class="label">Edad</td><td>{{ registro.edad or '-' }}</td></tr>
+      <tr><td class="label">Sexo</td><td>{{ registro.sexo or '-' }}</td></tr>
+      <tr><td class="label">Lugar de Nacimiento</td><td>{{ registro.lugar_nacimiento or '-' }}</td></tr>
+    </table>
+  </div>
+
+  <div class="box">
+    <h2>Dirección</h2>
+    <table>
+      <tr><td class="label">Departamento</td><td>{{ registro.departamento or '-' }}</td></tr>
+      <tr><td class="label">Provincia</td><td>{{ registro.provincia or '-' }}</td></tr>
+      <tr><td class="label">Distrito</td><td>{{ registro.distrito or '-' }}</td></tr>
+      <tr><td class="label">Calle</td><td>{{ registro.calle or '-' }}</td></tr>
+      <tr><td class="label">Comunidad</td><td>{{ registro.comunidad or '-' }}</td></tr>
+    </table>
+  </div>
+
+  <div class="box">
+    <h2>Metadatos</h2>
+    <table>
+      <tr><td class="label">Responsable del Registro</td><td>{{ registro.responsable_registro or '-' }}</td></tr>
+      <tr><td class="label">Fecha de Registro</td>
+          <td>{{ (registro.fecha_registro or '').strftime('%d/%m/%Y %H:%M:%S') if registro.fecha_registro else '-' }}</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

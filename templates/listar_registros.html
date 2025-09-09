@@ -180,6 +180,7 @@
                         {% if current_user.role in ['admin', 'gestor'] %}
                         <th>Acciones</th>
                         {% endif %}
+                        <th>Ficha</th>
                         <th>DNI</th>
                         <th>Nombre</th>
                         <th>Estado</th>
@@ -219,6 +220,12 @@
                             </div>
                         </td>
                         {% endif %}
+                        <td>
+                          <a href="{{ url_for('registro_pdf', dni=registro.dni, mode='download') }}"
+                               class="btn btn-outline-secondary btn-icon" title="Descargar PDF">
+                              <i class="fas fa-download"></i>
+                          </a>
+                        </td>
                         <td>{{ registro.dni }}</td>
                         <td>{{ registro.nombre }}</td>
                         <td class="{% if registro.estado == 'ACT' %}estado-act{% elif registro.estado == 'INA' %}estado-ina{% endif %}">

@@ -1,11 +1,11 @@
 import logging
-import os
+import os, re, unicodedata
 from datetime import datetime, timezone
 from functools import wraps
 from urllib.parse import urlparse, urljoin
 from sqlalchemy import and_, or_
 import pytz
-from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
+from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, current_app,make_response
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -13,8 +13,8 @@ from sqlalchemy import func
 from sqlalchemy.inspection import inspect
 from sqlalchemy.sql import text
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import current_user
 from sqlalchemy.orm import joinedload
+from weasyprint import HTML, CSS
 PERU_TZ = pytz.timezone("America/Lima")
 
 app = Flask(__name__)
@@ -441,6 +441,30 @@ def listar_registros():
     registros = Registro.query.order_by(Registro.fecha_registro.desc()).all()  # Ordenar por fecha de registro (descendente)
     return render_template('listar_registros.html', registros=registros)
 
+@app.route('/registro/<dni>/pdf', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def registro_pdf(dni):
+    registro = Registro.query.filter_by(dni=dni).first()
+    if not registro:
+        flash('El registro no existe.', 'danger')
+        return redirect(url_for('listar_registros'))
+
+    html_str = render_template('reportes/registro_pdf.html', registro=registro)
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path)\
+        .write_pdf(stylesheets=[CSS(css_path)])
+
+    # lee ?mode=inline (default) o ?mode=download
+    mode = request.args.get('mode', 'inline')
+    disposition = 'attachment' if mode == 'download' else 'inline'
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    # comillas por si el nombre lleva caracteres raros
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="ficha_registro_{registro.dni}.pdf"'
+    return resp
+
 
 ################################################################################################################################
 ################################################################################################################################
@@ -836,6 +860,65 @@ def get_registros():
     return jsonify(registros_json)
 
 # LISTAR INICIATIVAS
+def _slugify_filename(s: str, default='iniciativa'):
+    if not s:
+        return default
+    # normaliza tildes/ñ -> ascii
+    s2 = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode()
+    # deja solo [a-zA-Z0-9_-], reemplaza lo demás por "_"
+    s2 = re.sub(r'[^a-zA-Z0-9_-]+', '_', s2).strip('_').lower()
+    return s2 or default
+
+FASES_MAP = {
+    0: 'No se ha iniciado',
+    1: 'Gestación / estado preliminar',
+    2: 'Organización de actores / desarrollo de contenidos',
+    3: 'Coordinaciones preliminares',
+    4: 'Diálogo / socialización / sensibilización',
+    5: 'Argumentación / fundamentación',
+    6: 'Respuesta / acuerdos preliminares / compromisos',
+    7: 'Formalización de acuerdos',
+    8: 'Desarrollo de normas / instrumentos',
+    9: 'Institucionalización (aplicación, presupuesto, instancia)',
+    10: 'Monitoreo / supervisión / vigilancia',
+}
+
+@app.route('/iniciativa/<path:nombre_iniciativa>/pdf', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def iniciativa_pdf(nombre_iniciativa):
+    # búsqueda case-insensitive, por si el nombre tiene mayúsculas o espacios
+    iniciativa = (Iniciativa.query
+                  .filter(func.lower(Iniciativa.nombre_iniciativa) == func.lower(nombre_iniciativa))
+                  .first())
+
+    if not iniciativa:
+        flash('La iniciativa no existe.', 'danger')
+        return redirect(url_for('listar_iniciativas'))
+
+    # Render HTML para el PDF
+    html_str = render_template(
+        'reportes/iniciativa_pdf.html',
+        iniciativa=iniciativa,
+        FASES_MAP=FASES_MAP
+    )
+
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path) \
+        .write_pdf(stylesheets=[CSS(css_path)])
+
+    # ?mode=inline (default) o ?mode=download
+    mode = request.args.get('mode', 'inline')
+    disposition = 'attachment' if mode == 'download' else 'inline'
+
+    fname = f"ficha_iniciativa_{_slugify_filename(iniciativa.nombre_iniciativa)}.pdf"
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="{fname}"'
+    return resp
+
 
 @app.route('/listado_iniciativas', methods=['GET'])
 @login_required
