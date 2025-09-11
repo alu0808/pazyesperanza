@@ -165,6 +165,7 @@
                         {% if current_user.role in ['admin', 'gestor'] %}
                         <th>Acciones</th>
                         {% endif %}
+                        <th>Ficha</th>
                         <th>Participante</th>
                         <th>DNI</th>
                         <th>Iniciativa</th>
@@ -201,6 +202,12 @@
                             </div>
                         </td>
                         {% endif %}
+                        <td>
+                          <a href="{{ url_for('capacidad_incidencia_pdf', cap_id=capacidad.id, mode='download') }}"
+                             class="btn btn-outline-secondary btn-icon" title="Descargar PDF">
+                            <i class="fas fa-download"></i>
+                          </a>
+                        </td>
                         <td>{{ capacidad.registro.nombre }}</td>
                         <td>{{ capacidad.registro_dni }}</td>
                         <td>{{ capacidad.nombre_iniciativa }}</td>

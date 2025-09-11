@@ -2,57 +2,195 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Ficha de Registro – {{ registro.dni }}</title>
+  <title>Ficha de Registro — {{ registro.dni }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <style>
-    /* Unos estilos mínimos para PDF (además de styles.css si lo agregaste) */
-    body { font-family: Roboto, Arial, sans-serif; font-size: 12px; color: #222; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .header .brand { font-weight: 700; font-size: 16px; color:#18834d; }
-    .box { border: 1px solid #ccc; border-radius: 6px; padding: 12px; margin-bottom: 10px; }
-    h2 { font-size: 16px; margin: 0 0 6px; }
-    table { width: 100%; border-collapse: collapse; }
-    td, th { border: 1px solid #e5e5e5; padding: 6px; text-align: left; vertical-align: top; }
-    .label { width: 35%; background: #f8f8f8; font-weight: 600; }
-    .muted { color: #666; font-size: 11px; }
+    /* ===== Design tokens ===== */
+    :root{
+      --ink:#1f2937;            /* gris oscuro */
+      --muted:#6b7280;          /* gris medio */
+      --line:#e5e7eb;           /* línea tabla */
+      --brand:#1d7c3a;          /* verde institucional */
+      --bg-head:#f5f7f4;        /* cabecera tabla */
+      --chip:#eef4f0;           /* fondo chips */
+      --paper:#ffffff;
+      --ok:#1f8b4c;             /* verde ok */
+      --warn:#b45309;           /* ámbar */
+      --off:#9ca3af;            /* gris apagado */
+    }
+
+    /* ===== Ajustes para PDF ===== */
+    @page { size: A4; margin: 18mm 14mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Roboto", Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    h1, h2, h3 { margin: 0 0 .5rem 0; }
+    h1 { font-size: 18px; font-weight: 700; letter-spacing: .2px; }
+    h2 { font-size: 16px; font-weight: 700; letter-spacing: .2px; }
+    h3.section__title{
+      font-size: 12.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--brand);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+
+    .muted { color: var(--muted); }
+    .small { font-size: 10.5px; }
+    .mb  { margin-bottom: .6rem; }
+    .mb2 { margin-bottom: 1rem; }
+
+    header {
+      display:flex; justify-content: space-between; align-items:center;
+      padding-bottom: 8px; margin-bottom: 14px; border-bottom: 1.5px solid var(--line);
+    }
+    header img { height: 40px; }
+
+    footer {
+      border-top: 1.5px solid var(--line);
+      margin-top: 16px; padding-top: 8px;
+      color: var(--muted);
+    }
+
+    .section {
+      margin-top: 14px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* ===== Tabla base ===== */
+    table.tbl { width:100%; border-collapse: collapse; background: var(--paper); }
+    .tbl th, .tbl td { border: 1px solid var(--line); padding: 6px 8px; vertical-align: top; }
+    .tbl thead th { background: var(--bg-head); font-weight: 700; }
+    .tbl--compact th, .tbl--compact td { padding: 4px 6px; }
+    .tbl--borderless th, .tbl--borderless td { border: 0; padding: 2px 4px; }
+    .tbl--striped tbody tr:nth-child(odd) { background: #fafafa; }
+    .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Ancho cómodo para celdas "clave" en tablas tipo ficha */
+    .kv th { width: 36%; white-space: nowrap; }
+
+    /* ===== Chips / badges ===== */
+    .chips { display:flex; flex-wrap:wrap; gap:6px 8px; }
+    .chip {
+      display:inline-block; padding: 2px 10px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--chip); font-size: 11px;
+    }
+    .badge {
+      display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px;
+      border: 1px solid var(--line); background: #f3f4f6; color: #111827;
+    }
+    .badge--ok   { background: #ecfdf5; color: var(--ok);   border-color: #d1fae5; }
+    .badge--warn { background: #fffbeb; color: var(--warn); border-color: #fde68a; }
+    .badge--off  { background: #ff9090; color: #ff0000;  border-color: #ff9090; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="brand">Paz y Esperanza — Ficha de Registro</div>
-    <div class="muted">Generado: {{ (registro.fecha_registro or '').strftime('%d/%m/%Y %H:%M:%S') if registro.fecha_registro else '-' }}</div>
-  </div>
+  <header>
+    <div>
+      <h1>Ficha de Registro</h1>
+      <div class="muted small">Generado por el sistema</div>
+    </div>
+  </header>
 
-  <div class="box">
-    <h2>Datos Generales</h2>
-    <table>
-      <tr><td class="label">DNI</td><td>{{ registro.dni }}</td></tr>
-      <tr><td class="label">Nombre y Apellido</td><td>{{ registro.nombre }}</td></tr>
-      <tr><td class="label">Estado</td><td>{{ registro.estado or '-' }}</td></tr>
-      <tr><td class="label">Edad</td><td>{{ registro.edad or '-' }}</td></tr>
-      <tr><td class="label">Sexo</td><td>{{ registro.sexo or '-' }}</td></tr>
-      <tr><td class="label">Lugar de Nacimiento</td><td>{{ registro.lugar_nacimiento or '-' }}</td></tr>
-    </table>
-  </div>
-
-  <div class="box">
-    <h2>Dirección</h2>
-    <table>
-      <tr><td class="label">Departamento</td><td>{{ registro.departamento or '-' }}</td></tr>
-      <tr><td class="label">Provincia</td><td>{{ registro.provincia or '-' }}</td></tr>
-      <tr><td class="label">Distrito</td><td>{{ registro.distrito or '-' }}</td></tr>
-      <tr><td class="label">Calle</td><td>{{ registro.calle or '-' }}</td></tr>
-      <tr><td class="label">Comunidad</td><td>{{ registro.comunidad or '-' }}</td></tr>
-    </table>
-  </div>
-
-  <div class="box">
-    <h2>Metadatos</h2>
-    <table>
-      <tr><td class="label">Responsable del Registro</td><td>{{ registro.responsable_registro or '-' }}</td></tr>
-      <tr><td class="label">Fecha de Registro</td>
-          <td>{{ (registro.fecha_registro or '').strftime('%d/%m/%Y %H:%M:%S') if registro.fecha_registro else '-' }}</td>
+  {# ======== Resumen superior ======== #}
+  <div class="section">
+    <h2>{{ registro.nombre or '—' }}</h2>
+    {% set _estado = (registro.estado or '')|string %}
+    {% set EST = _estado.upper() %}
+    {% set estado_class =
+         'badge--ok'   if EST in ['ACT','ACTIVO','ACTIVA']
+    else 'badge--warn' if EST in ['OBS','OBSERVADO','OBSERVADA']
+    else 'badge--off'  if EST in ['INA','INACTIVO','INACTIVA']
+    else '' %}
+    <table class="tbl tbl--borderless small">
+      <tr>
+        <td><strong>DNI:</strong> {{ registro.dni or '—' }}</td>
+        <td><strong>Estado:</strong> <span class="badge {{ estado_class }}">{{ registro.estado or '—' }}</span></td>
+        <td><strong>Fecha registro:</strong> {{ registro.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if registro.fecha_registro else '—' }}</td>
+      </tr>
+      <tr>
+        <td colspan="3"><strong>Responsable:</strong> {{ registro.responsable_registro or '—' }}</td>
       </tr>
     </table>
   </div>
+
+  {# ======== Datos personales ======== #}
+  <div class="section">
+    <h3 class="section__title">Datos personales</h3>
+    <table class="tbl kv">
+      <tr><th>Nombre y Apellido</th><td>{{ registro.nombre or '—' }}</td></tr>
+      <tr><th>Edad</th><td>{{ registro.edad if registro.edad is not none else '—' }}</td></tr>
+      <tr><th>Sexo</th><td>{{ registro.sexo or '—' }}</td></tr>
+      <tr><th>Lugar de nacimiento</th><td>{{ registro.lugar_nacimiento or '—' }}</td></tr>
+
+      {# Campos opcionales: sólo se muestran si existen y tienen valor #}
+      {% if registro.fecha_nacimiento is defined and registro.fecha_nacimiento %}
+        <tr><th>Fecha de nacimiento</th><td>{{ registro.fecha_nacimiento.strftime('%d/%m/%Y') if registro.fecha_nacimiento.__class__.__name__ in ['datetime','date'] else registro.fecha_nacimiento }}</td></tr>
+      {% endif %}
+      {% if registro.nacionalidad is defined and registro.nacionalidad %}
+        <tr><th>Nacionalidad</th><td>{{ registro.nacionalidad }}</td></tr>
+      {% endif %}
+      {% if registro.estado_civil is defined and registro.estado_civil %}
+        <tr><th>Estado civil</th><td>{{ registro.estado_civil }}</td></tr>
+      {% endif %}
+    </table>
+  </div>
+
+  {# ======== Dirección / Ubicación ======== #}
+  <div class="section">
+    <h3 class="section__title">Dirección</h3>
+    <table class="tbl kv">
+      <tr><th>Departamento</th><td>{{ registro.departamento or '—' }}</td></tr>
+      <tr><th>Provincia</th><td>{{ registro.provincia or '—' }}</td></tr>
+      <tr><th>Distrito</th><td>{{ registro.distrito or '—' }}</td></tr>
+      <tr><th>Comunidad</th><td>{{ registro.comunidad or '—' }}</td></tr>
+      <tr><th>Calle</th><td>{{ registro.calle or '—' }}</td></tr>
+
+      {# Opcionales: centro poblado, referencia, etc. #}
+      {% if registro.centro_poblado is defined and registro.centro_poblado %}
+        <tr><th>Centro poblado</th><td>{{ registro.centro_poblado }}</td></tr>
+      {% endif %}
+      {% if registro.referencia is defined and registro.referencia %}
+        <tr><th>Referencia</th><td>{{ registro.referencia }}</td></tr>
+      {% endif %}
+    </table>
+  </div>
+
+  {# ======== Contacto (opcional) ======== #}
+  {% if (registro.telefono is defined and registro.telefono) or (registro.correo is defined and registro.correo) %}
+    <div class="section">
+      <h3 class="section__title">Contacto</h3>
+      <table class="tbl kv">
+        {% if registro.telefono is defined and registro.telefono %}
+          <tr><th>Teléfono</th><td>{{ registro.telefono }}</td></tr>
+        {% endif %}
+        {% if registro.correo is defined and registro.correo %}
+          <tr><th>Correo electrónico</th><td>{{ registro.correo }}</td></tr>
+        {% endif %}
+      </table>
+    </div>
+  {% endif %}
+
+  {# ======== Observaciones (opcional) ======== #}
+  {% if registro.observaciones is defined and registro.observaciones %}
+    <div class="section">
+      <h3 class="section__title">Observaciones</h3>
+      <div class="chips mb"><span class="chip">{{ registro.observaciones }}</span></div>
+    </div>
+  {% endif %}
+
+  <footer class="section small muted">
+    Generado el {{ registro.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if registro.fecha_registro else '' }}
+  </footer>
 </body>
 </html>

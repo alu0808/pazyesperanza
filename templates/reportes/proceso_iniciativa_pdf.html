@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Ficha de Proceso — {{ iniciativa.nombre_iniciativa }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* ===== Design tokens ===== */
+        :root {
+            --ink: #1f2937;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --brand: #1d7c3a;
+            --bg-head: #f5f7f4;
+            --chip: #eef4f0;
+            --paper: #ffffff;
+            --ok: #1f8b4c;
+            --warn: #b45309;
+            --off: #9ca3af;
+        }
+
+        /* ===== Ajustes PDF ===== */
+        @page {
+            size: A4;
+            margin: 18mm 14mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Roboto", Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.35;
+            overflow-wrap: anywhere; /* evita desbordes horizontales */
+            word-break: normal;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 .5rem 0;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        h2 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        h3.section__title {
+            font-size: 13.2px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--brand);
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .small {
+            font-size: 10.5px;
+        }
+
+        .mb {
+            margin-bottom: .6rem;
+        }
+
+        .mb2 {
+            margin-bottom: 1rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+            border-bottom: 1.5px solid var(--line);
+        }
+
+        footer {
+            border-top: 1.5px solid var(--line);
+            margin-top: 16px;
+            padding-top: 8px;
+            color: var(--muted);
+        }
+
+        .section {
+            margin-top: 14px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* ===== Tablas ===== */
+        table.tbl {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--paper);
+            table-layout: fixed; /* ancho fijo para no “crecer” fuera del A4 */
+        }
+
+        .tbl thead {
+            display: table-header-group;
+        }
+
+        /* repite encabezado si parte página */
+        .tbl tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .tbl th, .tbl td {
+            border: 1px solid var(--line);
+            padding: 7px 10px;
+            vertical-align: top;
+            overflow-wrap: anywhere; /* permite corte limpio dentro de celdas */
+            word-break: break-word;
+        }
+
+        .tbl thead th {
+            background: var(--bg-head);
+            font-weight: 700;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--ink);
+        }
+
+        .tbl--compact th, .tbl--compact td {
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+
+        .tbl--borderless th, .tbl--borderless td {
+            border: 0;
+            padding: 2px 4px;
+        }
+
+        .tbl--striped tbody tr:nth-child(odd) {
+            background: #fafafa;
+        }
+
+        .tbl .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Key–Value */
+        .tbl.kv th {
+            width: 42%;
+            font-size: 12.6px;
+            color: var(--brand);
+            background: #f1f5f2;
+            white-space: nowrap;
+        }
+
+        /* ===== Chips / Badges (sin cortes feos) ===== */
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+            align-items: flex-start;
+        }
+
+        /* Chip pill con wrap controlado */
+        .chip {
+            display: inline-block;
+            max-width: 100%;
+            padding: 3px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--chip);
+            font-size: 11px;
+            line-height: 1.25;
+
+            /* 👉 Permitir salto dentro del chip sin guiones feos */
+            white-space: normal; /* ya NO nowrap */
+            overflow-wrap: anywhere; /* rompe palabras largas (URLs, etc.) */
+            word-break: normal; /* no cortar palabras “a lo bruto” */
+            hyphens: none; /* evita Jóve-nes / Adolescen-tes */
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            border: 1px solid var(--line);
+            background: #f3f4f6;
+            color: #111827;
+            white-space: nowrap;
+            word-break: keep-all;
+            overflow-wrap: normal;
+            hyphens: none;
+        }
+
+        .badge--ok {
+            background: #ecfdf5;
+            color: var(--ok);
+            border-color: #d1fae5;
+        }
+
+        .badge--warn {
+            background: #fffbeb;
+            color: var(--warn);
+            border-color: #fde68a;
+        }
+
+        .badge--off {
+            background: #f3f4f6;
+            color: var(--off);
+            border-color: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>Ficha de Proceso de Iniciativa</h1>
+        <div class="muted small">Generado por el sistema</div>
+    </div>
+</header>
+
+<!-- CABECERA -->
+<div class="section">
+    <h2>{{ iniciativa.nombre_iniciativa }}</h2>
+    <table class="tbl tbl--borderless small">
+        <tr>
+            <td><strong>Oficina Regional:</strong> {{ iniciativa.oficina_regional or '—' }}</td>
+            <td>
+                <strong>N° monitoreo:</strong>
+                <span class="badge">{{ numero_registro or 1 }}</span>
+            </td>
+            <td><strong>Responsable:</strong> {{ proceso.responsable_registro or '—' }}</td>
+        </tr>
+        <tr>
+            <td colspan="2"><strong>Objetivo específico:</strong> {{ proceso.objetivo_especifico or '—' }}</td>
+            <td><strong>Fecha
+                Registro:</strong> {{ proceso.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if proceso.fecha_registro else '—' }}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- LOGROS -->
+<div class="section">
+    <h3 class="section__title">Logros / resultados</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Valoración</th>
+            <td>{{ proceso.logros or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Sustento</th>
+            <td>{{ proceso.sustento_logros or '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- CONTENIDOS -->
+{% set contenidos = [
+  ('Definición de la problemática', proceso.contenido_1),
+  ('Fundamentación/argumentación (normativa, estadística, PP)', proceso.contenido_2),
+  ('Formulación de objetivos / metas', proceso.contenido_3),
+  ('Presupuesto / financiamiento', proceso.contenido_4),
+  ('Organización / implementación', proceso.contenido_5)
+] %}
+<div class="section">
+    <h3 class="section__title">Contenidos (nivel de formulación)</h3>
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>Ítem</th>
+            <th>Calificación</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for label, val in contenidos %}
+            <tr>
+                <td>{{ label }}</td>
+                <td>
+                    {% set _val = (CAL_MAP.get(val, '—') if val is not none else '—') %}
+                    <span class="chip">{{ _val }}</span>
+                </td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td>Otro ({{ proceso.contenido_otro or '—' }})</td>
+            <td>
+                {% set _otro = (CAL_MAP.get(proceso.calificacion_otro_contenido, '—') if proceso.calificacion_otro_contenido is not none else '—') %}
+                <span class="chip">{{ _otro }}</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- FASE IMPLEMENTACIÓN -->
+<div class="section">
+    <h3 class="section__title">Fase de implementación</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Fase</th>
+            <td>
+                {% if proceso.fase_implementacion is not none %}
+                    <span class="chip">{{ FASES_MAP.get(proceso.fase_implementacion, proceso.fase_implementacion) }}</span>
+                {% elif proceso.fase_otro_detalle %}
+                    <span class="chip">Otra</span> — {{ proceso.fase_otro_detalle }}
+                {% else %} — {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Normas (detalle si fase=8)</th>
+            <td>{{ proceso.fase_normas_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Institucionalización (detalle si fase=9)</th>
+            <td>{{ proceso.fase_institucionalizacion_detalle or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Otra fase (detalle)</th>
+            <td>{{ proceso.fase_otro_detalle or '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- NIVEL AVANCE -->
+<div class="section">
+    <h3 class="section__title">Nivel de avance — comentarios</h3>
+    {% if proceso.nivel_avance_comentarios %}
+        <div class="chips">
+            <span class="chip">{{ proceso.nivel_avance_comentarios }}</span>
+        </div>
+    {% else %}
+        <div class="muted">—</div>
+    {% endif %}
+</div>
+
+<!-- COMPONENTES -->
+<div class="section">
+    <h3 class="section__title">Componentes (nivel de presencia/aceptación)</h3>
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>Componente</th>
+            <th>Calificación</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ proceso.componente_1 or '—' }}</td>
+            <td>
+                {% set c1 = (COMP_MAP.get(proceso.calificacion_componente_1, '—') if proceso.calificacion_componente_1 is not none else '—') %}
+                <span class="chip">{{ c1 }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>{{ proceso.componente_2 or '—' }}</td>
+            <td>
+                {% set c2 = (COMP_MAP.get(proceso.calificacion_componente_2, '—') if proceso.calificacion_componente_2 is not none else '—') %}
+                <span class="chip">{{ c2 }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>{{ proceso.componente_3 or '—' }}</td>
+            <td>
+                {% set c3 = (COMP_MAP.get(proceso.calificacion_componente_3, '—') if proceso.calificacion_componente_3 is not none else '—') %}
+                <span class="chip">{{ c3 }}</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- SUSTENTO VALORACIÓN -->
+<div class="section">
+    <h3 class="section__title">Sustento de la valoración</h3>
+    {% if proceso.sustento_valoracion %}
+        <div class="chips"><span class="chip">{{ proceso.sustento_valoracion }}</span></div>
+    {% else %}
+        <div class="muted">—</div>
+    {% endif %}
+</div>
+
+<!-- COMPETENCIAS / PARTICIPACIÓN -->
+<div class="section">
+    <h3 class="section__title">Competencias y participación</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Aspectos a reforzar (competencias)</th>
+            <td>{{ proceso.reforzar_competencias or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Participación / comportamiento</th>
+            <td>
+                {% if proceso.participacion_comportamiento is not none %}
+                    <span class="chip">{{ PART_MAP.get(proceso.participacion_comportamiento, proceso.participacion_comportamiento) }}</span>
+                {% else %} — {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Comentario de valoración</th>
+            <td>{{ proceso.comentario_valoracion or '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- FACTORES CLAVE -->
+<div class="section">
+    <h3 class="section__title">Factores clave</h3>
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>Favorecieron</th>
+            <th>Obstaculizaron</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ proceso.factores_favorecido or '—' }}</td>
+            <td>{{ proceso.factores_obstaculizado or '—' }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ACTIVIDADES -->
+{% set acts = [
+  (proceso.actividad_1, proceso.aporte_1),
+  (proceso.actividad_2, proceso.aporte_2),
+  (proceso.actividad_3, proceso.aporte_3),
+  (proceso.actividad_4, proceso.aporte_4),
+  (proceso.actividad_5, proceso.aporte_5),
+] %}
+<div class="section">
+    <h3 class="section__title">Actividades implementadas y aporte</h3>
+    <table class="tbl tbl--compact">
+        <thead>
+        <tr>
+            <th>Actividad</th>
+            <th>Aporte al objetivo</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for a,b in acts %}
+            {% if a or b %}
+                <tr>
+                    <td>{{ a or '—' }}</td>
+                    <td>{{ b or '—' }}</td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+        {% if not (proceso.actividad_1 or proceso.actividad_2 or proceso.actividad_3 or proceso.actividad_4 or proceso.actividad_5) %}
+            <tr>
+                <td colspan="2" class="muted">—</td>
+            </tr>
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- CAMBIOS E INSIGHTS -->
+<div class="section">
+    <h3 class="section__title">Cambios en la estrategia / comentarios</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Cambios en la estrategia institucional</th>
+            <td>{{ proceso.cambios_estrategia or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Comentario relevante</th>
+            <td>{{ proceso.comentario_relevante or '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<footer class="section small muted">
+    Generado el {{ proceso.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if proceso.fecha_registro else '' }}
+</footer>
+
+</body>
+</html>

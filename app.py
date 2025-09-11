@@ -5,7 +5,8 @@ from functools import wraps
 from urllib.parse import urlparse, urljoin
 from sqlalchemy import and_, or_
 import pytz
-from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, current_app,make_response
+from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, current_app, make_response, \
+    Response
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -441,31 +442,6 @@ def listar_registros():
     registros = Registro.query.order_by(Registro.fecha_registro.desc()).all()  # Ordenar por fecha de registro (descendente)
     return render_template('listar_registros.html', registros=registros)
 
-@app.route('/registro/<dni>/pdf', methods=['GET'])
-@login_required
-@roles_required('admin', 'gestor', 'viewer')
-def registro_pdf(dni):
-    registro = Registro.query.filter_by(dni=dni).first()
-    if not registro:
-        flash('El registro no existe.', 'danger')
-        return redirect(url_for('listar_registros'))
-
-    html_str = render_template('reportes/registro_pdf.html', registro=registro)
-    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
-    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path)\
-        .write_pdf(stylesheets=[CSS(css_path)])
-
-    # lee ?mode=inline (default) o ?mode=download
-    mode = request.args.get('mode', 'inline')
-    disposition = 'attachment' if mode == 'download' else 'inline'
-
-    resp = make_response(pdf_bytes)
-    resp.headers['Content-Type'] = 'application/pdf'
-    # comillas por si el nombre lleva caracteres raros
-    resp.headers['Content-Disposition'] = f'{disposition}; filename="ficha_registro_{registro.dni}.pdf"'
-    return resp
-
-
 ################################################################################################################################
 ################################################################################################################################
 #EDITAR REGISTROS INICIALES
@@ -860,66 +836,6 @@ def get_registros():
     return jsonify(registros_json)
 
 # LISTAR INICIATIVAS
-def _slugify_filename(s: str, default='iniciativa'):
-    if not s:
-        return default
-    # normaliza tildes/ñ -> ascii
-    s2 = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode()
-    # deja solo [a-zA-Z0-9_-], reemplaza lo demás por "_"
-    s2 = re.sub(r'[^a-zA-Z0-9_-]+', '_', s2).strip('_').lower()
-    return s2 or default
-
-FASES_MAP = {
-    0: 'No se ha iniciado',
-    1: 'Gestación / estado preliminar',
-    2: 'Organización de actores / desarrollo de contenidos',
-    3: 'Coordinaciones preliminares',
-    4: 'Diálogo / socialización / sensibilización',
-    5: 'Argumentación / fundamentación',
-    6: 'Respuesta / acuerdos preliminares / compromisos',
-    7: 'Formalización de acuerdos',
-    8: 'Desarrollo de normas / instrumentos',
-    9: 'Institucionalización (aplicación, presupuesto, instancia)',
-    10: 'Monitoreo / supervisión / vigilancia',
-}
-
-@app.route('/iniciativa/<path:nombre_iniciativa>/pdf', methods=['GET'])
-@login_required
-@roles_required('admin', 'gestor', 'viewer')
-def iniciativa_pdf(nombre_iniciativa):
-    # búsqueda case-insensitive, por si el nombre tiene mayúsculas o espacios
-    iniciativa = (Iniciativa.query
-                  .filter(func.lower(Iniciativa.nombre_iniciativa) == func.lower(nombre_iniciativa))
-                  .first())
-
-    if not iniciativa:
-        flash('La iniciativa no existe.', 'danger')
-        return redirect(url_for('listar_iniciativas'))
-
-    # Render HTML para el PDF
-    html_str = render_template(
-        'reportes/iniciativa_pdf.html',
-        iniciativa=iniciativa,
-        FASES_MAP=FASES_MAP
-    )
-
-    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
-
-    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path) \
-        .write_pdf(stylesheets=[CSS(css_path)])
-
-    # ?mode=inline (default) o ?mode=download
-    mode = request.args.get('mode', 'inline')
-    disposition = 'attachment' if mode == 'download' else 'inline'
-
-    fname = f"ficha_iniciativa_{_slugify_filename(iniciativa.nombre_iniciativa)}.pdf"
-
-    resp = make_response(pdf_bytes)
-    resp.headers['Content-Type'] = 'application/pdf'
-    resp.headers['Content-Disposition'] = f'{disposition}; filename="{fname}"'
-    return resp
-
-
 @app.route('/listado_iniciativas', methods=['GET'])
 @login_required
 @roles_required('admin', 'gestor', 'viewer')
@@ -1573,21 +1489,6 @@ class CapacidadIncidencia(db.Model):
     
     avances = db.relationship('AvanceCapacidadIncidencia', backref='capacidad_incidencia', lazy=True, cascade="all, delete-orphan")
     
-# @app.route('/obtener_datos_iniciativa', methods=['GET'])
-# @login_required
-# def obtener_datos_iniciativa():
-#     nombre_iniciativa = request.args.get('nombre_iniciativa', '').strip()
-#     if not nombre_iniciativa:
-#         return jsonify({'error': 'Debe proporcionar el nombre de la iniciativa.'}), 400
-#
-#     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
-#     if not iniciativa:
-#         return jsonify({'error': 'Iniciativa no encontrada.'}), 404
-#
-#     return jsonify({
-#         'poblacion': iniciativa.poblacion or iniciativa.otra_poblacion_detalle,
-#         'derecho_generico': iniciativa.derecho_generico or iniciativa.otro_derecho_detalle
-#     })
 
 @app.route('/obtener_datos_iniciativa', methods=['GET'])
 @login_required
@@ -1611,37 +1512,6 @@ def obtener_datos_iniciativa():
         'derecho_generico': ini.derecho_generico or ini.otro_derecho_detalle
     })
 
-
-
-# BUSCAR PARTICIPANTE
-# @app.route('/buscar_participante', methods=['GET'])
-# @login_required
-# def buscar_participante():
-#     search = request.args.get('q', '').strip().lower()  # Captura el término de búsqueda
-#     if not search:
-#         return jsonify([])  # Retorna una lista vacía si no hay término de búsqueda
-#
-#     # Buscar coincidencias por DNI o nombre, asegurarse de que tengan iniciativas relacionadas y estén activos
-#     registros = Registro.query.filter(
-#         ((Registro.dni.ilike(f'%{search}%')) | (Registro.nombre.ilike(f'%{search}%'))) &  # Coincidencia en búsqueda
-#         (Registro.iniciativas.any()) &  # Tengan al menos una iniciativa relacionada
-#         (Registro.estado == 'ACT')  # El estado del participante sea ACT
-#     ).all()
-#
-#     # Construir el resultado con lógica robusta para campos opcionales
-#     resultado = []
-#     for registro in registros:
-#         iniciativa = registro.iniciativas[0] if registro.iniciativas else None  # Tomar la primera iniciativa relacionada, si existe
-#         resultado.append({
-#             "dni": registro.dni or "",
-#             "nombre": registro.nombre or "",
-#             "poblacion": iniciativa.poblacion or iniciativa.otra_poblacion_detalle if iniciativa else "No especificado",
-#             "derecho_generico": iniciativa.derecho_generico or iniciativa.otro_derecho_detalle if iniciativa else "No especificado",
-#             "iniciativa": iniciativa.nombre_iniciativa if iniciativa else "No especificado",
-#             "capacidad_id": registro.capacidades[0].id if registro.capacidades else None
-#         })
-#
-#     return jsonify(resultado)
 
 @app.route('/buscar_participante', methods=['GET'])
 @login_required
@@ -1694,23 +1564,6 @@ def buscar_participante():
     return jsonify(resultado)
 
 
-# @app.route('/buscar_iniciativas_participante', methods=['GET'])
-# @login_required
-# def buscar_iniciativas_participante():
-#     dni = request.args.get('dni', '').strip()
-#     if not dni:
-#         return jsonify([])
-#
-#     # Buscar las iniciativas asociadas al participante por su DNI
-#     participante = Registro.query.filter_by(dni=dni).first()
-#     if not participante:
-#         return jsonify([])
-#
-#     iniciativas = [
-#         {"nombre_iniciativa": iniciativa.nombre_iniciativa}
-#         for iniciativa in participante.iniciativas
-#     ]
-#     return jsonify(iniciativas)
 
 @app.route('/buscar_iniciativas_participante', methods=['GET'])
 @login_required
@@ -1812,12 +1665,6 @@ def form_capacidades_incidencia():
     # Si es GET
     return render_template('capacidades_incidencia/form_capacidades_incidencia.html')
 
-# @app.route('/listar_capacidades_incidencia', methods=['GET'])
-# @login_required
-# @roles_required('admin', 'gestor', 'viewer')
-# def listar_capacidades_incidencia():
-#     capacidades = CapacidadIncidencia.query.order_by(CapacidadIncidencia.fecha_registro.desc()).all()
-#     return render_template('capacidades_incidencia/listar_capacidades_incidencia.html', capacidades=capacidades)
 
 @app.route('/listar_capacidades_incidencia', methods=['GET'])
 @login_required
@@ -1940,20 +1787,6 @@ class AvanceCapacidadIncidencia(db.Model):
     responsable_registro = db.Column(db.String(100), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
-    # Relación con CapacidadIncidencia
-    # capacidad_incidencia = db.relationship('CapacidadIncidencia', backref=db.backref('avances', lazy=True))
-
-# @app.route('/get_iniciativas_por_participante', methods=['GET'])
-# @login_required
-# def get_iniciativas_por_participante():
-#     dni = request.args.get('dni')
-#     if not dni:
-#         return jsonify([])
-#
-#     # Obtener todas las iniciativas asociadas al participante
-#     iniciativas = Iniciativa.query.join(iniciativa_registro).filter_by(registro_dni=dni).all()
-#
-#     return jsonify([{'nombre_iniciativa': iniciativa.nombre_iniciativa} for iniciativa in iniciativas])
 @app.route('/get_iniciativas_por_participante', methods=['GET'])
 @login_required
 def get_iniciativas_por_participante():
@@ -1974,26 +1807,6 @@ def get_iniciativas_por_participante():
     iniciativas = q.all()
     return jsonify([{'nombre_iniciativa': ini.nombre_iniciativa} for ini in iniciativas])
 
-# @app.route('/get_numero_avances_por_iniciativa', methods=['GET'])
-# @login_required
-# def get_numero_avances_por_iniciativa():
-#     dni = request.args.get('dni')
-#     nombre_iniciativa = request.args.get('iniciativa')
-#
-#     if not dni or not nombre_iniciativa:
-#         return jsonify({'error': 'DNI o iniciativa no especificados.'})
-#
-#     # Buscar la capacidad específica para el participante y la iniciativa
-#     capacidad = CapacidadIncidencia.query.filter_by(registro_dni=dni, nombre_iniciativa=nombre_iniciativa).first()
-#     if not capacidad:
-#         return jsonify({'error': 'No existe capacidad para esta combinación de participante e iniciativa.'})
-#
-#     # Contar los avances asociados a esta capacidad
-#     numero_avances = AvanceCapacidadIncidencia.query.filter_by(capacidad_id=capacidad.id).count()
-#
-#     # El próximo registro será el actual número de avances + 1
-#     proximo_registro = numero_avances + 1
-#     return jsonify({'proximo_registro': proximo_registro})
 
 @app.route('/get_numero_avances_por_iniciativa', methods=['GET'])
 @login_required
@@ -2022,29 +1835,6 @@ def get_numero_avances_por_iniciativa():
     numero_avances = AvanceCapacidadIncidencia.query.filter_by(capacidad_id=capacidad.id).count()
     return jsonify({'proximo_registro': numero_avances + 1})
 
-
-
-
-
-
-
-# @app.route('/buscar_iniciativas_participante_avances', methods=['GET'])
-# @login_required
-# def buscar_iniciativas_participante_avances():
-#     dni = request.args.get('dni', '').strip()
-#     if not dni:
-#         return jsonify([])
-#
-#     # Buscar las iniciativas asociadas al participante por su DNI
-#     participante = Registro.query.filter_by(dni=dni).first()
-#     if not participante:
-#         return jsonify([])
-#
-#     iniciativas = [
-#         {"nombre_iniciativa": iniciativa.nombre_iniciativa}
-#         for iniciativa in participante.iniciativas
-#     ]
-#     return jsonify(iniciativas)
 
 @app.route('/buscar_iniciativas_participante_avances', methods=['GET'])
 @login_required
@@ -2140,21 +1930,6 @@ def form_avances_capacidades_incidencia():
     # Si es GET, renderizar el formulario vacío
     return render_template('capacidades_incidencia/form_avances_capacidades_incidencia.html')
 
-# @app.route('/get_capacidad_avances/<participant_dni>', methods=['GET'])
-# @login_required
-# def get_capacidad_avances(participant_dni):
-#     # Buscar la capacidad asociada al participante
-#     capacidad = CapacidadIncidencia.query.filter_by(registro_dni=participant_dni).first()
-#     if not capacidad:
-#         return jsonify({"error": "No se encontró una capacidad para este participante."})
-#
-#     # Contar los avances asociados a esta capacidad
-#     numero_registros = len(capacidad.avances)
-#
-#     return jsonify({
-#         "capacidad_id": capacidad.id,
-#         "numero_registros": numero_registros
-#     })
 
 @app.route('/get_capacidad_avances/<participant_dni>', methods=['GET'])
 @login_required
@@ -3210,6 +2985,493 @@ def get_data():
     data["iniciativa_registro"] = [dict(zip(columns, row)) for row in query]
 
     return jsonify(data), 200, {'Content-Type': 'application/json; charset=utf-8'}
+
+##PDFs
+def _slugify_filename(s: str, default='iniciativa'):
+    if not s:
+        return default
+    # normaliza tildes/ñ -> ascii
+    s2 = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode()
+    # deja solo [a-zA-Z0-9_-], reemplaza lo demás por "_"
+    s2 = re.sub(r'[^a-zA-Z0-9_-]+', '_', s2).strip('_').lower()
+    return s2 or default
+
+FASES_MAP = {
+    0: 'No se ha iniciado',
+    1: 'Gestación / estado preliminar',
+    2: 'Organización de actores / desarrollo de contenidos',
+    3: 'Coordinaciones preliminares',
+    4: 'Diálogo / socialización / sensibilización',
+    5: 'Argumentación / fundamentación',
+    6: 'Respuesta / acuerdos preliminares / compromisos',
+    7: 'Formalización de acuerdos',
+    8: 'Desarrollo de normas / instrumentos',
+    9: 'Institucionalización (aplicación, presupuesto, instancia)',
+    10: 'Monitoreo / supervisión / vigilancia',
+}
+
+@app.route('/iniciativa/<path:nombre_iniciativa>/pdf', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def iniciativa_pdf(nombre_iniciativa):
+    # búsqueda case-insensitive, por si el nombre tiene mayúsculas o espacios
+    iniciativa = (Iniciativa.query
+                  .filter(func.lower(Iniciativa.nombre_iniciativa) == func.lower(nombre_iniciativa))
+                  .first())
+
+    if not iniciativa:
+        flash('La iniciativa no existe.', 'danger')
+        return redirect(url_for('listar_iniciativas'))
+
+    # Render HTML para el PDF
+    html_str = render_template(
+        'reportes/iniciativa_pdf.html',
+        iniciativa=iniciativa,
+        FASES_MAP=FASES_MAP
+    )
+
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path) \
+        .write_pdf(stylesheets=[CSS(css_path)])
+
+    # ?mode=inline (default) o ?mode=download
+    mode = request.args.get('mode', 'inline')
+    disposition = 'attachment' if mode == 'download' else 'inline'
+
+    fname = f"ficha_iniciativa_{_slugify_filename(iniciativa.nombre_iniciativa)}.pdf"
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="{fname}"'
+    return resp
+
+
+@app.route('/capacidad_incidencia/<int:cap_id>/pdf')
+@login_required
+def capacidad_incidencia_pdf(cap_id):
+    cap = (CapacidadIncidencia.query
+           .options(joinedload(CapacidadIncidencia.registro),
+                    joinedload(CapacidadIncidencia.iniciativa),
+                    joinedload(CapacidadIncidencia.avances))
+           .get_or_404(cap_id))
+
+    # Chequeo de OR (como en tus otras vistas)
+    # if not is_admin():
+    #     or_user = (current_user.oficina_regional or '').strip()
+    #     if not or_user or not cap.iniciativa or cap.iniciativa.oficina_regional != or_user:
+    #         abort(403)
+
+    html_str = render_template('reportes/capacidad_incidencia_pdf.html', capacidad=cap)
+
+    pdf_bin = HTML(string=html_str, base_url=request.host_url).write_pdf()
+    resp = make_response(pdf_bin)
+    filename = f"Capacidades_{cap.registro_dni or 'sin_dni'}_{cap.nombre_iniciativa or 'sin_iniciativa'}.pdf"
+    if request.args.get('mode') == 'download':
+        resp.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    else:
+        resp.headers['Content-Disposition'] = f'inline; filename="{filename}"'
+    resp.headers['Content-Type'] = 'application/pdf'
+    return resp
+
+@app.route('/registro/<dni>/pdf', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def registro_pdf(dni):
+    registro = Registro.query.filter_by(dni=dni).first()
+    if not registro:
+        flash('El registro no existe.', 'danger')
+        return redirect(url_for('listar_registros'))
+
+    html_str = render_template('reportes/registro_pdf.html', registro=registro)
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path)\
+        .write_pdf(stylesheets=[CSS(css_path)])
+
+    # lee ?mode=inline (default) o ?mode=download
+    mode = request.args.get('mode', 'inline')
+    disposition = 'attachment' if mode == 'download' else 'inline'
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    # comillas por si el nombre lleva caracteres raros
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="ficha_registro_{registro.dni}.pdf"'
+    return resp
+
+
+@app.route('/proceso_iniciativa_pdf/<int:id>', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def proceso_iniciativa_pdf(id):
+    # 1) Traer proceso y su iniciativa canónica
+    proceso = ProcesoIniciativa.query.get_or_404(id)
+    ini = (Iniciativa.query
+           .filter(func.lower(Iniciativa.nombre_iniciativa) == func.lower(proceso.nombre_iniciativa))
+           .first())
+
+    if not ini:
+        flash('Iniciativa asociada no encontrada.', 'danger')
+        return redirect(url_for('listar_proceso_iniciativa'))
+
+    # 2) Control de acceso por OR si no es admin
+    # if not is_admin():
+    #     or_user = (current_user.oficina_regional or '').strip()
+    #     if not or_user or ini.oficina_regional != or_user:
+    #         flash('No estás autorizado para ver esta ficha en PDF.', 'danger')
+    #         return redirect(url_for('listar_proceso_iniciativa'))
+
+    # 3) Calcular número de registro dentro de la iniciativa (como en editar)
+    numero_registro = (db.session.query(ProcesoIniciativa.id)
+        .filter(
+            ProcesoIniciativa.nombre_iniciativa == proceso.nombre_iniciativa,
+            or_(
+                ProcesoIniciativa.fecha_registro < proceso.fecha_registro,
+                and_(
+                    ProcesoIniciativa.fecha_registro == proceso.fecha_registro,
+                    ProcesoIniciativa.id <= proceso.id
+                )
+            )
+        ).count())
+
+    # 4) Mapas de etiquetas
+    CAL_MAP = {
+        0:'No se ha iniciado', 1:'Inicial', 2:'En proceso de formulación', 3:'Concluido'
+    }
+    COMP_MAP = {
+        0:'No se ha tomado en cuenta', 1:'En una mínima parte', 2:'De manera parcial',
+        3:'Se ha considerado plenamente', 4:'Se ha superado los planteamientos iniciales'
+    }
+    FASES_MAP = {
+        0:'No se ha iniciado',
+        1:'Gestación / embrionaria / preliminar',
+        2:'Organización / actores / desarrollo de contenidos',
+        3:'Coordinaciones preliminares',
+        4:'Diálogo / socialización / sensibilización',
+        5:'Argumentación / fundamentación',
+        6:'Respuesta / acuerdos / compromisos iniciales',
+        7:'Formalización de acuerdos',
+        8:'Desarrollo de normas / instrumentos',
+        9:'Institucionalización de la propuesta',
+        10:'Monitoreo / supervisión / vigilancia',
+    }
+    PART_MAP = {0: 'Desfavorable', 1: 'Indiferente', 2: 'Favorable'}
+
+    # 5) Renderizar HTML
+    html = render_template(
+        'reportes/proceso_iniciativa_pdf.html',
+        proceso=proceso,
+        iniciativa=ini,
+        numero_registro=numero_registro,
+        CAL_MAP=CAL_MAP,
+        COMP_MAP=COMP_MAP,
+        FASES_MAP=FASES_MAP,
+        PART_MAP=PART_MAP
+    )
+
+    # 6) Modo inline|download
+    mode = request.args.get('mode', 'inline')
+    filename = f"Proceso_{ini.nombre_iniciativa}_N{numero_registro or 1}.pdf"
+
+    # 7) Generar PDF (WeasyPrint si está instalado; si no, pdfkit/wkhtmltopdf)
+    try:
+        pdf = HTML(string=html, base_url=request.host_url).write_pdf()
+        return Response(
+            pdf,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'{"attachment" if mode=="download" else "inline"}; filename="{filename}"'
+            }
+        )
+    except Exception as e:
+            # Fallback: muestra el HTML si no hay motor PDF operativo
+            print(f'No se pudo generar el PDF en el servidor. {e}')
+            return html
+
+
+@app.route('/avance_capacidad_pdf/<int:avance_id>', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def avance_capacidad_pdf(avance_id):
+    # Traer avance + relaciones necesarias
+    q = (
+        AvanceCapacidadIncidencia.query
+        .join(CapacidadIncidencia, AvanceCapacidadIncidencia.capacidad_id == CapacidadIncidencia.id)
+        .join(Iniciativa, CapacidadIncidencia.nombre_iniciativa == Iniciativa.nombre_iniciativa)
+        .options(
+            joinedload(AvanceCapacidadIncidencia.capacidad_incidencia)
+                .joinedload(CapacidadIncidencia.iniciativa),
+            joinedload(AvanceCapacidadIncidencia.capacidad_incidencia)
+                .joinedload(CapacidadIncidencia.registro)
+        )
+        .filter(AvanceCapacidadIncidencia.id == avance_id)
+    )
+
+    # Políticas de visibilidad (mismo criterio que tu listado)
+    # if not (is_admin() or is_viewer()):
+    #     or_user = (current_user.oficina_regional or '').strip()
+    #     if not or_user:
+    #         flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+    #         return redirect(url_for('listar_avances_capacidades_incidencia'))
+    #     q = q.filter(Iniciativa.oficina_regional == or_user)
+
+    avance = q.first()
+    if not avance:
+        flash('El avance no existe o no está permitido para tu usuario.', 'danger')
+        return redirect(url_for('listar_avances_capacidades_incidencia'))
+
+    ini = avance.capacidad_incidencia.iniciativa if avance.capacidad_incidencia else None
+
+    capacidad = avance.capacidad_incidencia
+    registro = capacidad.registro
+    iniciativa = capacidad.iniciativa
+
+    avances_db = (AvanceCapacidadIncidencia.query
+                  .filter_by(capacidad_id=capacidad.id)
+                  .order_by(AvanceCapacidadIncidencia.fecha_registro.asc(),
+                            AvanceCapacidadIncidencia.id.asc())
+                  .all())
+
+    # Por si hubiera NULL en fecha_registro, reforzamos con sort estable en Python
+    avances_sorted = sorted(
+        avances_db,
+        key=lambda a: ((a.fecha_registro or datetime.min), a.id)
+    )
+
+    numero_monitoreo = next(
+        (i for i, a in enumerate(avances_sorted, start=1) if a.id == avance.id),
+        None
+    )
+
+    # Mapas de calificación (0–4)
+    CAL5 = {
+        0: "No se observa el atributo",
+        1: "Estado incipiente o poco relevante",
+        2: "Presencia regular, aún insuficiente",
+        3: "Buena presencia del atributo",
+        4: "Alto dominio del atributo",
+    }
+
+    # Render del HTML
+    html_str = render_template(
+        'reportes/avance_capacidad_pdf.html',
+        avance=avance,
+        capacidad=capacidad,
+        registro=registro,
+        iniciativa=iniciativa,
+        CAL5=CAL5,
+        avances_sorted=avances_sorted,
+        numero_monitoreo=numero_monitoreo
+    )
+
+    # CSS base (tu styles.css) + base_url para assets
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path)\
+        .write_pdf(stylesheets=[CSS(css_path)])
+
+    # inline (ver en navegador) o download (descargar)
+    mode = request.args.get('mode', 'inline')
+    disposition = 'attachment' if mode == 'download' else 'inline'
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    filename = f"avance_capacidad_{registro.dni}_{avance.id}.pdf"
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+    return resp
+
+
+@app.route('/caso_emblematico_pdf/<string:nombre_caso>', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def caso_emblematico_pdf(nombre_caso):
+    # Búsqueda (case-insensitive) + restricción por OR igual que en listar
+    q = CasoEmblematico.query.filter(
+        func.lower(CasoEmblematico.nombre_caso) == func.lower(nombre_caso)
+    )
+
+    # Mantén la misma lógica que usaste en "listar_casos_emblematicos":
+    # los viewer ven all; gestores filtran por su OR; admin sin filtro.
+    # if not (is_admin() or is_viewer()):
+    #     or_user = (current_user.oficina_regional or '').strip()
+    #     if not or_user:
+    #         flash('Tu usuario no tiene Oficina Regional asignada.', 'danger')
+    #         return redirect(url_for('listar_casos_emblematicos'))
+    #     q = q.filter(CasoEmblematico.oficina_regional == or_user)
+
+    caso = q.first()
+    if not caso:
+        flash('El caso no existe o no está permitido para tu usuario.', 'danger')
+        return redirect(url_for('listar_casos_emblematicos'))
+
+    # Render del HTML
+    html_str = render_template('reportes/caso_emblematico_pdf.html', caso=caso)
+
+    # WeasyPrint: CSS base (tu styles.css) + base_url para assets
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path)\
+        .write_pdf(stylesheets=[CSS(css_path)])
+
+    # inline (ver en navegador) o download (descargar)
+    mode = request.args.get('mode', 'inline')
+    disposition = 'attachment' if mode == 'download' else 'inline'
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    # Comillas por si el nombre lleva espacios u otros caracteres
+    filename = f'caso_emblematico_{caso.nombre_caso}.pdf'
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+    return resp
+
+
+@app.route('/avance_caso_emblematico_pdf/<int:avance_id>', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def avance_caso_emblematico_pdf(avance_id):
+    q = (AvanceCasoEmblematico.query
+         .join(CasoEmblematico, AvanceCasoEmblematico.nombre_caso == CasoEmblematico.nombre_caso)
+         .options(joinedload(AvanceCasoEmblematico.caso))
+         .filter(AvanceCasoEmblematico.id == avance_id))
+
+    # if not is_admin():
+    #     or_user = (current_user.oficina_regional or '').strip()
+    #     if not or_user:
+    #         flash('Tu usuario no tiene Oficina Regional asignada.', 'danger')
+    #         return redirect(url_for('listar_avances_caso_emblematico'))
+    #     q = q.filter(CasoEmblematico.oficina_regional == or_user)
+
+    avance = q.first()
+    if not avance:
+        flash('El avance no existe o no está permitido para tu usuario.', 'danger')
+        return redirect(url_for('listar_avances_caso_emblematico'))
+
+    # Ordenar todos los avances del caso y calcular N°
+    avances_sorted = (AvanceCasoEmblematico.query
+        .filter(AvanceCasoEmblematico.nombre_caso == avance.nombre_caso)
+        .order_by(AvanceCasoEmblematico.fecha_registro.asc(),
+                  AvanceCasoEmblematico.id.asc())
+        .all())
+
+    numero_monitoreo = next(
+        (i for i, a in enumerate(avances_sorted, start=1) if a.id == avance.id),
+        None
+    )
+
+    html_str = render_template(
+        'reportes/avance_caso_emblematico_pdf.html',
+        avance=avance,
+        caso=avance.caso,
+        numero_monitoreo=numero_monitoreo
+    )
+
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path) \
+        .write_pdf(stylesheets=[CSS(css_path)])
+
+    mode = request.args.get('mode', 'inline')
+    disposition = 'attachment' if mode == 'download' else 'inline'
+
+    filename = f"avance_caso_{avance.caso.nombre_caso}_{avance.id}.pdf"
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+    return resp
+
+
+@app.route('/politica_nacional_memoria_pdf/<nombre_politica_memoria>', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def politica_nacional_memoria_pdf(nombre_politica_memoria):
+    # Normaliza a lower() para coincidir con cómo guardas el PK
+    name_l = (nombre_politica_memoria or '').strip().lower()
+
+    q = (PoliticaNacionalMemoria.query
+         .options(joinedload(PoliticaNacionalMemoria.avances))
+         .filter(func.lower(PoliticaNacionalMemoria.nombre_politica_memoria) == name_l))
+
+    # Filtro por OR si no es admin/viewer
+    # if not (is_admin() or is_viewer()):
+    #     or_user = (current_user.oficina_regional or '').strip()
+    #     if not or_user:
+    #         flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+    #         return redirect(url_for('listar_politica_nacional_memoria'))
+    #     q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+
+    poli = q.first()
+    if not poli:
+        flash('La política/sitio de memoria no existe o no pertenece a tu OR.', 'danger')
+        return redirect(url_for('listar_politica_nacional_memoria'))
+
+    # Orden estable de avances por fecha (NULL al final) e ID
+    avances_db = list(poli.avances or [])
+    avances_sorted = sorted(
+        avances_db,
+        key=lambda a: ((a.fecha_registro or datetime.min), a.id)
+    )
+
+    html_str = render_template(
+        'reportes/politica_nacional_memoria_pdf.html',
+        poli=poli,
+        avances_sorted=avances_sorted
+    )
+
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path)\
+        .write_pdf(stylesheets=[CSS(css_path)])
+
+    mode = request.args.get('mode', 'inline')
+    disposition = 'attachment' if mode == 'download' else 'inline'
+    filename = f"politica_memoria_{poli.nombre_politica_memoria}.pdf"
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+    return resp
+
+@app.route('/avance_politica_memoria_pdf/<int:avance_id>', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def avance_politica_memoria_pdf(avance_id):
+    q = (AvancePoliticaMemoria.query
+         .join(PoliticaNacionalMemoria, AvancePoliticaMemoria.nombre_politica_memoria == PoliticaNacionalMemoria.nombre_politica_memoria)
+         .options(joinedload(AvancePoliticaMemoria.politica))
+         .filter(AvancePoliticaMemoria.id == avance_id))
+
+    # if not is_admin():
+    #     or_user = (current_user.oficina_regional or '').strip()
+    #     if not or_user:
+    #         flash('Tu usuario no tiene Oficina Regional asignada.', 'danger')
+    #         return redirect(url_for('listar_avances_politica_memoria'))
+    #     q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+
+    avance = q.first()
+    if not avance:
+        flash('El avance no existe o no está permitido para tu usuario.', 'danger')
+        return redirect(url_for('listar_avances_politica_memoria'))
+
+    # N° monitoreo
+    avances_sorted = (AvancePoliticaMemoria.query
+        .filter(AvancePoliticaMemoria.nombre_politica_memoria == avance.nombre_politica_memoria)
+        .order_by(AvancePoliticaMemoria.fecha_registro.asc(),
+                  AvancePoliticaMemoria.id.asc())
+        .all())
+    numero_monitoreo = next((i for i, a in enumerate(avances_sorted, start=1) if a.id == avance.id), None)
+
+    html_str = render_template(
+        'reportes/avance_politica_memoria_pdf.html',
+        avance=avance,
+        politica=avance.politica,
+        numero_monitoreo=numero_monitoreo
+    )
+
+    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path).write_pdf(stylesheets=[CSS(css_path)])
+
+    disposition = 'attachment' if request.args.get('mode') == 'download' else 'inline'
+    filename = f"avance_politica_memoria_{avance.politica.nombre_politica_memoria}_{avance.id}.pdf"
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+    return resp
 
 
 if __name__ == '__main__':

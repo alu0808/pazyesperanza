@@ -7,16 +7,16 @@
     <style>
         /* ===== Design tokens ===== */
         :root {
-            --ink: #1f2937; /* gris oscuro */
-            --muted: #6b7280; /* gris medio */
-            --line: #e5e7eb; /* línea tabla */
-            --brand: #1d7c3a; /* verde institucional */
-            --bg-head: #f5f7f4; /* cabecera tabla */
-            --chip: #eef4f0; /* fondo chips */
+            --ink: #1f2937;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --brand: #1d7c3a;
+            --bg-head: #f5f7f4;
+            --chip: #eef4f0;
             --paper: #ffffff;
         }
 
-        /* ===== Ajustes para PDF ===== */
+        /* ===== Ajustes PDF ===== */
         @page {
             size: A4;
             margin: 18mm 14mm;
@@ -32,10 +32,12 @@
             font-family: "Roboto", Arial, sans-serif;
             font-size: 12px;
             line-height: 1.35;
+            overflow-wrap: anywhere; /* corta cadenas largas */
         }
 
         h1, h2, h3 {
             margin: 0 0 .5rem 0;
+            overflow-wrap: anywhere;
         }
 
         h1 {
@@ -99,22 +101,30 @@
 
         .section {
             margin-top: 14px;
-            /* Evitar cortes feos en impresión */
             page-break-inside: avoid;
             break-inside: avoid;
         }
 
-        /* ===== Tabla base ===== */
+        /* ===== Tablas ===== */
         table.tbl {
             width: 100%;
             border-collapse: collapse;
             background: var(--paper);
+            table-layout: fixed; /* evita que se desborde el ancho */
         }
 
+        .tbl thead {
+            display: table-header-group;
+        }
+
+        /* repite encabezado al saltar de página */
         .tbl th, .tbl td {
             border: 1px solid var(--line);
             padding: 6px 8px;
             vertical-align: top;
+            overflow-wrap: anywhere;
+            word-break: normal;
+            hyphens: auto;
         }
 
         .tbl thead th {
@@ -140,17 +150,17 @@
             font-variant-numeric: tabular-nums;
         }
 
-        /* Ancho cómodo para celdas "clave" en tablas tipo ficha */
         .kv th {
             width: 36%;
             white-space: nowrap;
         }
 
-        /* ===== Chips / etiquetas ===== */
+        /* ===== Chips ===== */
         .chips {
             display: flex;
             flex-wrap: wrap;
             gap: 6px 8px;
+            align-items: flex-start;
         }
 
         .chip {
@@ -160,6 +170,30 @@
             border: 1px solid var(--line);
             background: var(--chip);
             font-size: 11px;
+            line-height: 1.3;
+
+            /* 👉 evita guiones y cortes dentro de la palabra */
+            white-space: nowrap;
+            hyphens: none;
+            word-break: keep-all;
+            overflow-wrap: normal;
+
+            /* que el chip no se encoja demasiado */
+            flex: 0 0 auto;
+            max-width: 100%;
+        }
+
+        /* ===== Bloques multilínea (textareas) ===== */
+        .multiline {
+            white-space: pre-line; /* respeta \n del usuario */
+            overflow-wrap: anywhere;
+            hyphens: auto;
+        }
+
+        /* Evita que filas individuales se partan feo (sin bloquear tablas largas) */
+        .tbl tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
     </style>
 </head>
@@ -176,12 +210,12 @@
     <table class="tbl tbl--borderless small">
         <tr>
             <td><strong>Oficina Regional:</strong> {{ iniciativa.oficina_regional or '—' }}</td>
-            <td><strong>Proyectos:</strong> {{ iniciativa.proyectos or '—' }}</td>
+            <td><strong>Proyectos:</strong> <span class="multiline">{{ iniciativa.proyectos or '—' }}</span></td>
             <td><strong>Responsable:</strong> {{ iniciativa.responsable_registro or '—' }}</td>
         </tr>
         <tr>
-            <td colspan="3"><strong>Fecha Registro:</strong>
-                {{ iniciativa.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if iniciativa.fecha_registro else '—' }}
+            <td colspan="3"><strong>Fecha
+                Registro:</strong> {{ iniciativa.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if iniciativa.fecha_registro else '—' }}
             </td>
         </tr>
     </table>
@@ -192,15 +226,15 @@
     <table class="tbl kv">
         <tr>
             <th>Derecho</th>
-            <td>{{ iniciativa.derecho_generico or '—' }}</td>
+            <td class="multiline">{{ iniciativa.derecho_generico or '—' }}</td>
         </tr>
         <tr>
             <th>Detalle (si “Otro”)</th>
-            <td>{{ iniciativa.otro_derecho_detalle or '—' }}</td>
+            <td class="multiline">{{ iniciativa.otro_derecho_detalle or '—' }}</td>
         </tr>
         <tr>
             <th>Colectivo / Organización</th>
-            <td>{{ iniciativa.colectivo_organizacion or '—' }}</td>
+            <td class="multiline">{{ iniciativa.colectivo_organizacion or '—' }}</td>
         </tr>
     </table>
 </div>
@@ -220,7 +254,7 @@
             {% for r in iniciativa.registros %}
                 <tr>
                     <td>{{ r.dni }}</td>
-                    <td>{{ r.nombre }}</td>
+                    <td class="multiline">{{ r.nombre }}</td>
                     <td>{{ r.estado or '—' }}</td>
                 </tr>
             {% endfor %}
@@ -310,23 +344,23 @@
     <table class="tbl kv">
         <tr>
             <th>Política pública (detalle)</th>
-            <td>{{ iniciativa.cambio_politica_detalle or '—' }}</td>
+            <td class="multiline">{{ iniciativa.cambio_politica_detalle or '—' }}</td>
         </tr>
         <tr>
             <th>Marcos / procedimientos (detalle)</th>
-            <td>{{ iniciativa.cambio_marcos_detalle or '—' }}</td>
+            <td class="multiline">{{ iniciativa.cambio_marcos_detalle or '—' }}</td>
         </tr>
         <tr>
             <th>Prácticas privadas (detalle)</th>
-            <td>{{ iniciativa.cambio_practicas_detalle or '—' }}</td>
+            <td class="multiline">{{ iniciativa.cambio_practicas_detalle or '—' }}</td>
         </tr>
         <tr>
             <th>Sensibilidad social (detalle)</th>
-            <td>{{ iniciativa.cambio_sensibilidad_detalle or '—' }}</td>
+            <td class="multiline">{{ iniciativa.cambio_sensibilidad_detalle or '—' }}</td>
         </tr>
         <tr>
             <th>Otro tipo (detalle)</th>
-            <td>
+            <td class="multiline">
                 {{ iniciativa.otro_naturaleza_detalle or '—' }}
                 {% if iniciativa.otro_naturaleza_particular %} — {{ iniciativa.otro_naturaleza_particular }}{% endif %}
             </td>
@@ -346,22 +380,20 @@
             <td>
                 {% if iniciativa.fase_implementacion is not none %}
                     {{ FASES_MAP.get(iniciativa.fase_implementacion, iniciativa.fase_implementacion) }}
-                {% else %}
-                    —
-                {% endif %}
+                {% else %} — {% endif %}
             </td>
         </tr>
         <tr>
             <th>Normas (detalle si fase=8)</th>
-            <td>{{ iniciativa.fase_normas_detalle or '—' }}</td>
+            <td class="multiline">{{ iniciativa.fase_normas_detalle or '—' }}</td>
         </tr>
         <tr>
             <th>Institucionalización (detalle si fase=9)</th>
-            <td>{{ iniciativa.fase_institucionalizacion_detalle or '—' }}</td>
+            <td class="multiline">{{ iniciativa.fase_institucionalizacion_detalle or '—' }}</td>
         </tr>
         <tr>
             <th>Otra fase (detalle)</th>
-            <td>{{ iniciativa.fase_otro_detalle or '—' }}</td>
+            <td class="multiline">{{ iniciativa.fase_otro_detalle or '—' }}</td>
         </tr>
     </table>
 </div>
@@ -378,14 +410,14 @@
         </thead>
         <tbody>
         <tr>
-            <td>{{ iniciativa.sector_publico_competente_1 or '—' }}</td>
-            <td>{{ iniciativa.dependencia_instancia_1 or '—' }}</td>
-            <td>{{ iniciativa.alcance_escala_1 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.sector_publico_competente_1 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.dependencia_instancia_1 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.alcance_escala_1 or '—' }}</td>
         </tr>
         <tr>
-            <td>{{ iniciativa.sector_publico_competente_2 or '—' }}</td>
-            <td>{{ iniciativa.dependencia_instancia_2 or '—' }}</td>
-            <td>{{ iniciativa.alcance_escala_2 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.sector_publico_competente_2 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.dependencia_instancia_2 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.alcance_escala_2 or '—' }}</td>
         </tr>
         </tbody>
     </table>
@@ -396,15 +428,15 @@
     <table class="tbl kv">
         <tr>
             <th>Localidad 1</th>
-            <td>{{ iniciativa.localidad_1 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.localidad_1 or '—' }}</td>
         </tr>
         <tr>
             <th>Localidad 2</th>
-            <td>{{ iniciativa.localidad_2 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.localidad_2 or '—' }}</td>
         </tr>
         <tr>
             <th>Localidad 3</th>
-            <td>{{ iniciativa.localidad_3 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.localidad_3 or '—' }}</td>
         </tr>
     </table>
 </div>
@@ -415,12 +447,10 @@
     <div class="chips mb">
         {% for p in poblaciones if p %}
             <span class="chip">
-          {% if p == 'Otra población' %}
-              Otra población: {{ iniciativa.otra_poblacion_detalle or '—' }}
-          {% else %}
-              {{ p }}
-          {% endif %}
-        </span>
+        {% if p == 'Otra población' %}
+            Otra población: {{ iniciativa.otra_poblacion_detalle or '—' }}
+        {% else %} {{ p }} {% endif %}
+      </span>
         {% else %}
             <span class="muted">—</span>
         {% endfor %}
@@ -429,12 +459,12 @@
 
 <div class="section">
     <h3 class="section__title">Descripción de la situación</h3>
-    <div class="chips mb"><span class="chip">{{ iniciativa.descripcion_situacion or '—' }}</span></div>
+    <div class="chips mb"><span class="chip multiline">{{ iniciativa.descripcion_situacion or '—' }}</span></div>
 </div>
 
 <div class="section">
     <h3 class="section__title">Objetivo específico</h3>
-    <div class="chips mb"><span class="chip">{{ iniciativa.objetivo_especifico or '—' }}</span></div>
+    <div class="chips mb"><span class="chip multiline">{{ iniciativa.objetivo_especifico or '—' }}</span></div>
 </div>
 
 <div class="section">
@@ -443,12 +473,10 @@
     <div class="chips mb">
         {% for c in campos_list if c %}
             <span class="chip">
-          {% if c == 'Otro' %}
-              Otro: {{ iniciativa.campo_otro_detalle or '—' }}
-          {% else %}
-              {{ c }}
-          {% endif %}
-        </span>
+        {% if c == 'Otro' %}
+            Otro: {{ iniciativa.campo_otro_detalle or '—' }}
+        {% else %} {{ c }} {% endif %}
+      </span>
         {% else %}
             <span class="muted">—</span>
         {% endfor %}
@@ -460,11 +488,11 @@
     {% if iniciativa.componente_1 or iniciativa.componente_2 or iniciativa.componente_3 %}
         <ul class="small">
             {% if iniciativa.componente_1 %}
-                <li>{{ iniciativa.componente_1 }}</li>{% endif %}
+                <li class="multiline">{{ iniciativa.componente_1 }}</li>{% endif %}
             {% if iniciativa.componente_2 %}
-                <li>{{ iniciativa.componente_2 }}</li>{% endif %}
+                <li class="multiline">{{ iniciativa.componente_2 }}</li>{% endif %}
             {% if iniciativa.componente_3 %}
-                <li>{{ iniciativa.componente_3 }}</li>{% endif %}
+                <li class="multiline">{{ iniciativa.componente_3 }}</li>{% endif %}
         </ul>
     {% else %}
         <div class="muted">—</div>
@@ -473,7 +501,7 @@
 
 <div class="section">
     <h3 class="section__title">Participación en comunidad de fe</h3>
-    <div class="chips mb"><span class="chip">{{ iniciativa.tipo_participacion_fe or '—' }}</span></div>
+    <div class="chips mb"><span class="chip multiline">{{ iniciativa.tipo_participacion_fe or '—' }}</span></div>
 </div>
 
 <div class="section">
@@ -481,26 +509,25 @@
     {% if iniciativa.actividad_1 or iniciativa.actividad_2 or iniciativa.actividad_3 or iniciativa.actividad_4 or iniciativa.actividad_5 %}
         <ol class="small">
             {% if iniciativa.actividad_1 %}
-                <li>{{ iniciativa.actividad_1 }}</li>{% endif %}
+                <li class="multiline">{{ iniciativa.actividad_1 }}</li>{% endif %}
             {% if iniciativa.actividad_2 %}
-                <li>{{ iniciativa.actividad_2 }}</li>{% endif %}
+                <li class="multiline">{{ iniciativa.actividad_2 }}</li>{% endif %}
             {% if iniciativa.actividad_3 %}
-                <li>{{ iniciativa.actividad_3 }}</li>{% endif %}
+                <li class="multiline">{{ iniciativa.actividad_3 }}</li>{% endif %}
             {% if iniciativa.actividad_4 %}
-                <li>{{ iniciativa.actividad_4 }}</li>{% endif %}
+                <li class="multiline">{{ iniciativa.actividad_4 }}</li>{% endif %}
             {% if iniciativa.actividad_5 %}
-                <li>{{ iniciativa.actividad_5 }}</li>{% endif %}
+                <li class="multiline">{{ iniciativa.actividad_5 }}</li>{% endif %}
         </ol>
     {% else %}
         <div class="muted">—</div>
     {% endif %}
 </div>
 
-{# Mapa de calificaciones -> etiqueta #}
 {% set CAL_MAP = {
-    0:'No se ha iniciado', 1:'Inicial', 2:'En proceso de formulación', 3:'Concluido',
-    '0':'No se ha iniciado', '1':'Inicial', '2':'En proceso de formulación', '3':'Concluido'
-  } %}
+  0:'No se ha iniciado', 1:'Inicial', 2:'En proceso de formulación', 3:'Concluido',
+  '0':'No se ha iniciado', '1':'Inicial', '2':'En proceso de formulación', '3':'Concluido'
+} %}
 
 <div class="section">
     <h3 class="section__title">Contenidos (nivel de formulación)</h3>
@@ -553,16 +580,16 @@
         </thead>
         <tbody>
         <tr>
-            <td>{{ iniciativa.proyecto_1 or '—' }}</td>
-            <td>{{ iniciativa.fuente_financiamiento_1 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.proyecto_1 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.fuente_financiamiento_1 or '—' }}</td>
             <td class="num">{{ iniciativa.financiamiento_1 if iniciativa.financiamiento_1 is not none else '—' }}</td>
-            <td>{{ iniciativa.periodo_financiamiento_1 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.periodo_financiamiento_1 or '—' }}</td>
         </tr>
         <tr>
-            <td>{{ iniciativa.proyecto_2 or '—' }}</td>
-            <td>{{ iniciativa.fuente_financiamiento_2 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.proyecto_2 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.fuente_financiamiento_2 or '—' }}</td>
             <td class="num">{{ iniciativa.financiamiento_2 if iniciativa.financiamiento_2 is not none else '—' }}</td>
-            <td>{{ iniciativa.periodo_financiamiento_2 or '—' }}</td>
+            <td class="multiline">{{ iniciativa.periodo_financiamiento_2 or '—' }}</td>
         </tr>
         </tbody>
     </table>
@@ -570,7 +597,7 @@
 
 <div class="section">
     <h3 class="section__title">Observaciones</h3>
-    <div class="chips mb"><span class="chip">{{ iniciativa.observaciones or '—' }}</span></div>
+    <div class="chips mb"><span class="chip multiline">{{ iniciativa.observaciones or '—' }}</span></div>
 </div>
 
 <footer class="section small muted">

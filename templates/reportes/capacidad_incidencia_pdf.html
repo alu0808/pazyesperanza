@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Ficha de Capacidades — {{ capacidad.registro_dni }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* ===== Design tokens (consistentes con iniciativa_pdf) ===== */
+        :root {
+            --ink: #1f2937;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --brand: #1d7c3a;
+            --bg-head: #f5f7f4;
+            --chip: #eef4f0;
+            --paper: #ffffff;
+            --ok: #1f8b4c;
+            --warn: #b45309;
+            --off: #9ca3af;
+        }
+
+        /* ===== Ajustes PDF ===== */
+        @page {
+            size: A4;
+            margin: 18mm 14mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Roboto", Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 .5rem 0;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        h2 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        h3.section__title {
+            font-size: 12.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--brand);
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .small {
+            font-size: 10.5px;
+        }
+
+        .mb {
+            margin-bottom: .6rem;
+        }
+
+        .mb2 {
+            margin-bottom: 1rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+            border-bottom: 1.5px solid var(--line);
+        }
+
+        header img {
+            height: 40px;
+        }
+
+        footer {
+            border-top: 1.5px solid var(--line);
+            margin-top: 16px;
+            padding-top: 8px;
+            color: var(--muted);
+        }
+
+        .section {
+            margin-top: 14px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* ===== Tablas ===== */
+        table.tbl {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--paper);
+        }
+
+        .tbl th, .tbl td {
+            border: 1px solid var(--line);
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        .tbl thead th {
+            background: var(--bg-head);
+            font-weight: 700;
+        }
+
+        .tbl--compact th, .tbl--compact td {
+            padding: 4px 6px;
+        }
+
+        .tbl--borderless th, .tbl--borderless td {
+            border: 0;
+            padding: 2px 4px;
+        }
+
+        .tbl--striped tbody tr:nth-child(odd) {
+            background: #fafafa;
+        }
+
+        .kv th {
+            width: 36%;
+            white-space: nowrap;
+        }
+
+        /* ===== Chips / badges ===== */
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+        }
+
+        .chip {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--chip);
+            font-size: 11px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            border: 1px solid var(--line);
+            background: #f3f4f6;
+            color: #111827;
+        }
+
+        .badge--ok {
+            background: #ecfdf5;
+            color: var(--ok);
+            border-color: #d1fae5;
+        }
+
+        .badge--warn {
+            background: #fffbeb;
+            color: var(--warn);
+            border-color: #fde68a;
+        }
+
+        .badge--off {
+            background: #f3f4f6;
+            color: var(--off);
+            border-color: #e5e7eb;
+        }
+
+        /* Alinear números si más adelante muestras totales/promedios */
+        .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div>
+        <h1>Ficha de Capacidades de Incidencia</h1>
+        <div class="muted small">Generado por el sistema</div>
+    </div>
+    {# Si quieres logo, descomenta: #}
+    <!-- <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo"> -->
+</header>
+
+{# Mapa de calificaciones (0–4) #}
+{% set CAP_MAP = {
+  0:'No se observa el atributo',
+  1:'Se observa en un estado incipiente o poco relevante',
+  2:'Se observa una presencia regular, pero aún insuficiente del atributo',
+  3:'Se observa una buena presencia del atributo',
+  4:'Se observa un alto dominio del atributo',
+  '0':'No se observa el atributo',
+  '1':'Se observa en un estado incipiente o poco relevante',
+  '2':'Se observa una presencia regular, pero aún insuficiente del atributo',
+  '3':'Se observa una buena presencia del atributo',
+  '4':'Se observa un alto dominio del atributo'
+} %}
+
+<!-- ===== Resumen superior ===== -->
+<div class="section">
+    <h2>{{ capacidad.registro.nombre if capacidad.registro else 'Participante' }}</h2>
+
+    {% set EST = (capacidad.registro.estado if capacidad.registro and capacidad.registro.estado else '') %}
+    {% set ESTU = EST.upper() %}
+    {% set estado_class = '' %}
+    {% if ESTU in ['ACT','ACTIVO','ACTIVA'] %}
+        {% set estado_class = 'badge--ok' %}
+    {% elif ESTU in ['OBS','OBSERVADO','OBSERVADA'] %}
+        {% set estado_class = 'badge--warn' %}
+    {% elif ESTU in ['INA','INACTIVO','INACTIVA'] %}
+        {% set estado_class = 'badge--off' %}
+    {% endif %}
+
+    <table class="tbl tbl--borderless small">
+        <tr>
+            <td><strong>DNI:</strong> {{ capacidad.registro_dni or '—' }}</td>
+            <td><strong>Estado participante:</strong> <span
+                    class="badge {{ estado_class }}">{{ capacidad.registro.estado if capacidad.registro and capacidad.registro.estado else '—' }}</span>
+            </td>
+            <td><strong>Fecha
+                registro:</strong> {{ capacidad.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if capacidad.fecha_registro else '—' }}
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3"><strong>Iniciativa:</strong> {{ capacidad.nombre_iniciativa or '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- ===== Contexto de la iniciativa ===== -->
+<div class="section">
+    <h3 class="section__title">Contexto de la iniciativa</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Población / colectivo</th>
+            <td>{{ (capacidad.iniciativa.poblacion or capacidad.iniciativa.otra_poblacion_detalle) if capacidad.iniciativa else '—' }}</td>
+        </tr>
+        <tr>
+            <th>Derecho prioritario</th>
+            <td>{{ (capacidad.iniciativa.derecho_generico or capacidad.iniciativa.otro_derecho_detalle) if capacidad.iniciativa else '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- ===== Calificaciones de capacidades ===== -->
+<div class="section">
+    <h3 class="section__title">Desarrollo de capacidades (escala 0–4)</h3>
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>Capacidad</th>
+            <th>Calificación</th>
+            <th>Interpretación</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>1. Conocimiento de la problemática del derecho vulnerado</td>
+            <td>{{ capacidad.capacidad_1 if capacidad.capacidad_1 is not none else '—' }}</td>
+            <td>{{ CAP_MAP.get(capacidad.capacidad_1, '—') if capacidad.capacidad_1 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>2. Manejo de rutas, mecanismos e instrumentos</td>
+            <td>{{ capacidad.capacidad_2 if capacidad.capacidad_2 is not none else '—' }}</td>
+            <td>{{ CAP_MAP.get(capacidad.capacidad_2, '—') if capacidad.capacidad_2 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>3. Organización y movilización a sus pares</td>
+            <td>{{ capacidad.capacidad_3 if capacidad.capacidad_3 is not none else '—' }}</td>
+            <td>{{ CAP_MAP.get(capacidad.capacidad_3, '—') if capacidad.capacidad_3 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>4. Argumentación y vocería de la propuesta</td>
+            <td>{{ capacidad.capacidad_4 if capacidad.capacidad_4 is not none else '—' }}</td>
+            <td>{{ CAP_MAP.get(capacidad.capacidad_4, '—') if capacidad.capacidad_4 is not none else '—' }}</td>
+        </tr>
+        <tr>
+            <td>5. Participación en colectivos y movimientos de defensa de agenda DD. HH.</td>
+            <td>{{ capacidad.capacidad_5 if capacidad.capacidad_5 is not none else '—' }}</td>
+            <td>{{ CAP_MAP.get(capacidad.capacidad_5, '—') if capacidad.capacidad_5 is not none else '—' }}</td>
+        </tr>
+        {% if capacidad.otra_capacidad or capacidad.calificacion_otra_capacidad is not none %}
+            <tr>
+                <td>Otra ({{ capacidad.otra_capacidad or '—' }})</td>
+                <td>{{ capacidad.calificacion_otra_capacidad if capacidad.calificacion_otra_capacidad is not none else '—' }}</td>
+                <td>{{ CAP_MAP.get(capacidad.calificacion_otra_capacidad, '—') if capacidad.calificacion_otra_capacidad is not none else '—' }}</td>
+            </tr>
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ===== Metadatos ===== -->
+<div class="section">
+    <h3 class="section__title">Otros datos</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Responsable del registro</th>
+            <td>{{ capacidad.responsable_registro or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Fecha y hora del registro</th>
+            <td>{{ capacidad.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if capacidad.fecha_registro else '—' }}</td>
+        </tr>
+    </table>
+</div>
+
+
+<footer class="section small muted">
+    Generado el {{ capacidad.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if capacidad.fecha_registro else '' }}
+</footer>
+</body>
+</html>
