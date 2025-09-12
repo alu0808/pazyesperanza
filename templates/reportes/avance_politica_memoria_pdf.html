@@ -1,73 +1,216 @@
+<!-- templates/avance_politica_memoria_pdf.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Avance — {{ politica.nombre_politica_memoria or 'Política/Sitio de Memoria' }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  <style>
-    :root { --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --brand:#1d7c3a; --bg-head:#f5f7f4; --chip:#eef4f0; --paper:#fff; }
-    @page { size:A4; margin:18mm 14mm; }
-    *{ box-sizing:border-box; }
-    html,body{ background:var(--paper); color:var(--ink); font-family:"Roboto",Arial,sans-serif; font-size:12px; line-height:1.35; }
-    h1,h2,h3{ margin:0 0 .5rem 0; }
-    h1{ font-size:18px; font-weight:700; letter-spacing:.2px; }
-    h3.section__title{ font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--brand); border-bottom:1px solid var(--line); padding-bottom:6px; margin-bottom:8px; }
-    .small{ font-size:10.5px; } .muted{ color:var(--muted); }
-    header{ display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; margin-bottom:14px; border-bottom:1.5px solid var(--line); }
-    footer{ border-top:1.5px solid var(--line); margin-top:16px; padding-top:8px; color:var(--muted); }
-    .section{ margin-top:14px; page-break-inside:avoid; break-inside:avoid; }
-    table.tbl{ width:100%; border-collapse:collapse; }
-    .tbl th,.tbl td{ border:1px solid var(--line); padding:6px 8px; vertical-align:top; }
-    .tbl thead th{ background:var(--bg-head); font-weight:700; }
-    .tbl--borderless th,.tbl--borderless td{ border:0; padding:2px 4px; }
-    .kv th{ width:36%; white-space:nowrap; font-size:12.5px; }
-    .chip{ display:inline-block; padding:2px 10px; border-radius:999px; border:1px solid var(--line); background:var(--chip); font-size:11px; }
-  </style>
+    <meta charset="utf-8">
+    <title>Avance — {{ poli.nombre_politica_memoria or '—' }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        :root {
+            --ink: #1f2937;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --brand: #1d7c3a;
+            --bg-head: #f5f7f4;
+            --chip: #eef4f0;
+            --paper: #ffffff;
+        }
+
+        @page {
+            size: A4;
+            margin: 18mm 14mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Roboto", Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.35;
+            overflow-wrap: anywhere; /* evita desbordes horizontales */
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 .5rem 0;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        h2 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        h3.section__title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--brand);
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .small {
+            font-size: 10.5px;
+        }
+
+        .section {
+            margin-top: 14px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+            border-bottom: 1.5px solid var(--line);
+        }
+
+        footer {
+            border-top: 1.5px solid var(--line);
+            margin-top: 16px;
+            padding-top: 8px;
+            color: var(--muted);
+        }
+
+        /* Tablas robustas contra overflow */
+        table.tbl {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--paper);
+            table-layout: fixed; /* fuerza ajuste de celdas */
+        }
+
+        .tbl thead {
+            display: table-header-group;
+        }
+
+        /* repite cabecera si pagina */
+        .tbl th, .tbl td {
+            border: 1px solid var(--line);
+            padding: 6px 8px;
+            vertical-align: top;
+            overflow-wrap: anywhere;
+            word-break: normal;
+            hyphens: auto; /* cortes amables */
+        }
+
+        .tbl thead th {
+            background: var(--bg-head);
+            font-weight: 700;
+        }
+
+        .tbl--borderless th, .tbl--borderless td {
+            border: 0;
+            padding: 2px 4px;
+        }
+
+        .kv th {
+            width: 36%;
+            white-space: nowrap;
+            font-size: 12.5px;
+        }
+
+        /* Respetar saltos de línea guardados en BD (texto largo de textarea) */
+        .multiline {
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+            word-break: normal;
+            hyphens: auto;
+        }
+
+        /* Chips que envuelven correctamente y no guionan feo */
+        .chip {
+            display: inline-block;
+            max-width: 100%;
+            padding: 2px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--chip);
+            font-size: 11px;
+            line-height: 1.25;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: normal;
+            hyphens: none;
+        }
+    </style>
 </head>
 <body>
+
 <header>
-  <div>
-    <h1>Avance — Política/Sitio de Memoria</h1>
-    <div class="muted small">Generado por el sistema</div>
-  </div>
+    <div>
+        <h1>Avance — Política/Sitio de Memoria</h1>
+        <div class="muted small">Generado por el sistema</div>
+    </div>
 </header>
 
+<!-- Resumen -->
 <div class="section">
-  <h2>{{ politica.nombre_politica_memoria or '—' }}</h2>
-  <table class="tbl tbl--borderless small">
-    <tr>
-      <td><strong>N° de Monitoreo:</strong> <span class="chip">{{ numero_monitoreo or '—' }}</span></td>
-      <td><strong>Localización:</strong> {{ politica.localizacion or '—' }}</td>
-      <td><strong>Oficina Regional:</strong> {{ politica.oficina_regional or '—' }}</td>
-    </tr>
-    <tr>
-      <td colspan="3"><strong>Descripción/Propuesta:</strong> {{ politica.descripcion_propuesta or '—' }}</td>
-    </tr>
-  </table>
+    <h2>{{ poli.nombre_politica_memoria or '—' }}</h2>
+    <table class="tbl tbl--borderless small">
+        <tr>
+            <td><strong># Monitoreo:</strong> <span class="chip">{{ numero_monitoreo or '—' }}</span></td>
+            <td><strong>Localización:</strong> {{ poli.localizacion or '—' }}</td>
+            <td><strong>Oficina Regional:</strong> {{ poli.oficina_regional or '—' }}</td>
+        </tr>
+        <tr>
+            <td><strong>Responsable:</strong> {{ avance.responsable_registro or '—' }}</td>
+            <td colspan="2"><strong>Fecha
+                avance:</strong> {{ avance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if avance.fecha_registro else '—' }}
+            </td>
+        </tr>
+    </table>
 </div>
 
+<!-- Detalle -->
 <div class="section">
-  <h3 class="section__title">Detalle del avance</h3>
-  <table class="tbl kv">
-    <tr><th>Ocurrencias del período</th><td>{{ avance.ocurrencias_periodo or '—' }}</td></tr>
-    <tr><th>Actividades realizadas</th><td>{{ avance.actividades_realizadas or '—' }}</td></tr>
-    <tr><th>Presencia / participación</th><td>{{ avance.presencia_participacion or '—' }}</td></tr>
-    <tr><th>Estado actual</th><td>{{ avance.estado_actual or '—' }}</td></tr>
-    <tr><th>Recomendaciones</th><td>{{ avance.recomendaciones or '—' }}</td></tr>
-    <tr><th>Otro asunto</th><td>{{ avance.otro_asunto or '—' }}</td></tr>
-  </table>
-</div>
-
-<div class="section">
-  <h3 class="section__title">Otros datos</h3>
-  <table class="tbl kv">
-    <tr><th>Responsable del registro</th><td>{{ avance.responsable_registro or '—' }}</td></tr>
-    <tr><th>Fecha del avance</th><td>{{ avance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if avance.fecha_registro else '—' }}</td></tr>
-  </table>
+    <h3 class="section__title">Detalle del avance</h3>
+    <table class="tbl kv">
+        <tr>
+            <th>Ocurrencias del período</th>
+            <td class="multiline">{{ avance.ocurrencias_periodo or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Actividades realizadas</th>
+            <td class="multiline">{{ avance.actividades_realizadas or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Estado actual de la gestión</th>
+            <td class="multiline">{{ avance.estado_actual_gestion or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Recomendaciones</th>
+            <td class="multiline">{{ avance.recomendaciones or '—' }}</td>
+        </tr>
+        <tr>
+            <th>Otro asunto</th>
+            <td class="multiline">{{ avance.otro_asunto or '—' }}</td>
+        </tr>
+    </table>
 </div>
 
 <footer class="section small muted">
-  Generado el {{ avance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if avance.fecha_registro else '' }}
+    Generado el {{ avance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if avance.fecha_registro else '' }}
 </footer>
+
 </body>
 </html>

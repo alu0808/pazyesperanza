@@ -3426,52 +3426,105 @@ def politica_nacional_memoria_pdf(nombre_politica_memoria):
     resp.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
     return resp
 
-@app.route('/avance_politica_memoria_pdf/<int:avance_id>', methods=['GET'])
+# @app.route('/avance_politica_memoria_pdf/<int:avance_id>', methods=['GET'])
+# @login_required
+# @roles_required('admin', 'gestor', 'viewer')
+# def avance_politica_memoria_pdf(avance_id):
+#     q = (AvancePoliticaMemoria.query
+#          .join(PoliticaNacionalMemoria, AvancePoliticaMemoria.nombre_politica_memoria == PoliticaNacionalMemoria.nombre_politica_memoria)
+#          .options(joinedload(AvancePoliticaMemoria.politica))
+#          .filter(AvancePoliticaMemoria.id == avance_id))
+#
+#     # if not is_admin():
+#     #     or_user = (current_user.oficina_regional or '').strip()
+#     #     if not or_user:
+#     #         flash('Tu usuario no tiene Oficina Regional asignada.', 'danger')
+#     #         return redirect(url_for('listar_avances_politica_memoria'))
+#     #     q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+#
+#     avance = q.first()
+#     if not avance:
+#         flash('El avance no existe o no está permitido para tu usuario.', 'danger')
+#         return redirect(url_for('listar_avances_politica_memoria'))
+#
+#     # N° monitoreo
+#     avances_sorted = (AvancePoliticaMemoria.query
+#         .filter(AvancePoliticaMemoria.nombre_politica_memoria == avance.nombre_politica_memoria)
+#         .order_by(AvancePoliticaMemoria.fecha_registro.asc(),
+#                   AvancePoliticaMemoria.id.asc())
+#         .all())
+#     numero_monitoreo = next((i for i, a in enumerate(avances_sorted, start=1) if a.id == avance.id), None)
+#
+#     html_str = render_template(
+#         'reportes/avance_politica_memoria_pdf.html',
+#         avance=avance,
+#         politica=avance.politica,
+#         numero_monitoreo=numero_monitoreo
+#     )
+#
+#     css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
+#     pdf_bytes = HTML(string=html_str, base_url=current_app.root_path).write_pdf(stylesheets=[CSS(css_path)])
+#
+#     disposition = 'attachment' if request.args.get('mode') == 'download' else 'inline'
+#     filename = f"avance_politica_memoria_{avance.politica.nombre_politica_memoria}_{avance.id}.pdf"
+#
+#     resp = make_response(pdf_bytes)
+#     resp.headers['Content-Type'] = 'application/pdf'
+#     resp.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+#     return resp
+
+def _numero_monitoreo_para(avance):
+    avances = (AvancePoliticaMemoria.query
+               .filter(AvancePoliticaMemoria.nombre_politica_memoria == avance.nombre_politica_memoria)
+               .order_by(AvancePoliticaMemoria.fecha_registro.asc(),
+                         AvancePoliticaMemoria.id.asc())
+               .all())
+    for i, a in enumerate(avances, start=1):
+        if a.id == avance.id:
+            return i
+    return None
+
+@app.route('/avance_politica_memoria_pdf/<int:id>')
 @login_required
 @roles_required('admin', 'gestor', 'viewer')
-def avance_politica_memoria_pdf(avance_id):
-    q = (AvancePoliticaMemoria.query
-         .join(PoliticaNacionalMemoria, AvancePoliticaMemoria.nombre_politica_memoria == PoliticaNacionalMemoria.nombre_politica_memoria)
-         .options(joinedload(AvancePoliticaMemoria.politica))
-         .filter(AvancePoliticaMemoria.id == avance_id))
+def avance_politica_memoria_pdf(id):
+    avance = (AvancePoliticaMemoria.query
+              .options(joinedload(AvancePoliticaMemoria.politica))
+              .get_or_404(id))
 
-    # if not is_admin():
-    #     or_user = (current_user.oficina_regional or '').strip()
-    #     if not or_user:
-    #         flash('Tu usuario no tiene Oficina Regional asignada.', 'danger')
-    #         return redirect(url_for('listar_avances_politica_memoria'))
-    #     q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+    # Restringe por OR para no-admin/no-viewer
+    if not (is_admin() or is_viewer()):
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user or (avance.politica and avance.politica.oficina_regional != or_user):
+            abort(403)
 
-    avance = q.first()
-    if not avance:
-        flash('El avance no existe o no está permitido para tu usuario.', 'danger')
-        return redirect(url_for('listar_avances_politica_memoria'))
-
-    # N° monitoreo
-    avances_sorted = (AvancePoliticaMemoria.query
-        .filter(AvancePoliticaMemoria.nombre_politica_memoria == avance.nombre_politica_memoria)
-        .order_by(AvancePoliticaMemoria.fecha_registro.asc(),
-                  AvancePoliticaMemoria.id.asc())
-        .all())
-    numero_monitoreo = next((i for i, a in enumerate(avances_sorted, start=1) if a.id == avance.id), None)
+    numero_monitoreo = _numero_monitoreo_para(avance)
+    mode = (request.args.get('mode') or 'inline').lower()
+    inline = (mode != 'download')
 
     html_str = render_template(
         'reportes/avance_politica_memoria_pdf.html',
         avance=avance,
-        politica=avance.politica,
+        poli=avance.politica,
         numero_monitoreo=numero_monitoreo
     )
 
-    css_path = os.path.join(current_app.root_path, 'static', 'css', 'styles.css')
-    pdf_bytes = HTML(string=html_str, base_url=current_app.root_path).write_pdf(stylesheets=[CSS(css_path)])
-
-    disposition = 'attachment' if request.args.get('mode') == 'download' else 'inline'
-    filename = f"avance_politica_memoria_{avance.politica.nombre_politica_memoria}_{avance.id}.pdf"
-
-    resp = make_response(pdf_bytes)
-    resp.headers['Content-Type'] = 'application/pdf'
-    resp.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
-    return resp
+    # Si ya tienes un helper render_pdf(html_str, filename, inline), úsalo:
+    try:
+        return render_pdf(html_str,  # type: ignore
+                          filename=f"avance_politica_{avance.nombre_politica_memoria}_{avance.id}.pdf",
+                          inline=inline)
+    except Exception:
+        # Fallback con WeasyPrint directo
+        if HTML is None:
+            # Último recurso: devuelve HTML (útil en dev si no hay WeasyPrint)
+            return html_str
+        pdf_bytes = HTML(string=html_str, base_url=request.host_url).write_pdf()
+        resp = make_response(pdf_bytes)
+        disp = 'inline' if inline else 'attachment'
+        resp.headers['Content-Type'] = 'application/pdf'
+        resp.headers['Content-Disposition'] = f'{disp}; filename=avance_politica_{avance.nombre_politica_memoria}_{avance.id}.pdf'
+        return resp
 
 
 if __name__ == '__main__':
