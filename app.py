@@ -784,6 +784,14 @@ def form_iniciativas():
                     )
                     db.session.execute(conn)
 
+                    # NUEVO: auditar/registrar en la tabla nueva
+                    upsert_participacion(
+                        iniciativa_nombre=nueva_iniciativa.nombre_iniciativa,
+                        registro=registro,
+                        estado='ACTIVO',
+                        cambiado_por=current_user.username
+                    )
+
         # Guardar cambios en la base de datos
         db.session.commit()
 
@@ -975,10 +983,23 @@ def editar_iniciativa(nombre_iniciativa):
                 registro = Registro.query.filter_by(dni=dni).first()
                 if registro:
                     iniciativa.registros.append(registro)
+                    # registrar ACTIVO
+                    upsert_participacion(
+                        iniciativa_nombre=iniciativa.nombre_iniciativa,
+                        registro=registro,
+                        estado='ACTIVO',
+                        cambiado_por=current_user.username
+                    )
 
         # Eliminar participantes no seleccionados
         for registro in iniciativa.registros[:]:
             if registro.dni not in nuevos_dnis:
+                upsert_participacion(
+                    iniciativa_nombre=iniciativa.nombre_iniciativa,
+                    registro=registro,
+                    estado='RETIRADO',
+                    cambiado_por=current_user.username
+                )
                 iniciativa.registros.remove(registro)
 
         db.session.commit()
@@ -3526,6 +3547,114 @@ def avance_politica_memoria_pdf(id):
         resp.headers['Content-Disposition'] = f'{disp}; filename=avance_politica_{avance.nombre_politica_memoria}_{avance.id}.pdf'
         return resp
 
+
+class ParticipacionIniciativa(db.Model):
+    __tablename__ = 'participacion_iniciativa'
+
+    id = db.Column(db.Integer, primary_key=True)
+    iniciativa_nombre = db.Column(
+        db.String(150),
+        db.ForeignKey('iniciativa.nombre_iniciativa', ondelete='CASCADE'),
+        index=True,
+        nullable=False
+    )
+    registro_dni = db.Column(
+        db.String(12),
+        db.ForeignKey('registro.dni', ondelete='SET NULL'),
+        index=True,
+        nullable=True
+    )
+    # denormalización para “congelar” el nombre como se veía al momento del cambio
+    nombre_participante = db.Column(db.String(150), nullable=False)
+
+    estado = db.Column(db.String(10), nullable=False)  # 'ACTIVO' | 'RETIRADO'
+    # opcionalmente, quién hizo el cambio y cuándo
+    cambiado_por = db.Column(db.String(100), nullable=True)
+    fecha_cambio = db.Column(db.DateTime, default=obtener_hora_peru, nullable=False)
+
+    __table_args__ = (
+        # si solo quieres el **último** estado por (iniciativa, dni), deja UNIQUE y haz “upsert”
+        db.UniqueConstraint('iniciativa_nombre', 'registro_dni', name='uq_participacion_ultima'),
+    )
+
+def upsert_participacion(iniciativa_nombre, registro, estado, cambiado_por=None):
+    fila = ParticipacionIniciativa.query.filter_by(
+        iniciativa_nombre=iniciativa_nombre,
+        registro_dni=registro.dni
+    ).first()
+    if fila:
+        fila.estado = estado
+        fila.nombre_participante = registro.nombre or fila.nombre_participante
+        fila.cambiado_por = cambiado_por
+        fila.fecha_cambio = obtener_hora_peru()
+    else:
+        fila = ParticipacionIniciativa(
+            iniciativa_nombre=iniciativa_nombre,
+            registro_dni=registro.dni,
+            nombre_participante=registro.nombre or '',
+            estado=estado,
+            cambiado_por=cambiado_por
+        )
+        db.session.add(fila)
+
+
+@app.route('/listar_participaciones_iniciativas', methods=['GET'])
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def listar_participaciones_iniciativas():
+    # Filtros opcionales por querystring
+    filtro_iniciativa = (request.args.get('iniciativa') or '').strip()
+    filtro_estado = (request.args.get('estado') or '').strip().upper()  # 'ACTIVO' | 'RETIRADO'
+
+    # Base: join para poder filtrar por OR y mostrar campos de iniciativa si quieres
+    q = (db.session.query(ParticipacionIniciativa, Iniciativa)
+         .join(Iniciativa, ParticipacionIniciativa.iniciativa_nombre == Iniciativa.nombre_iniciativa))
+
+    # Filtro por rol/oficina regional (igual que en tu ejemplo)
+    if not (is_admin() or is_viewer()):
+        or_user = (current_user.oficina_regional or '').strip()
+        if not or_user:
+            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
+            return render_template('listar_participaciones_iniciativas.html', participaciones=[])
+        q = q.filter(Iniciativa.oficina_regional == or_user)
+
+    # Filtros opcionales
+    if filtro_iniciativa:
+        q = q.filter(ParticipacionIniciativa.iniciativa_nombre == filtro_iniciativa)
+    if filtro_estado in ('ACTIVO', 'RETIRADO'):
+        q = q.filter(ParticipacionIniciativa.estado == filtro_estado)
+
+    # Orden por fecha de cambio descendente
+    filas = q.order_by(ParticipacionIniciativa.fecha_cambio.desc()).all()
+
+    # Normaliza a lista de dicts para el template (más cómodo)
+    participaciones = []
+    for p, ini in filas:
+        participaciones.append({
+            "id": p.id,
+            "iniciativa_nombre": p.iniciativa_nombre,
+            "registro_dni": p.registro_dni,
+            "nombre_participante": p.nombre_participante,
+            "estado": p.estado,
+            "cambiado_por": p.cambiado_por,
+            "fecha_cambio": p.fecha_cambio,
+            "oficina_regional": ini.oficina_regional or '—'
+        })
+
+    # Para popular el combo de iniciativas en el filtro (opcional)
+    # Si tienes muchas, puedes limitar o hacer un autocomplete
+    iniciativas_todas = (db.session.query(Iniciativa.nombre_iniciativa)
+                         .order_by(Iniciativa.nombre_iniciativa.asc())
+                         .all())
+    iniciativas_todas = [x[0] for x in iniciativas_todas]
+
+    return render_template(
+        'listar_participaciones_iniciativas.html',
+        participaciones=participaciones,
+        iniciativas_todas=iniciativas_todas,
+        filtro_iniciativa=filtro_iniciativa,
+        filtro_estado=filtro_estado
+    )
 
 if __name__ == '__main__':
     # with app.app_context():
