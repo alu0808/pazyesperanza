@@ -3641,7 +3641,7 @@ def listar_participaciones_iniciativas():
             "oficina_regional": ini.oficina_regional or '—'
         })
 
-    # Para popular el combo de iniciativas en el filtro (opcional)
+    # Para popular el combo de iniciativas
     # Si tienes muchas, puedes limitar o hacer un autocomplete
     iniciativas_todas = (db.session.query(Iniciativa.nombre_iniciativa)
                          .order_by(Iniciativa.nombre_iniciativa.asc())
