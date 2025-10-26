@@ -1,19 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Lista de Registro de Capacidades de Incidencia</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/styles.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- Libs -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/static/css/styles.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
 
     <style>
+        /* Barras */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1d7c3a;
+            color: #fff;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box
+        }
+
+        .title-bar-company img {
+            height: 50px
+        }
+
+        .title-bar {
+            background: #343a40;
+            color: #fff;
+            text-align: center;
+            padding: 7px;
+            font-size: 1rem;
+            width: 100%
+        }
+
+        /* Botones */
+        .button-container {
+            display: flex;
+            justify-content: flex-end
+        }
+
         .btn-group {
             display: flex;
             justify-content: center;
-            gap: 10px; /* Añade espacio entre los botones */
+            gap: 10px
         }
 
         .btn-icon {
@@ -21,113 +54,115 @@
             align-items: center;
             justify-content: center;
             padding: 4px;
-            font-size: 0.8rem;
+            font-size: .8rem
         }
 
         .btn-primary {
-            background-color: #007bff;
+            background: #007bff;
             border: none;
-            color: white;
+            color: #fff
         }
 
         .btn-danger {
-            background-color: #dc3545;
+            background: #dc3545;
             border: none;
-            color: white;
+            color: #fff
         }
 
         .btn-success {
-            background-color: #e8e53e;
+            background: #e8e53e;
             border: none;
-            color: rgb(40, 40, 40);
+            color: #282828
         }
 
         .btn-success:hover {
             color: #fff;
-            background-color: #383838;
-            border-color: #383838;
-        }
-
-        .title-bar {
-            background-color: #343a40;
-            color: white;
-            text-align: center;
-            padding: 7px;
-            font-size: 1rem;
-            width: 100%;
+            background: #383838;
+            border-color: #383838
         }
 
         .btn-icon:hover {
-            opacity: 0.9;
+            opacity: .9
+        }
+
+        /* Contenedor y tabla */
+        .container-fluid {
+            max-width: 100vw
         }
 
         .table-responsive {
-            overflow-x: auto; /* Agrega scroll horizontal */
+            overflow-x: auto;
+            width: 100%
         }
 
-        .table {
-            border-collapse: collapse; /* Asegura que los bordes se muestren correctamente */
+        table.table {
             width: 100%;
+            border-collapse: collapse;
+            min-width: 2000px; /* ajusta si necesitas más ancho */
         }
 
-        .table th, .table td {
-            white-space: nowrap; /* Evita que las celdas se rompan en varias líneas */
-            border: 1px solid #dee2e6; /* Agrega borde entre las celdas */
-            padding: 8px;
-            text-align: center; /* Centra el texto horizontalmente */
-            vertical-align: middle; /* Centra el texto verticalmente */
+        table.table th, table.table td {
+            border: 1px solid #dee2e6;
+            padding: 6px 8px;
+            font-size: .7rem;
+            text-align: left;
+            vertical-align: middle
         }
 
-        .table th {
-            background-color: #18834d; /* Fondo color verde oscuro para los encabezados */
-            color: white;
-            font-size: 0.8rem;
+        /* Encabezado fijo y sin romper palabras cortas */
+        table.table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #18834d;
+            color: #fff;
+            font-size: .7rem;
+            text-align: center;
+            white-space: nowrap;
+            word-break: keep-all;
+            overflow-wrap: normal;
+            hyphens: none
         }
 
-        /* Estilo para el botón superior derecho */
-        .button-container {
-            display: flex;
-            justify-content: flex-end;
+        /* Encabezados largos con wrap si hace falta */
+        table.table thead th.wrap-lg {
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
-        /* Nueva barra con logo y nombre de la empresa */
-        .title-bar-company {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #1d7c3a;
-            color: white;
-            padding: 5px 20px;
-            width: 100%;
-            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+        /* Celdas: por defecto permiten varias líneas; las muy largas usan wrap-lg */
+        table.table td {
+            white-space: normal
         }
 
-        .title-bar-company img {
-            height: 40px; /* Ajusta la altura del logo */
+        table.table td.wrap-lg {
+            white-space: normal !important;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            max-width: 900px; /* ajusta a gusto (800-1000px) */
+            min-width: 200px;
+        }
+
+        /* Paginación */
+        nav[aria-label="Paginación"] .pagination .page-link {
+            min-width: 28px;
+            text-align: center
         }
 
         @media (min-width: 768px) {
-            .title {
-                font-size: 2.5rem;
-                margin-bottom: 40px;
-            }
-
             .title-bar-company img {
-                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
+                height: 50px
             }
         }
     </style>
 </head>
 
 <body>
-<!-- Barra superior con el nombre de la empresa y el logo -->
-<!-- Barra superior con el nombre de la empresa y el logo -->
+<!-- Barra superior -->
 <div class="title-bar-company">
     <a href="{{ url_for('index') }}">
         <img src="/static/images/logo.png" alt="Logo de la empresa">
     </a>
-
-    <!-- Verificar si el usuario está autenticado y mostrar el enlace adecuado -->
     <div class="button-container">
         {% if current_user.is_authenticated %}
             <a href="{{ url_for('logout') }}" class="btn btn-light label-principal">Cerrar sesión</a>
@@ -136,52 +171,50 @@
         {% endif %}
     </div>
 </div>
-<!-- Título Principal -->
-<div class="title-bar">
-    Lista de Registro de Capacidades de Incidencia
-</div>
 
-<div class="container mt-5">
-    <!-- Mostrar mensajes flash -->
+<!-- Título -->
+<div class="title-bar">Lista de Registro de Capacidades de Incidencia</div>
+
+<div class="container-fluid mt-3 px-4">
+    <!-- Flash -->
     <div class="alert-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="alert alert_mod alert-{{ messages[0][0] }}">
-                    {{ messages[0][1] }}
-                </div>
+                <div class="alert alert_mod alert-{{ messages[0][0] }}">{{ messages[0][1] }}</div>
             {% endif %}
         {% endwith %}
     </div>
 
-    <!-- Botón en la parte superior derecha -->
+    <!-- Botón -->
     {% if current_user.role in ['admin', 'gestor'] %}
-        <div class="button-container">
-            <a href="/form_avances_capacidades_incidencia" style="margin-bottom: 15px;"
-               class="btn btn-success label-principal">Nuevo Avance de Capacidad de Incidencia</a>
+        <div class="button-container mb-3">
+            <a href="/form_avances_capacidades_incidencia" class="btn btn-success label-principal">
+                Nuevo Avance de Capacidad de Incidencia
+            </a>
         </div>
     {% endif %}
-    <!-- Tabla de registros -->
+
+    <!-- Tabla -->
     <div class="table-responsive mb-5">
-        <table class="table table-striped">
+        <table id="tabla" class="table table-striped">
             <thead>
             <tr>
                 {% if current_user.role in ['admin', 'gestor'] %}
-                    <th>Acciones</th>
-                {% endif %}
+                    <th>Acciones</th>{% endif %}
                 <th>Ficha</th>
-                <th>Participante</th>
-                <th>DNI</th>
+                <th class="wrap-lg">Participante</th>
+                <th class="wrap-lg">DNI</th>
                 <th>N° Registro</th>
-                <th>Iniciativa</th>
-                <th>Capacidad 1</th>
+                <th class="wrap-lg">Iniciativa</th>
+                <th>Capacidad 1</>
                 <th>Capacidad 2</th>
                 <th>Capacidad 3</th>
                 <th>Capacidad 4</th>
                 <th>Capacidad 5</th>
-                <th>Otra Capacidad</th>
+                <th class="wrap-lg">Otra Capacidad</th>
                 <th>Calificación Otra Capacidad</th>
-                <th>Responsable Registro</th>
-                <th>Fecha Registro</th>
+                <th class="wrap-lg">Responsable Registro</th>
+                <th class="wrap-lg">Fecha Registro</th>
             </tr>
             </thead>
             <tbody>
@@ -191,7 +224,7 @@
                         <td>
                             <div class="btn-group">
                                 <a href="/editar_avances_capacidades_incidencia/{{ avance.id }}"
-                                   class="btn btn-primary btn-icon">
+                                   class="btn btn-primary btn-icon" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 {% if current_user.role == 'admin' %}
@@ -212,38 +245,114 @@
                            class="btn btn-outline-secondary btn-icon" title="Descargar PDF">
                             <i class="fas fa-download"></i>
                         </a>
-
                     </td>
-                    <td>{{ avance.capacidad_incidencia.registro.nombre }}</td>
-                    <td>{{ avance.capacidad_incidencia.registro_dni }}</td>
+                    <td class="wrap-lg">{{ avance.capacidad_incidencia.registro.nombre }}</td>
+                    <td class="wrap-lg">{{ avance.capacidad_incidencia.registro_dni }}</td>
                     <td>{{ avance.numero_registro }}</td>
-                    <td>{{ avance.capacidad_incidencia.nombre_iniciativa }}</td>
+                    <td class="wrap-lg">{{ avance.capacidad_incidencia.nombre_iniciativa }}</td>
                     <td>{{ avance.capacidad_1 }}</td>
                     <td>{{ avance.capacidad_2 }}</td>
                     <td>{{ avance.capacidad_3 }}</td>
                     <td>{{ avance.capacidad_4 }}</td>
                     <td>{{ avance.capacidad_5 }}</td>
-                    <td>{{ avance.otra_capacidad }}</td>
+                    <td class="wrap-lg">{{ avance.otra_capacidad }}</td>
                     <td>{{ avance.calificacion_otra_capacidad }}</td>
-                    <td>{{ avance.responsable_registro }}</td>
-                    <td>{{ avance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td class="wrap-lg">{{ avance.responsable_registro }}</td>
+                    <td class="wrap-lg">{{ avance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
 
+    <!-- Paginación debajo -->
+    <nav aria-label="Paginación" class="d-flex justify-content-between align-items-center my-3">
+        <div id="pager-info" class="small text-muted"></div>
+        <ul id="pager" class="pagination pagination-sm mb-0"></ul>
+    </nav>
+
     <div class="row justify-content-end mt-3 mb-5">
         <div class="col-md-3 d-flex justify-content-end">
-            <button type="button" class="btn btn-secondary btn-sm text-center" style="font-size: 1rem;"
+            <button type="button" class="btn btn-secondary btn-sm" style="font-size:1rem"
                     onclick="window.location.href='/'">Ir al menú
             </button>
         </div>
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/script.js"></script>
+
+<!-- Paginación client-side -->
+<script>
+    (function () {
+        const ROWS_PER_PAGE = 5;  // 10 por página
+        const tbody = document.querySelector('#tabla tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const totalRows = rows.length;
+        const totalPages = Math.max(1, Math.ceil(totalRows / ROWS_PER_PAGE));
+        const pager = document.getElementById('pager');
+        const pagerInfo = document.getElementById('pager-info');
+        let current = 1;
+
+        function showPage(page) {
+            current = Math.min(Math.max(1, page), totalPages);
+            const start = (current - 1) * ROWS_PER_PAGE;
+            const end = start + ROWS_PER_PAGE;
+
+            rows.forEach((tr, i) => {
+                tr.style.display = (i >= start && i < end) ? '' : 'none';
+            });
+            renderPager();
+            pagerInfo.textContent = `Mostrando ${Math.min(end, totalRows)} de ${totalRows} registros (pág. ${current}/${totalPages})`;
+        }
+
+        function renderPager() {
+            pager.innerHTML = '';
+
+            const liPrev = document.createElement('li');
+            liPrev.className = 'page-item' + (current === 1 ? ' disabled' : '');
+            liPrev.innerHTML = `<a class="page-link" href="#" tabindex="-1">«</a>`;
+            liPrev.onclick = e => {
+                e.preventDefault();
+                showPage(current - 1);
+            };
+            pager.appendChild(liPrev);
+
+            const span = 3;
+            let from = Math.max(1, current - span);
+            let to = Math.min(totalPages, current + span);
+            if (current <= span) to = Math.min(totalPages, 1 + 2 * span);
+            if (current + span > totalPages) from = Math.max(1, totalPages - 2 * span);
+
+            for (let p = from; p <= to; p++) {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (p === current ? ' active' : '');
+                li.innerHTML = `<a class="page-link" href="#">${p}</a>`;
+                li.onclick = e => {
+                    e.preventDefault();
+                    showPage(p);
+                };
+                pager.appendChild(li);
+            }
+
+            const liNext = document.createElement('li');
+            liNext.className = 'page-item' + (current === totalPages ? ' disabled' : '');
+            liNext.innerHTML = `<a class="page-link" href="#">»</a>`;
+            liNext.onclick = e => {
+                e.preventDefault();
+                showPage(current + 1);
+            };
+            pager.appendChild(liNext);
+        }
+
+        // iniciar
+        showPage(1);
+    })();
+</script>
 </body>
 </html>

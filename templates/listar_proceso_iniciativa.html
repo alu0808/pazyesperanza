@@ -1,18 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Lista de Procesos de Iniciativas</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/styles.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- Libs -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/static/css/styles.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+
     <style>
+        /* Barras */
+        .title-bar-company {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1d7c3a;
+            color: #fff;
+            padding: 5px 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .title-bar-company img {
+            height: 50px;
+        }
+
+        .title-bar {
+            background: #343a40;
+            color: #fff;
+            text-align: center;
+            padding: 7px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        /* Botones */
+        .button-container {
+            display: flex;
+            justify-content: flex-end;
+        }
+
         .btn-group {
             display: flex;
             justify-content: center;
-            gap: 10px; /* Añade espacio entre los botones */
+            gap: 10px;
         }
 
         .btn-icon {
@@ -20,116 +54,106 @@
             align-items: center;
             justify-content: center;
             padding: 4px;
-            font-size: 0.8rem;
+            font-size: .8rem;
         }
 
         .btn-primary {
-            background-color: #007bff;
+            background: #007bff;
             border: none;
-            color: white;
+            color: #fff;
         }
 
         .btn-danger {
-            background-color: #dc3545;
+            background: #dc3545;
             border: none;
-            color: white;
+            color: #fff;
         }
 
         .btn-success {
-            background-color: #e8e53e;
+            background: #e8e53e;
             border: none;
-            color: rgb(40, 40, 40);
+            color: #282828;
         }
 
         .btn-success:hover {
             color: #fff;
-            background-color: #383838;
+            background: #383838;
             border-color: #383838;
         }
 
-        .title-bar {
-            background-color: #343a40;
-            color: white;
-            text-align: center;
-            padding: 7px;
-            font-size: 1rem;
-            width: 100%;
+        .btn-icon:hover {
+            opacity: .9;
         }
 
-        .btn-icon:hover {
-            opacity: 0.9;
+        /* Contenedor y tabla */
+        .container-fluid {
+            max-width: 100vw;
         }
 
         .table-responsive {
-            overflow-x: auto; /* Agrega scroll horizontal */
-        }
-
-        .table {
-            border-collapse: collapse; /* Asegura que los bordes se muestren correctamente */
+            overflow-x: auto;
             width: 100%;
         }
 
-        .table th, .table td {
-            white-space: nowrap; /* Evita que las celdas se rompan en varias líneas */
-            border: 1px solid #dee2e6; /* Agrega borde entre las celdas */
-            padding: 8px;
-            text-align: center; /* Centra el texto horizontalmente */
-            vertical-align: middle; /* Centra el texto verticalmente */
-        }
-
-        .table th {
-            background-color: #18834d; /* Fondo color verde oscuro para los encabezados */
-            color: white;
-            font-size: 0.8rem;
-        }
-
-        /* Estilo para el botón superior derecho */
-        .button-container {
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        /* Nueva barra con logo y nombre de la empresa */
-        .title-bar-company {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #1d7c3a;
-            color: white;
-            padding: 5px 20px;
+        table.table {
             width: 100%;
-            box-sizing: border-box; /* Para asegurar que los padding no excedan el ancho total */
+            border-collapse: collapse;
+            min-width: 5000px; /* hay muchas columnas: ajusta si hace falta más ancho */
         }
 
-        .title-bar-company img {
-            height: 40px; /* Ajusta la altura del logo */
+        table.table th, table.table td {
+            border: 1px solid #dee2e6;
+            padding: 6px 8px;
+            font-size: .7rem;
+            text-align: left;
+            vertical-align: middle;
         }
 
-        @media (min-width: 768px) {
-            .title {
-                font-size: 2.5rem;
-                margin-bottom: 40px;
-            }
-
-            .title-bar-company img {
-                height: 50px; /* Ajusta la altura del logo en pantallas grandes */
-            }
-
+        /* Encabezados: no romper palabras por defecto */
+        table.table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #18834d;
+            color: #fff;
+            font-size: .7rem;
+            text-align: center;
+            white-space: nowrap;
+            word-break: keep-all;
+            overflow-wrap: normal;
+            hyphens: none;
         }
 
+        /* Encabezados largos con wrap */
+        table.table thead th.wrap-lg{
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
 
+        /* Celdas de datos: por defecto normal; las muy largas con wrap-lg permiten corte amplio */
+        table.table td { white-space: normal; }
+        table.table td.wrap-lg{
+            white-space: normal !important;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            max-width: 900px; /* ajusta a gusto (800-1000px) */
+            min-width: 200px;
+        }
+
+        /* Paginación */
+        nav[aria-label="Paginación"] .pagination .page-link {
+            min-width: 28px;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body>
-<!-- Barra superior con el nombre de la empresa y el logo -->
-<!-- Barra superior con el nombre de la empresa y el logo -->
+<!-- Barra superior -->
 <div class="title-bar-company">
     <a href="{{ url_for('index') }}">
         <img src="/static/images/logo.png" alt="Logo de la empresa">
     </a>
-
-    <!-- Verificar si el usuario está autenticado y mostrar el enlace adecuado -->
     <div class="button-container">
         {% if current_user.is_authenticated %}
             <a href="{{ url_for('logout') }}" class="btn btn-light label-principal">Cerrar sesión</a>
@@ -138,44 +162,42 @@
         {% endif %}
     </div>
 </div>
-<!-- Título Principal -->
-<div class="title-bar">
-    Lista de Procesos de Iniciativas
-</div>
 
-<div class="container mt-5">
-    <!-- Mostrar mensajes flash -->
+<!-- Título -->
+<div class="title-bar">Lista de Procesos de Iniciativas</div>
+
+<div class="container-fluid mt-3 px-4">
+    <!-- Flash -->
     <div class="alert-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="alert alert_mod alert-{{ messages[0][0] }}">
-                    {{ messages[0][1] }}
-                </div>
+                <div class="alert alert_mod alert-{{ messages[0][0] }}">{{ messages[0][1] }}</div>
             {% endif %}
         {% endwith %}
     </div>
 
-    <!-- Botón en la parte superior derecha -->
+    <!-- Botón -->
     {% if current_user.role in ['admin', 'gestor'] %}
-        <div class="button-container">
-            <a href="/form_registro_proceso_iniciativa" style="margin-bottom: 15px;"
-               class="btn btn-success label-principal">Nuevo Proceso de Iniciativa</a>
+        <div class="button-container mb-3">
+            <a href="/form_registro_proceso_iniciativa" class="btn btn-success label-principal">
+                Nuevo Proceso de Iniciativa
+            </a>
         </div>
     {% endif %}
-    <!-- Tabla de registros -->
+
+    <!-- Tabla -->
     <div class="table-responsive mb-5">
-        <table class="table table-striped">
+        <table id="tabla" class="table table-striped">
             <thead>
             <tr>
                 {% if current_user.role in ['admin', 'gestor'] %}
-                    <th>Acciones</th>
-                {% endif %}
+                    <th>Acciones</th>{% endif %}
                 <th>Ficha</th>
-                <th>Nombre Iniciativa</th>
+                <th class="wrap-lg">Nombre Iniciativa</th>
                 <th>N° Registro</th>
-                <th>Objetivo Específico</th>
-                <th>Logros</th>
-                <th>Sustento de Logros</th>
+                <th class="wrap-lg">Objetivo Específico</th>
+                <th class="wrap-lg">Logros</th>
+                <th class="wrap-lg">Sustento de Logros</th>
                 <th>Contenido 1</th>
                 <th>Contenido 2</th>
                 <th>Contenido 3</th>
@@ -183,39 +205,39 @@
                 <th>Contenido 5</th>
                 <th>Contenido 6</th>
                 <th>Contenido 7</th>
-                <th>Contenido Otro</th>
-                <th>Calificación Otro Contenido</th>
+                <th class="wrap-lg">Contenido Otro</th>
+                <th class="wrap-lg">Calificación Otro Contenido</th>
                 <th>Fase Implementación</th>
-                <th>Fase Normas Detalle</th>
-                <th>Fase Institucionalización Detalle</th>
-                <th>Fase Otro Detalle</th>
-                <th>Componente 1</th>
+                <th class="wrap-lg">Fase Normas Detalle</th>
+                <th class="wrap-lg">Fase Institucionalización Detalle</th>
+                <th class="wrap-lg">Fase Otro Detalle</th>
+                <th class="wrap-lg">Componente 1</th>
                 <th>Calificación Componente 1</th>
-                <th>Componente 2</th>
+                <th class="wrap-lg">Componente 2</th>
                 <th>Calificación Componente 2</th>
-                <th>Componente 3</th>
+                <th class="wrap-lg">Componente 3</th>
                 <th>Calificación Componente 3</th>
-                <th>Sustento Valoración</th> <!-- Campo añadido -->
-                <th>Nivel de Avance Comentarios</th>
-                <th>Reforzar Competencias</th>
-                <th>Participación Comportamiento</th>
-                <th>Comentario Valoración</th>
-                <th>Factores Favorecido</th>
-                <th>Factores Obstaculizado</th>
-                <th>Actividad 1</th>
-                <th>Aporte 1</th>
-                <th>Actividad 2</th>
-                <th>Aporte 2</th>
-                <th>Actividad 3</th>
-                <th>Aporte 3</th>
-                <th>Actividad 4</th>
-                <th>Aporte 4</th>
-                <th>Actividad 5</th>
-                <th>Aporte 5</th>
-                <th>Cambios Estrategia</th>
-                <th>Comentario Relevante</th>
-                <th>Responsable Registro</th>
-                <th>Fecha Registro</th>
+                <th class="wrap-lg">Sustento Valoración</th>
+                <th class="wrap-lg">Nivel de Avance Comentarios</th>
+                <th class="wrap-lg">Reforzar Competencias</th>
+                <th class="wrap-lg">Participación Comportamiento</th>
+                <th class="wrap-lg">Comentario Valoración</th>
+                <th class="wrap-lg">Factores Favorecido</th>
+                <th class="wrap-lg">Factores Obstaculizado</th>
+                <th class="wrap-lg">Actividad 1</th>
+                <th class="wrap-lg">Aporte 1</th>
+                <th class="wrap-lg">Actividad 2</th>
+                <th class="wrap-lg">Aporte 2</th>
+                <th class="wrap-lg">Actividad 3</th>
+                <th class="wrap-lg">Aporte 3</th>
+                <th class="wrap-lg">Actividad 4</th>
+                <th class="wrap-lg">Aporte 4</th>
+                <th class="wrap-lg">Actividad 5</th>
+                <th class="wrap-lg">Aporte 5</th>
+                <th class="wrap-lg">Cambios Estrategia</th>
+                <th class="wrap-lg">Comentario Relevante</th>
+                <th class="wrap-lg">Responsable Registro</th>
+                <th class="wrap-lg">Fecha Registro</th>
             </tr>
             </thead>
             <tbody>
@@ -224,10 +246,10 @@
                     {% if current_user.role in ['admin', 'gestor'] %}
                         <td>
                             <div class="btn-group">
-                                <a href="/editar_proceso_iniciativa/{{ proceso.id }}" class="btn btn-primary btn-icon">
+                                <a href="/editar_proceso_iniciativa/{{ proceso.id }}" class="btn btn-primary btn-icon"
+                                   title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
-
                                 {% if current_user.role == 'admin' %}
                                     <form method="POST"
                                           action="/eliminar_proceso_iniciativa/{{ proceso.id }}"
@@ -247,11 +269,11 @@
                             <i class="fas fa-download"></i>
                         </a>
                     </td>
-                    <td>{{ proceso.nombre_iniciativa }}</td>
+                    <td class="wrap-lg">{{ proceso.nombre_iniciativa }}</td>
                     <td>{{ proceso.numero_registro }}</td>
-                    <td>{{ proceso.objetivo_especifico }}</td>
-                    <td>{{ proceso.logros }}</td>
-                    <td>{{ proceso.sustento_logros }}</td>
+                    <td class="wrap-lg">{{ proceso.objetivo_especifico }}</td>
+                    <td class="wrap-lg">{{ proceso.logros }}</td>
+                    <td class="wrap-lg">{{ proceso.sustento_logros }}</td>
                     <td>{{ proceso.contenido_1 }}</td>
                     <td>{{ proceso.contenido_2 }}</td>
                     <td>{{ proceso.contenido_3 }}</td>
@@ -259,56 +281,133 @@
                     <td>{{ proceso.contenido_5 }}</td>
                     <td>{{ proceso.contenido_6 }}</td>
                     <td>{{ proceso.contenido_7 }}</td>
-                    <td>{{ proceso.contenido_otro }}</td>
+                    <td class="wrap-lg">{{ proceso.contenido_otro }}</td>
                     <td>{{ proceso.calificacion_otro_contenido }}</td>
                     <td>{{ proceso.fase_implementacion }}</td>
-                    <td>{{ proceso.fase_normas_detalle }}</td>
-                    <td>{{ proceso.fase_institucionalizacion_detalle }}</td>
-                    <td>{{ proceso.fase_otro_detalle }}</td>
-                    <td>{{ proceso.componente_1 }}</td>
+                    <td class="wrap-lg">{{ proceso.fase_normas_detalle }}</td>
+                    <td class="wrap-lg">{{ proceso.fase_institucionalizacion_detalle }}</td>
+                    <td class="wrap-lg">{{ proceso.fase_otro_detalle }}</td>
+                    <td class="wrap-lg">{{ proceso.componente_1 }}</td>
                     <td>{{ proceso.calificacion_componente_1 }}</td>
-                    <td>{{ proceso.componente_2 }}</td>
+                    <td class="wrap-lg">{{ proceso.componente_2 }}</td>
                     <td>{{ proceso.calificacion_componente_2 }}</td>
-                    <td>{{ proceso.componente_3 }}</td>
+                    <td class="wrap-lg">{{ proceso.componente_3 }}</td>
                     <td>{{ proceso.calificacion_componente_3 }}</td>
-                    <td>{{ proceso.sustento_valoracion }}</td> <!-- Campo añadido -->
-                    <td>{{ proceso.nivel_avance_comentarios }}</td>
-                    <td>{{ proceso.reforzar_competencias }}</td>
-                    <td>{{ proceso.participacion_comportamiento }}</td>
-                    <td>{{ proceso.comentario_valoracion }}</td>
-                    <td>{{ proceso.factores_favorecido }}</td>
-                    <td>{{ proceso.factores_obstaculizado }}</td>
-                    <td>{{ proceso.actividad_1 }}</td>
-                    <td>{{ proceso.aporte_1 }}</td>
-                    <td>{{ proceso.actividad_2 }}</td>
-                    <td>{{ proceso.aporte_2 }}</td>
-                    <td>{{ proceso.actividad_3 }}</td>
-                    <td>{{ proceso.aporte_3 }}</td>
-                    <td>{{ proceso.actividad_4 }}</td>
-                    <td>{{ proceso.aporte_4 }}</td>
-                    <td>{{ proceso.actividad_5 }}</td>
-                    <td>{{ proceso.aporte_5 }}</td>
-                    <td>{{ proceso.cambios_estrategia }}</td>
-                    <td>{{ proceso.comentario_relevante }}</td>
-                    <td>{{ proceso.responsable_registro }}</td>
-                    <td>{{ proceso.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td class="wrap-lg">{{ proceso.sustento_valoracion }}</td>
+                    <td class="wrap-lg">{{ proceso.nivel_avance_comentarios }}</td>
+                    <td class="wrap-lg">{{ proceso.reforzar_competencias }}</td>
+                    <td class="wrap-lg">{{ proceso.participacion_comportamiento }}</td>
+                    <td class="wrap-lg">{{ proceso.comentario_valoracion }}</td>
+                    <td class="wrap-lg">{{ proceso.factores_favorecido }}</td>
+                    <td class="wrap-lg">{{ proceso.factores_obstaculizado }}</td>
+                    <td class="wrap-lg">{{ proceso.actividad_1 }}</td>
+                    <td class="wrap-lg">{{ proceso.aporte_1 }}</td>
+                    <td class="wrap-lg">{{ proceso.actividad_2 }}</td>
+                    <td class="wrap-lg">{{ proceso.aporte_2 }}</td>
+                    <td class="wrap-lg">{{ proceso.actividad_3 }}</td>
+                    <td class="wrap-lg">{{ proceso.aporte_3 }}</td>
+                    <td class="wrap-lg">{{ proceso.actividad_4 }}</td>
+                    <td class="wrap-lg">{{ proceso.aporte_4 }}</td>
+                    <td class="wrap-lg">{{ proceso.actividad_5 }}</td>
+                    <td class="wrap-lg">{{ proceso.aporte_5 }}</td>
+                    <td class="wrap-lg">{{ proceso.cambios_estrategia }}</td>
+                    <td class="wrap-lg">{{ proceso.comentario_relevante }}</td>
+                    <td class="wrap-lg">{{ proceso.responsable_registro }}</td>
+                    <td class="wrap-lg">{{ proceso.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
 
+    <!-- Paginación debajo -->
+    <nav aria-label="Paginación" class="d-flex justify-content-between align-items-center my-3">
+        <div id="pager-info" class="small text-muted"></div>
+        <ul id="pager" class="pagination pagination-sm mb-0"></ul>
+    </nav>
+
     <div class="row justify-content-end mt-3 mb-5">
         <div class="col-md-3 d-flex justify-content-end">
-            <button type="button" class="btn btn-secondary btn-sm text-center" style="font-size: 1rem;"
+            <button type="button" class="btn btn-secondary btn-sm" style="font-size:1rem"
                     onclick="window.location.href='/'">Ir al menú
             </button>
         </div>
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/script.js"></script>
+
+<!-- Paginación client-side -->
+<script>
+    (function () {
+        const ROWS_PER_PAGE = 3;  // 10 por página
+        const tbody = document.querySelector('#tabla tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const totalRows = rows.length;
+        const totalPages = Math.max(1, Math.ceil(totalRows / ROWS_PER_PAGE));
+        const pager = document.getElementById('pager');
+        const pagerInfo = document.getElementById('pager-info');
+        let current = 1;
+
+        function showPage(page) {
+            current = Math.min(Math.max(1, page), totalPages);
+            const start = (current - 1) * ROWS_PER_PAGE;
+            const end = start + ROWS_PER_PAGE;
+
+            rows.forEach((tr, i) => {
+                tr.style.display = (i >= start && i < end) ? '' : 'none';
+            });
+            renderPager();
+            pagerInfo.textContent = `Mostrando ${Math.min(end, totalRows)} de ${totalRows} registros (pág. ${current}/${totalPages})`;
+        }
+
+        function renderPager() {
+            pager.innerHTML = '';
+
+            const liPrev = document.createElement('li');
+            liPrev.className = 'page-item' + (current === 1 ? ' disabled' : '');
+            liPrev.innerHTML = `<a class="page-link" href="#" tabindex="-1">«</a>`;
+            liPrev.onclick = e => {
+                e.preventDefault();
+                showPage(current - 1);
+            };
+            pager.appendChild(liPrev);
+
+            const span = 3;
+            let from = Math.max(1, current - span);
+            let to = Math.min(totalPages, current + span);
+            if (current <= span) to = Math.min(totalPages, 1 + 2 * span);
+            if (current + span > totalPages) from = Math.max(1, totalPages - 2 * span);
+
+            for (let p = from; p <= to; p++) {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (p === current ? ' active' : '');
+                li.innerHTML = `<a class="page-link" href="#">${p}</a>`;
+                li.onclick = e => {
+                    e.preventDefault();
+                    showPage(p);
+                };
+                pager.appendChild(li);
+            }
+
+            const liNext = document.createElement('li');
+            liNext.className = 'page-item' + (current === totalPages ? ' disabled' : '');
+            liNext.innerHTML = `<a class="page-link" href="#">»</a>`;
+            liNext.onclick = e => {
+                e.preventDefault();
+                showPage(current + 1);
+            };
+            pager.appendChild(liNext);
+        }
+
+        // iniciar
+        showPage(1);
+    })();
+</script>
 </body>
 </html>
