@@ -79,7 +79,7 @@ def format_for_datetime_local(dt):
 # Crear las tablas en la base de datos
 # with app.app_context():
 #     db.create_all()
-    
+
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -379,7 +379,7 @@ def obtener_hora_peru():
 # Definición del modelo de datos
 class Registro(db.Model):
     dni = db.Column(db.String(20), primary_key=True, nullable=False)
-    nombre = db.Column(db.String(100), nullable=False) 
+    nombre = db.Column(db.String(100), nullable=False)
     edad = db.Column(db.Integer, nullable=True)  # Permitir NULL
     sexo = db.Column(db.String(10), nullable=True)
     lugar_nacimiento = db.Column(db.String(60), nullable=True)
@@ -405,7 +405,7 @@ def form_registro_inicial():
         if Registro.query.filter_by(dni=dni).first():
             flash('Este DNI ya ha sido registrado.', 'danger')
             return redirect(url_for('listar_registros'))
-        
+
         # Crear una nueva instancia de Registro con los datos del formulario
         nuevo_registro = Registro(
             dni=dni,
@@ -439,7 +439,19 @@ def form_registro_inicial():
 @login_required
 @roles_required('admin', 'gestor', 'viewer')
 def listar_registros():
-    registros = Registro.query.order_by(Registro.fecha_registro.desc()).all()  # Ordenar por fecha de registro (descendente)
+    if is_admin() or is_viewer():
+        # admin y viewer
+        registros_q = Registro.query
+    else:
+        # gestor solo ve los registros donde él es responsable_registro
+        registros_q = Registro.query.filter(
+            Registro.responsable_registro == current_user.username  # o current_user.id si el campo es FK a id
+        )
+
+    registros = (registros_q
+                 .order_by(Registro.fecha_registro.desc())  # Ordenar por fecha de registro (descendente)
+                 .all())
+
     return render_template('listar_registros.html', registros=registros)
 
 ################################################################################################################################
@@ -502,13 +514,13 @@ def eliminar_registro(dni):
     if not registro:
         flash('El registro no existe.', 'danger')
         return redirect(url_for('listar_registros'))
-    
-    
+
+
     # # Validar si el participante está asociado a alguna iniciativa
     # if registro.iniciativas:
     #     flash("El participante no puede ser eliminado porque está asociado a una o más iniciativas.", "danger")
     #     return redirect(url_for('listar_registros'))
-    
+
     # # Verificar si el participante tiene capacidades relacionadas
     # if registro.capacidades:  # Asegúrate de que la relación esté configurada como backref
     #     flash('No se puede eliminar el participante porque tiene capacidades relacionadas.', 'danger')
@@ -670,7 +682,7 @@ def form_iniciativas():
         if Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == nombre_iniciativa).first():
             flash('Esta Iniciativa ya ha sido registrada.', 'danger')
             return redirect(url_for('listar_iniciativas'))
-        
+
         # Procesar la fase de implementación seleccionada
         fase_implementacion = request.form.get('fase_implementacion', None)  # Valor de 0-9 o "otro"
         if fase_implementacion == "":
@@ -759,7 +771,7 @@ def form_iniciativas():
             observaciones=request.form.get('observaciones', ''),
             oficina_regional=oficina_regional,
             proyectos=request.form.get('proyectos', ''),
-            tipo_participacion_fe=request.form.get('tipo_participacion_fe', ''),                
+            tipo_participacion_fe=request.form.get('tipo_participacion_fe', ''),
             responsable_registro=current_user.username
         )
 
@@ -797,7 +809,7 @@ def form_iniciativas():
 
         flash('Iniciativa registrada exitosamente.', 'success')
         return redirect(url_for('listar_iniciativas'))
-    
+
     # Si es GET, pasar los registros disponibles al frontend
     registros_disponibles = Registro.query.filter(
         ~Registro.iniciativas.any()  # Registros que no están asociados a ninguna iniciativa
@@ -970,13 +982,13 @@ def editar_iniciativa(nombre_iniciativa):
         iniciativa.oficina_regional=oficina_regional
         iniciativa.proyectos=request.form.get('proyectos', '')
         iniciativa.tipo_participacion_fe=request.form.get('tipo_participacion_fe', '')
-        
+
         # Actualizar participantes
         nuevos_dnis = request.form.get('registros', '').split(',')
         nuevos_dnis = [dni.strip() for dni in nuevos_dnis if dni]
         actuales_dnis = [registro.dni for registro in iniciativa.registros]
-                
-                
+
+
         # Agregar nuevos participantes
         for dni in nuevos_dnis:
             if dni not in actuales_dnis:
@@ -1044,7 +1056,7 @@ def eliminar_iniciativa(nombre_iniciativa):
     if not iniciativa:
         flash('La iniciativa no existe.', 'danger')
         return redirect(url_for('listar_iniciativas'))
-    
+
     # Verificar si la iniciativa tiene capacidades relacionadas
     if iniciativa.capacidades:  # Asegúrate de que la relación esté configurada correctamente
         flash('No se puede eliminar la iniciativa porque tiene capacidades relacionadas.', 'danger')
@@ -1072,7 +1084,7 @@ class ProcesoIniciativa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre_iniciativa = db.Column(db.String(150), db.ForeignKey('iniciativa.nombre_iniciativa'), nullable=False)
     objetivo_especifico = db.Column(db.String(255), nullable=False)
-    
+
     # Logros
     logros = db.Column(db.String(80), nullable=True)
     sustento_logros = db.Column(db.String(255), nullable=True)
@@ -1135,7 +1147,7 @@ class ProcesoIniciativa(db.Model):
     # Timestamp
     fecha_registro = db.Column(db.DateTime, default=obtener_hora_peru, nullable=True)
 
-    
+
     # Relación con registros a través de Iniciativa
     @property
     def registros(self):
@@ -1174,7 +1186,7 @@ def form_registro_proceso_iniciativa():
         numero_registros = ProcesoIniciativa.query.filter_by(
             nombre_iniciativa=nombre_iniciativa
         ).count()
-        
+
         # Procesar la fase de implementación seleccionada
         fase_implementacion = request.form.get('fase_implementacion', None)  # Valor de 0-9 o "otro"
         if fase_implementacion == "":
@@ -1183,7 +1195,7 @@ def form_registro_proceso_iniciativa():
         if not fase_implementacion:
             flash('Debe seleccionar una fase de implementación.', 'danger')
             return redirect(url_for('form_registro_proceso_iniciativa'))
-        
+
         # Crear un nuevo ProcesoIniciativa
         nuevo_proceso = ProcesoIniciativa(
             # Capturar los datos del formulario
@@ -1321,7 +1333,7 @@ def editar_proceso_iniciativa(id):
             return redirect(url_for('listar_proceso_iniciativa'))
 
     if request.method == 'POST':
-        
+
         fase_implementacion = request.form.get('fase_implementacion')
         if fase_implementacion == "otro":
             proceso_iniciativas.fase_implementacion = None  # No almacenar "otro", solo el detalle
@@ -1468,7 +1480,7 @@ def eliminar_proceso_iniciativa(id):
     if not proceso_iniciativa:
         flash('La iniciativa no existe.', 'danger')
         return redirect(url_for('listar_proceso_iniciativa'))
-    
+
     try:
         # Eliminar el proceso de la base de datos
         db.session.delete(proceso_iniciativa)
@@ -1507,9 +1519,9 @@ class CapacidadIncidencia(db.Model):
 
     # Relación con Iniciativa
     iniciativa = db.relationship('Iniciativa', backref='capacidades')
-    
+
     avances = db.relationship('AvanceCapacidadIncidencia', backref='capacidad_incidencia', lazy=True, cascade="all, delete-orphan")
-    
+
 
 @app.route('/obtener_datos_iniciativa', methods=['GET'])
 @login_required
@@ -1619,7 +1631,7 @@ def form_capacidades_incidencia():
         nombre_iniciativa_in = request.form['nombre_iniciativa'].strip()
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
 
-        
+
         if not registro_dni:
             flash('El participante buscado no está en el listado de Registro inicial.', 'danger')
             return redirect(url_for('form_capacidades_incidencia'))
@@ -1650,7 +1662,7 @@ def form_capacidades_incidencia():
         if ini not in participante.iniciativas:
             flash('El participante no está asociado a la iniciativa seleccionada.', 'danger')
             return redirect(url_for('form_capacidades_incidencia'))
-        
+
         # Verificar si ya existe una capacidad registrada para el participante en esa iniciativa
         capacidad_existente = (CapacidadIncidencia.query
                                .filter(CapacidadIncidencia.registro_dni == registro_dni,
@@ -1660,7 +1672,7 @@ def form_capacidades_incidencia():
         if capacidad_existente:
             flash('Ya existe un registro inicial de capacidades para este participante en esta iniciativa.', 'danger')
             return redirect(url_for('listar_capacidades_incidencia'))
-        
+
 
         nueva_capacidad = CapacidadIncidencia(
             registro_dni=registro_dni,
@@ -1717,7 +1729,7 @@ def listar_capacidades_incidencia():
 def editar_capacidades_incidencia(id):
     # Buscar la capacidad en la base de datos por ID
     capacidad = CapacidadIncidencia.query.filter_by(id=id).first()
-    
+
     if not capacidad:
         flash('El registro de capacidad de incidencia no existe.', 'danger')
         return redirect(url_for('listar_capacidades_incidencia'))  # Redirigir si no se encuentra
@@ -1777,7 +1789,7 @@ def eliminar_capacidades_incidencia(id):
     if not capacidad:
         flash('La capacidad no existe.', 'danger')
         return redirect(url_for('listar_capacidades_incidencia'))
-    
+
     try:
         # Eliminar el proceso de la base de datos
         db.session.delete(capacidad)
@@ -1909,7 +1921,7 @@ def form_avances_capacidades_incidencia():
         if not capacidad:
             flash('La iniciativa no está asociada a este participante en tu OR.', 'danger')
             return redirect(url_for('form_avances_capacidades_incidencia'))
-                
+
         # Calificaciones y datos específicos del avance
         capacidad_1 = request.form.get('capacidad_1', None) or None
         capacidad_2 = request.form.get('capacidad_2', None) or None
@@ -2226,10 +2238,10 @@ def editar_caso_emblematico(nombre_caso):
       if not oficina_regional:
           flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
           return redirect(url_for('form_registro_casos_emblematicos'))
-    
+
     if request.method == 'POST':
         # Actualizar solo los campos que no son llave primaria, verificando si están vacíos o nulos
-        caso.numero_expediente = request.form.get('numero_expediente', '') 
+        caso.numero_expediente = request.form.get('numero_expediente', '')
         caso.sala = request.form.get('sala', '')
         caso.antecedentes = request.form.get('antecedentes', '')  # Si no se proporciona, por defecto será un string vacío
         caso.descripcion_caso = request.form.get('descripcion_caso', '')  # Si no se proporciona, por defecto será un string vacío
@@ -2469,7 +2481,7 @@ def eliminar_avance_caso_emblematico(id):
     if not avances_caso_emblematico:
         flash('El avance de caso emblematico no existe.', 'danger')
         return redirect(url_for('listar_avances_caso_emblematico'))
-    
+
     try:
         # Eliminar el proceso de la base de datos
         db.session.delete(avances_caso_emblematico)
@@ -2603,17 +2615,17 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
       if not oficina_regional:
           flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
           return redirect(url_for('form_registro_casos_emblematicos'))
-    
+
     if request.method == 'POST':
         # Actualizar solo los campos que no son llave primaria, verificando si están vacíos o nulos
-        politica_memoria.localizacion = request.form.get('localizacion', '') 
+        politica_memoria.localizacion = request.form.get('localizacion', '')
         politica_memoria.descripcion_propuesta = request.form.get('descripcion_propuesta', '')
-        politica_memoria.institucion_1 = request.form.get('institucion_1', '') 
-        politica_memoria.asunto_1 = request.form.get('asunto_1', '') 
-        politica_memoria.institucion_2 = request.form.get('institucion_2', '') 
-        politica_memoria.asunto_2 = request.form.get('asunto_2', '') 
-        politica_memoria.institucion_3 = request.form.get('institucion_3', '') 
-        politica_memoria.asunto_3 = request.form.get('asunto_3', '') 
+        politica_memoria.institucion_1 = request.form.get('institucion_1', '')
+        politica_memoria.asunto_1 = request.form.get('asunto_1', '')
+        politica_memoria.institucion_2 = request.form.get('institucion_2', '')
+        politica_memoria.asunto_2 = request.form.get('asunto_2', '')
+        politica_memoria.institucion_3 = request.form.get('institucion_3', '')
+        politica_memoria.asunto_3 = request.form.get('asunto_3', '')
         politica_memoria.organizaciones_aliadas = request.form.get('organizaciones_aliadas', '')  # Si no se proporciona, por defecto será un string vacío
         politica_memoria.otro_dato = request.form.get('otro_dato', '')
         politica_memoria.oficina_regional = oficina_regional
@@ -2621,7 +2633,7 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
         fecha_manual = parse_datetime_local_peru(request.form.get('fecha_registro', '').strip())
         if fecha_manual:
             politica_memoria.fecha_registro = fecha_manual
-        
+
         # Guardar los cambios en la base de datos
         try:
             db.session.commit()
@@ -2845,7 +2857,7 @@ def eliminar_avances_politica_nacional_memoria(id):
     if not avances_caso_emblematico:
         flash('El avance de politica nacional y/o memoria no existe.', 'danger')
         return redirect(url_for('listar_avances_politica_nacional_memoria'))
-    
+
     try:
         # Eliminar el proceso de la base de datos
         db.session.delete(avances_caso_emblematico)
@@ -2880,12 +2892,12 @@ def get_objetivo_especifico(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
     if not iniciativa:
         return jsonify({'error': 'Iniciativa no encontrada'}), 404
-    
+
     # Contar registros existentes y sumar 1 para el próximo número
     numero_registros = ProcesoIniciativa.query.filter_by(
         nombre_iniciativa=nombre_iniciativa
     ).count()
-    
+
     return jsonify({
         'objetivo_especifico': iniciativa.objetivo_especifico,
         'numero_formularios': numero_registros + 1  # +1 para el nuevo registro
