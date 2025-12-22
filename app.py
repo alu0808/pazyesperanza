@@ -16,6 +16,11 @@ from sqlalchemy.sql import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload
 from weasyprint import HTML, CSS
+from io import BytesIO
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from flask import send_file
+
 PERU_TZ = pytz.timezone("America/Lima")
 
 app = Flask(__name__)
@@ -112,14 +117,40 @@ user_iniciativa = db.Table(
 
 from flask import abort
 
+
 def is_admin():
     return current_user.is_authenticated and current_user.role == 'admin'
+
+
+def is_admin_regional():
+    return current_user.is_authenticated and current_user.role == 'admin_regional'
+
 
 def is_gestor():
     return current_user.is_authenticated and current_user.role == 'gestor'
 
+
 def is_viewer():
     return current_user.is_authenticated and current_user.role == 'viewer'
+
+
+# Nueva función para verificar si el usuario tiene permiso de editar registro
+def can_edit_record(registro_responsable_user):
+
+    if is_admin():
+        return True
+
+    # Obtenemos el usuario creador del registro para ver su oficina
+    creador = User.query.filter_by(username=registro_responsable_user).first()
+
+    if not creador:
+        return False  # Si no existe el usuario creador, solo admin general toca esto
+
+    # Admin Regional y Gestor editan si coinciden en oficina regional
+    if is_admin_regional() or is_gestor():
+        return current_user.oficina_regional == creador.oficina_regional
+
+    return False
 
 def iniciativas_visibles_q():
     q = Iniciativa.query
@@ -240,47 +271,72 @@ def admin_dashboard():
 @login_required
 @roles_required('admin')
 def create_user():
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
-        role = request.form['role'].strip()
-        oficina_regional = request.form.get('oficina_regional', '').strip()
-
-        # Validaciones básicas
-        if role not in ('admin', 'gestor', 'viewer'):
-            flash('Rol inválido.', 'danger')
-            return redirect(url_for('create_user'))
-
-        if role == 'gestor' and not oficina_regional:
-            flash('Debe seleccionar una oficina regional para el rol Gestor.', 'danger')
-            return redirect(url_for('create_user'))
-
-        if not username or not password:
-            flash('Usuario y contraseña son obligatorios.', 'danger')
-            return redirect(url_for('create_user'))
-
-        # Crear
-        new_user = User(
-            username=username,
-            role=role,
-            oficina_regional=oficina_regional or None
-        )
-        new_user.set_password(password)  # asumiendo que ya tienes este método
-
-        db.session.add(new_user)
-        db.session.commit()
-        flash('Usuario creado exitosamente.', 'success')
-        return redirect(url_for('admin_dashboard'))
-
-    # GET
-    # Opcional: pasar la lista de OR desde backend
+    # Lista de oficinas disponibles (puedes agregar más según tu necesidad)
     oficinas = [
         "Oficina Nacional",
         "Oficina Reg. Apurímac",
         "Oficina Reg. Huánuco",
         "Oficina Reg. Ayacucho",
         "Oficina Reg. San Martín",
+        # Agrega aquí otras oficinas si es necesario (ej. Lima, Cusco, etc.)
     ]
+
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        role = request.form['role'].strip()
+        oficina_regional = request.form.get('oficina_regional', '').strip()
+
+        # 1. Validar que el usuario no exista previamente
+        if User.query.filter_by(username=username).first():
+            flash('El nombre de usuario ya existe. Por favor elija otro.', 'danger')
+            return redirect(url_for('create_user'))
+
+        # 2. Validar roles permitidos (Agregamos 'admin_regional')
+        valid_roles = ('admin', 'admin_regional', 'gestor', 'viewer')
+        if role not in valid_roles:
+            flash('Rol inválido.', 'danger')
+            return redirect(url_for('create_user'))
+
+        # 3. Lógica de Oficina Regional según el Rol
+        if role == 'admin':
+            # El Admin General es global, forzamos a que no tenga oficina específica
+            oficina_regional = None
+
+        elif role in ('admin_regional', 'gestor'):
+            # Para estos roles, la oficina es OBLIGATORIA
+            if not oficina_regional:
+                flash(f'Debe seleccionar una Oficina Regional para el rol de {role}.', 'danger')
+                return redirect(url_for('create_user'))
+
+        elif role == 'viewer':
+            # El Viewer puede tener oficina (ver solo esa región) o estar vacío (ver todo)
+            if not oficina_regional:
+                oficina_regional = None
+
+        if not username or not password:
+            flash('Usuario y contraseña son obligatorios.', 'danger')
+            return redirect(url_for('create_user'))
+
+        # Crear el nuevo usuario
+        new_user = User(
+            username=username,
+            role=role,
+            oficina_regional=oficina_regional
+        )
+        new_user.set_password(password)
+
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Usuario creado exitosamente.', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear usuario: {str(e)}', 'danger')
+            return redirect(url_for('create_user'))
+
+    # GET: Renderizar el formulario pasando las oficinas
     return render_template('create_user.html', oficinas=oficinas)
 
 # Ruta para editar un usuario
@@ -348,9 +404,10 @@ def delete_user(user_id):
 ########################################################################################################################################
 @app.route('/', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')  # Solo los usuarios con rol 'admin' pueden acceder
+# Agregamos 'admin_regional' a la lista de roles permitidos
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def index():
-    return render_template('index.html')  # Nuevo index.html con opciones para navegar
+    return render_template('index.html')
 
 def validar_longitud(campo, valor, max_length):
     if len(valor.strip()) > max_length:
@@ -394,7 +451,7 @@ class Registro(db.Model):
 
 @app.route('/form_registro_inicial', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def form_registro_inicial():
     if request.method == 'POST':
         # Validación del DNI y eliminación de espacios en blanco
@@ -434,32 +491,104 @@ def form_registro_inicial():
 
     return render_template('form_registro_inicial.html')
 
+
+@app.route('/reasignar_responsable', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable():
+    dni = request.form.get('dni_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    registro = Registro.query.filter_by(dni=dni).first()
+
+    if registro and nuevo_responsable:
+        registro.responsable_registro = nuevo_responsable
+        db.session.commit()
+        flash(f'Responsable del DNI {dni} actualizado a {nuevo_responsable}.', 'success')
+    else:
+        flash('Error al reasignar responsable.', 'danger')
+
+    return redirect(url_for('listar_registros'))
+
+
+@app.route('/eliminar_registro/<dni>', methods=['POST'])
+@login_required
+@roles_required('admin', 'admin_regional')
+def eliminar_registro(dni):
+    registro = Registro.query.filter_by(dni=dni).first()
+
+    if not registro:
+        flash('El registro no existe.', 'danger')
+        return redirect(url_for('listar_registros'))
+
+    # Verificación de permiso de oficina para Admin Regional
+    if is_admin_regional():
+        creador = User.query.filter_by(username=registro.responsable_registro).first()
+        if not creador or creador.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar registros de otra oficina.', 'danger')
+            return redirect(url_for('listar_registros'))
+
+    if is_admin():
+        # Admin General: Eliminación definitiva (o lo que decidas)
+        # db.session.delete(registro) # Descomentar para delete físico
+        registro.estado = 'INA'  # O delete lógico
+        flash("Registro eliminado/inactivado por Administrador.", "success")
+
+    elif is_admin_regional():
+        # Admin Regional: Solo inactiva
+        registro.estado = 'INA'
+        flash("Registro marcado como inactivo por Administrador Regional.", "warning")
+
+    db.session.commit()
+    return redirect(url_for('listar_registros'))
+
 # LISTAR REGISTROS
 @app.route('/listar_registros', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def listar_registros():
-    if is_admin() or is_viewer():
-        # admin y viewer
-        registros_q = Registro.query
-    else:
-        # gestor solo ve los registros donde él es responsable_registro
-        registros_q = Registro.query.filter(
-            Registro.responsable_registro == current_user.username  # o current_user.id si el campo es FK a id
-        )
+    # Obtener el filtro del dropdown (si existe)
+    filtro_oficina = request.args.get('oficina', '').strip()
 
-    registros = (registros_q
-                 .order_by(Registro.fecha_registro.desc())  # Ordenar por fecha de registro (descendente)
-                 .all())
+    # Base de la consulta: Traemos el Registro Y la Oficina del usuario responsable
+    # Usamos outerjoin por si el usuario responsable fue borrado o es null
+    q = db.session.query(Registro, User.oficina_regional) \
+        .outerjoin(User, User.username == Registro.responsable_registro)
 
-    return render_template('listar_registros.html', registros=registros)
+    # Lógica de permisos y filtros
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        # Admin y Viewer Global ven todo
+        # Si seleccionaron una oficina en el filtro, aplicamos el filtro
+        if filtro_oficina:
+            q = q.filter(User.oficina_regional == filtro_oficina)
 
+    elif current_user.oficina_regional:
+        # Admin Regional, Gestor y Viewer Regional solo ven SU oficina
+        q = q.filter(User.oficina_regional == current_user.oficina_regional)
+
+    # Ordenar y ejecutar
+    resultados = q.order_by(Registro.fecha_registro.desc()).all()
+
+    # Lista de usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    # Lista de oficinas para el filtro (Solo admin/viewer global)
+    oficinas_filtro = [
+        "Oficina Nacional", "Oficina Reg. Apurímac", "Oficina Reg. Huánuco",
+        "Oficina Reg. Ayacucho", "Oficina Reg. San Martín"
+    ]
+
+    return render_template('listar_registros.html',
+                           registros=resultados,  # OJO: Ahora esto es una lista de tuplas (registro, oficina)
+                           usuarios_todos=usuarios_todos,
+                           oficinas_filtro=oficinas_filtro,
+                           filtro_actual=filtro_oficina)
 ################################################################################################################################
 ################################################################################################################################
 #EDITAR REGISTROS INICIALES
 @app.route('/editar_registro/<dni>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def editar_registro(dni):
     # Obtener el registro existente usando el DNI
     registro = Registro.query.filter_by(dni=dni).first()
@@ -504,43 +633,7 @@ def editar_registro(dni):
                            )
 
 #ELIMINAR REGISTROS INICIALES
-@app.route('/eliminar_registro/<dni>', methods=['POST'])
-@login_required
-@roles_required('admin')
-def eliminar_registro(dni):
-    # Buscar el registro por DNI
-    registro = Registro.query.filter_by(dni=dni).first()
 
-    if not registro:
-        flash('El registro no existe.', 'danger')
-        return redirect(url_for('listar_registros'))
-
-
-    # # Validar si el participante está asociado a alguna iniciativa
-    # if registro.iniciativas:
-    #     flash("El participante no puede ser eliminado porque está asociado a una o más iniciativas.", "danger")
-    #     return redirect(url_for('listar_registros'))
-
-    # # Verificar si el participante tiene capacidades relacionadas
-    # if registro.capacidades:  # Asegúrate de que la relación esté configurada como backref
-    #     flash('No se puede eliminar el participante porque tiene capacidades relacionadas.', 'danger')
-    #     return redirect(url_for('listar_registros'))
-
-    try:
-        # Marcar el registro como inactivo
-        registro.estado = 'INA'  # INA = Inactivo
-        db.session.commit()
-        flash("El participante ha sido marcado como inactivo.", "success")
-        # Eliminar el registro de la base de datos
-        # db.session.delete(registro)
-        # db.session.commit()
-        # flash('El registro ha sido eliminado con éxito.', 'success')
-    except Exception as e:
-        # Si ocurre un error, lo gestionamos
-        db.session.rollback()
-        flash(f'Ocurrió un error al eliminar el registro: {e}', 'danger')
-
-    return redirect(url_for('listar_registros'))
 
 @app.route('/dashboard', methods=['GET'])
 @login_required
@@ -657,7 +750,7 @@ OR_CHOICES = [
 
 @app.route('/form_iniciativas', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def form_iniciativas():
     if request.method == 'POST':
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
@@ -856,17 +949,57 @@ def get_registros():
     return jsonify(registros_json)
 
 # LISTAR INICIATIVAS
+
+@app.route('/reasignar_responsable_iniciativa', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_iniciativa():
+    nombre_iniciativa = request.form.get('nombre_iniciativa_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
+    nuevo_user = User.query.filter_by(username=nuevo_responsable).first()
+
+    if iniciativa and nuevo_user:
+        # 1. Cambiamos el dueño
+        iniciativa.responsable_registro = nuevo_user.username
+        # 2. IMPORTANTE: Actualizamos la oficina de la iniciativa para que coincida con el nuevo dueño
+        iniciativa.oficina_regional = nuevo_user.oficina_regional
+
+        db.session.commit()
+        flash(f'Iniciativa reasignada a {nuevo_responsable} (Oficina: {nuevo_user.oficina_regional or "Global"}).',
+              'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_iniciativas'))
 @app.route('/listado_iniciativas', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def listar_iniciativas():
-    iniciativas = iniciativas_visibles_q().all()
-    return render_template('listar_iniciativas.html', iniciativas=iniciativas)
+    q = Iniciativa.query
+
+    # Lógica de Permisos:
+    # 1. Admin y Viewer Global (sin oficina) ven TODO.
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+        # 2. Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+    elif current_user.oficina_regional:
+        q = q.filter(Iniciativa.oficina_regional == current_user.oficina_regional)
+
+    iniciativas = q.all()
+
+    # NUEVO: Obtener usuarios para el modal (Solo si es admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    # NUEVO: Pasar usuarios_todos al render_template
+    return render_template('listar_iniciativas.html', iniciativas=iniciativas, usuarios_todos=usuarios_todos)
 
 # EDITAR INICIATIVAS
 @app.route('/editar_iniciativa/<nombre_iniciativa>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Viewer quitado (no edita), agregado admin_regional
 def editar_iniciativa(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
 
@@ -1048,7 +1181,7 @@ def editar_iniciativa(nombre_iniciativa):
 # ELIMINAR INICIATIVA
 @app.route('/eliminar_iniciativa/<nombre_iniciativa>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional')
 def eliminar_iniciativa(nombre_iniciativa):
     # Obtener la iniciativa usando el nombre_iniciativa
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
@@ -1056,6 +1189,11 @@ def eliminar_iniciativa(nombre_iniciativa):
     if not iniciativa:
         flash('La iniciativa no existe.', 'danger')
         return redirect(url_for('listar_iniciativas'))
+
+    if not is_admin():  # Si no es admin general (es admin_regional)
+        if iniciativa.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar iniciativas de otra región.', 'danger')
+            return redirect(url_for('listar_iniciativas'))
 
     # Verificar si la iniciativa tiene capacidades relacionadas
     if iniciativa.capacidades:  # Asegúrate de que la relación esté configurada correctamente
@@ -1624,7 +1762,7 @@ def buscar_iniciativas_participante():
 
 @app.route('/form_capacidades_incidencia', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def form_capacidades_incidencia():
     if request.method == 'POST':
         registro_dni = request.form['registro_dni'].strip()
@@ -1701,31 +1839,39 @@ def form_capacidades_incidencia():
 
 @app.route('/listar_capacidades_incidencia', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_capacidades_incidencia():
-    if is_admin() or is_viewer():
-        capacidades_q = (CapacidadIncidencia.query
-                         .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(CapacidadIncidencia.nombre_iniciativa)))
-    else:
-        or_user = (current_user.oficina_regional or '').strip()
-        if not or_user:
-            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
-            return redirect(url_for('index'))
-        capacidades_q = (CapacidadIncidencia.query
-                         .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(CapacidadIncidencia.nombre_iniciativa))
-                         .filter(Iniciativa.oficina_regional == or_user))
+    # Base de la consulta
+    capacidades_q = (CapacidadIncidencia.query
+                     .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(
+        CapacidadIncidencia.nombre_iniciativa)))
+
+    # Lógica de permisos
+    # 1. Admin y Viewer Global ven TODO
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+        # 2. Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+    elif current_user.oficina_regional:
+        or_user = current_user.oficina_regional
+        capacidades_q = capacidades_q.filter(Iniciativa.oficina_regional == or_user)
 
     capacidades = (capacidades_q
                    .options(joinedload(CapacidadIncidencia.iniciativa), joinedload(CapacidadIncidencia.registro))
                    .order_by(CapacidadIncidencia.fecha_registro.desc())
                    .all())
 
-    return render_template('capacidades_incidencia/listar_capacidades_incidencia.html', capacidades=capacidades)
+    # NUEVO: Usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    return render_template('capacidades_incidencia/listar_capacidades_incidencia.html',
+                           capacidades=capacidades,
+                           usuarios_todos=usuarios_todos)
 
 
 @app.route('/editar_capacidades_incidencia/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def editar_capacidades_incidencia(id):
     # Buscar la capacidad en la base de datos por ID
     capacidad = CapacidadIncidencia.query.filter_by(id=id).first()
@@ -1781,28 +1927,53 @@ def editar_capacidades_incidencia(id):
 # ELIMINAR PROCESO INICIATIVAS
 @app.route('/eliminar_capacidades_incidencia/<int:id>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional') # Gestor NO elimina
 def eliminar_capacidades_incidencia(id):
-    # Buscar el proceso de iniciativa por su id
     capacidad = CapacidadIncidencia.query.filter_by(id=id).first()
 
     if not capacidad:
         flash('La capacidad no existe.', 'danger')
         return redirect(url_for('listar_capacidades_incidencia'))
 
+    # VALIDACIÓN ADMIN REGIONAL: Verificar que pertenezca a su oficina
+    if not is_admin(): # Es admin_regional
+        # Necesitamos acceder a la iniciativa para saber la oficina
+        if capacidad.iniciativa and capacidad.iniciativa.oficina_regional != current_user.oficina_regional:
+             flash('No tienes permiso para eliminar registros de otra región.', 'danger')
+             return redirect(url_for('listar_capacidades_incidencia'))
+
     try:
-        # Eliminar el proceso de la base de datos
         db.session.delete(capacidad)
         db.session.commit()
         flash('La Capacidad ha sido eliminado correctamente.', 'success')
     except:
-        # En caso de error, hacer rollback
         db.session.rollback()
         flash('Hubo un error al intentar eliminar la capacidad.', 'danger')
 
-    # Redirigir a la lista de procesos de iniciativas
     return redirect(url_for('listar_capacidades_incidencia'))
 
+
+@app.route('/reasignar_responsable_capacidad', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_capacidad():
+    capacidad_id = request.form.get('capacidad_id_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    capacidad = CapacidadIncidencia.query.filter_by(id=capacidad_id).first()
+
+    # Nota: Aquí solo cambiamos el responsable_registro (quien digitó).
+    # La oficina regional depende de la Iniciativa, por lo que no se cambia la oficina aquí directamente,
+    # salvo que quieras cambiar también la iniciativa asociada, lo cual es más complejo.
+
+    if capacidad and nuevo_responsable:
+        capacidad.responsable_registro = nuevo_responsable
+        db.session.commit()
+        flash(f'Responsable de la capacidad actualizado a {nuevo_responsable}.', 'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_capacidades_incidencia'))
 #######################################################################################################################################
 #######################################################################################################################################
 ############################################ AVANCES CAPACIDAD INCIDENCIA #############################################################
@@ -3666,6 +3837,92 @@ def listar_participaciones_iniciativas():
         iniciativas_todas=iniciativas_todas,
         filtro_iniciativa=filtro_iniciativa,
         filtro_estado=filtro_estado
+    )
+
+
+@app.route('/descargar_excel_registros')
+@login_required
+@roles_required('admin', 'gestor', 'viewer')
+def descargar_excel_registros():
+    # 1. Reutilizamos la misma lógica de filtrado que en 'listar_registros'
+    if is_admin() or is_viewer():
+        registros_q = Registro.query
+    else:
+        # Gestor solo descarga sus registros
+        registros_q = Registro.query.filter(
+            Registro.responsable_registro == current_user.username
+        )
+
+    registros = registros_q.order_by(Registro.fecha_registro.desc()).all()
+
+    # 2. Crear el libro de Excel y la hoja
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Registros Iniciales"
+
+    # 3. Definir Cabeceras
+    headers = [
+        "DNI", "Nombre", "Edad", "Sexo", "Lugar Nacimiento",
+        "Departamento", "Provincia", "Distrito", "Calle",
+        "Comunidad", "Estado", "Responsable", "Fecha Registro"
+    ]
+    ws.append(headers)
+
+    # 4. Dar estilo a la cabecera (Negrita, fondo verde oscuro como tu tabla HTML, texto blanco)
+    header_fill = PatternFill(start_color="18834d", end_color="18834d", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    # 5. Llenar los datos
+    for reg in registros:
+        # Formatear fecha a string para evitar conflictos de zona horaria en Excel
+        fecha_str = reg.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if reg.fecha_registro else ""
+
+        row = [
+            reg.dni,
+            reg.nombre,
+            reg.edad,
+            reg.sexo,
+            reg.lugar_nacimiento,
+            reg.departamento,
+            reg.provincia,
+            reg.distrito,
+            reg.calle,
+            reg.comunidad,
+            reg.estado,
+            reg.responsable_registro,
+            fecha_str
+        ]
+        ws.append(row)
+
+    # 6. Ajustar ancho de columnas automáticamente (opcional, visual)
+    from openpyxl.utils import get_column_letter
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter  # Get the column name
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column].width = adjusted_width
+
+    # 7. Guardar en memoria y enviar
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="Reporte_Registros_Iniciales.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 if __name__ == '__main__':

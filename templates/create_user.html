@@ -42,24 +42,24 @@
         <label class="label-principal" for="role">Rol</label>
         <select class="form-control" id="role" name="role" required>
           <option value="" selected>Seleccione un rol</option>
-          <option value="admin">Admin</option>
-          <option value="gestor">Gestor</option>
-          <option value="viewer">Viewer</option>
+          <option value="admin">Administrador General (Todo)</option>
+          <option value="admin_regional">Administrador Regional (Edita/Inactiva su región)</option>
+          <option value="gestor">Gestor (Registra/Edita su región)</option>
+          <option value="viewer">Visualizador (Solo lectura)</option>
         </select>
-        <small class="form-text text-muted">
-          Admin: todo acceso. Gestor: edita/ve lo asignado en su OR. Viewer: solo lectura global.
-        </small>
       </div>
 
       <div class="form-group">
-        <label class="label-principal" for="oficina_regional">Oficina Regional de referencia</label>
+        <label class="label-principal" for="oficina_regional">Oficina Regional</label>
         <select class="form-control" id="oficina_regional" name="oficina_regional" disabled>
-          <option value="" selected>Seleccione una oficina</option>
+          <option value="" selected>Seleccione una oficina (o dejar vacío para Global)</option>
           {% for of in oficinas %}
             <option value="{{ of }}">{{ of }}</option>
           {% endfor %}
         </select>
-        <small class="form-text text-muted">Obligatoria para el rol Gestor.</small>
+        <small class="form-text text-muted" id="help-oficina">
+          Requerido para Admin Regional y Gestor. Opcional para Viewer (si se deja vacío ve todo).
+        </small>
       </div>
 
       <div class="d-flex justify-content-end">
@@ -74,10 +74,23 @@
     const orSel   = document.getElementById('oficina_regional');
 
     function toggleOR() {
-      const isGestor = roleSel.value === 'gestor';
-      orSel.disabled = !isGestor;
-      orSel.required = isGestor;
-      if (!isGestor) { orSel.value = ''; }
+      const rol = roleSel.value;
+      // Roles que requieren Oficina Regional OBLIGATORIA o PERMITIDA
+      // Admin Regional y Gestor DEBEN tener oficina. Viewer PUEDE tenerla. Admin NO.
+
+      if (rol === 'admin') {
+          orSel.disabled = true;
+          orSel.value = "";
+          orSel.required = false;
+      } else if (rol === 'admin_regional' || rol === 'gestor') {
+          orSel.disabled = false;
+          orSel.required = true;
+      } else if (rol === 'viewer') {
+          orSel.disabled = false;
+          orSel.required = false; // Viewer puede ser global (sin oficina) o regional
+      } else {
+          orSel.disabled = true;
+      }
     }
     roleSel.addEventListener('change', toggleOR);
   </script>

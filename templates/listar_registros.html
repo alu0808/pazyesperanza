@@ -152,14 +152,10 @@
 <!-- Barra superior con el nombre de la empresa y el logo -->
 <!-- Barra superior con el nombre de la empresa y el logo -->
 <div class="title-bar-company">
-    <a href="{{ url_for('index') }}">
-        <img src="/static/images/logo.png" alt="Logo de la empresa">
-    </a>
-
-    <!-- Verificar si el usuario está autenticado y mostrar el enlace adecuado -->
+    <a href="{{ url_for('index') }}"><img src="/static/images/logo.png" alt="Logo"></a>
     <div class="button-container">
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('logout') }}" class="btn btn-light label-principal">Cerrar sesión</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-light label-principal">Cerrar sesión ({{ current_user.username }})</a>
         {% else %}
             <a href="{{ url_for('login') }}" class="btn btn-light label-principal">Iniciar sesión</a>
         {% endif %}
@@ -171,31 +167,31 @@
 </div>
 
 <div class="container-fluid mt-3 px-4">
-    <!-- Mostrar mensajes flash -->
     <div class="alert-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="alert alert_mod alert-{{ messages[0][0] }}">
-                    {{ messages[0][1] }}
-                </div>
+                <div class="alert alert_mod alert-{{ messages[0][0] }}">{{ messages[0][1] }}</div>
             {% endif %}
         {% endwith %}
     </div>
 
-    <!-- Botón en la parte superior derecha -->
-    {% if current_user.role in ['admin', 'gestor'] %}
-        <div class="button-container">
-            <a href="/form_registro_inicial" style="margin-bottom: 15px;" class="btn btn-success label-principal">Nuevo
-                Registro</a>
-        </div>
-    {% endif %}
+    <div class="button-container mb-3">
+        <div class="actions-right">
+            <a href="{{ url_for('descargar_excel_registros') }}" class="btn btn-sm" style="color: white; background-color: #207245; border-color: #207245;">
+                <i class="fas fa-file-excel"></i> Excel
+            </a>
 
-    <!-- Tabla de registros -->
+            {% if current_user.role in ['admin', 'admin_regional', 'gestor'] %}
+                <a href="/form_registro_inicial" class="btn btn-success btn-sm">Nuevo Registro</a>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="table-responsive mb-5">
-        <table class="table table-striped">
+        <table class="table table-striped table-hover">
             <thead>
             <tr>
-                {% if current_user.role in ['admin', 'gestor'] %}
+                {% if current_user.role != 'viewer' %}
                     <th>Acciones</th>
                 {% endif %}
                 <th>Ficha</th>
@@ -210,40 +206,46 @@
                 <th>Distrito</th>
                 <th>Calle</th>
                 <th>Comunidad</th>
+                <th>Oficina Regional</th>
                 <th>Responsable Registro</th>
                 <th>Fecha Registro</th>
             </tr>
             </thead>
             <tbody>
-            {% for registro in registros %}
+            {% for registro, oficina in registros %}
                 <tr>
-                    {% if current_user.role in ['admin', 'gestor'] %}
+                    {% if current_user.role != 'viewer' %}
                         <td>
                             <div class="btn-group">
-                                {% if current_user.role == 'admin' or (current_user.role == 'gestor' and registro.responsable_registro == current_user.username) %}
-                                    <a href="/editar_registro/{{ registro.dni }}" class="btn btn-primary btn-icon"
-                                       title="Editar">
+                                {% if current_user.role == 'admin' or (oficina == current_user.oficina_regional) %}
+                                    <a href="/editar_registro/{{ registro.dni }}" class="btn btn-primary btn-icon" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                 {% endif %}
+
+                                {% if current_user.role in ['admin', 'admin_regional'] %}
+                                    {% if current_user.role == 'admin' or (oficina == current_user.oficina_regional) %}
+                                        <form method="POST" action="/eliminar_registro/{{ registro.dni }}" onsubmit="return confirm('¿Confirma acción sobre este registro?');" style="display:inline;">
+                                            <button type="submit" class="btn btn-danger btn-icon" title="Eliminar/Inactivar">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+
                                 {% if current_user.role == 'admin' %}
-                                    <form method="POST"
-                                          action="/eliminar_registro/{{ registro.dni }}"
-                                          onsubmit="return confirm('¿Estás seguro de que deseas eliminar este registro?');"
-                                          style="display:inline;">
-                                        <button type="submit" class="btn btn-danger btn-icon" title="Eliminar">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-warning btn-icon" title="Cambiar Oficina (Reasignar)"
+                                            data-toggle="modal" data-target="#modalReasignar"
+                                            onclick="setReasignarData('{{ registro.dni }}', '{{ registro.responsable_registro }}')">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
                                 {% endif %}
                             </div>
                         </td>
                     {% endif %}
+
                     <td>
-                        <a href="{{ url_for('registro_pdf', dni=registro.dni, mode='download') }}"
-                           class="btn btn-outline-secondary btn-icon" title="Descargar PDF">
-                            <i class="fas fa-download"></i>
-                        </a>
+                        <a href="{{ url_for('registro_pdf', dni=registro.dni, mode='download') }}" class="btn btn-outline-secondary btn-icon"><i class="fas fa-download"></i></a>
                     </td>
                     <td>{{ registro.dni }}</td>
                     <td>{{ registro.nombre }}</td>
@@ -258,12 +260,18 @@
                     <td>{{ registro.distrito }}</td>
                     <td>{{ registro.calle }}</td>
                     <td>{{ registro.comunidad }}</td>
+                    <td style="font-weight: bold; color: #444;">{{ oficina or 'Oficina Nacional / Sin Asignar' }}</td>
                     <td>{{ registro.responsable_registro }}</td>
                     <td>{{ registro.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="10" class="text-center text-muted">No se encontraron registros.</td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
+
         <nav aria-label="Paginación" class="d-flex justify-content-between align-items-center my-3">
             <div id="pager-info" class="small text-muted"></div>
             <ul id="pager" class="pagination pagination-sm mb-0"></ul>
@@ -272,14 +280,56 @@
 
     <div class="row justify-content-end mt-3 mb-5">
         <div class="col-md-3 d-flex justify-content-end">
-            <button type="button" class="btn btn-secondary btn-sm text-center" style="font-size: 1rem;"
-                    onclick="window.location.href='/'">Ir al menú
-            </button>
-            <!-- <button type="button" class="btn btn-success btn-sm text-center mr-3 flex-grow-1" style="font-size: 1rem;" onclick="window.location.href='/form_registro_inicial'">Ir a Registro</button> -->
-            <!-- <button type="submit" class="btn btn-primary btn-sm text-center flex-grow-1" style="font-size: 1rem;">Guardar</button> -->
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.location.href='/'">Ir al menú</button>
         </div>
     </div>
 </div>
+
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="modalReasignar" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">Reasignar Responsable (Cambiar Oficina)</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="POST" action="{{ url_for('reasignar_responsable') }}">
+          <div class="modal-body">
+            <input type="hidden" name="dni_reasignar" id="dni_reasignar">
+            <p>Se cambiará la propiedad del registro <strong><span id="span_dni"></span></strong>.</p>
+            <p class="text-muted small">Actual: <span id="span_actual"></span></p>
+
+            <div class="form-group">
+                <label for="nuevo_responsable">Nuevo Responsable (Determina la Oficina):</label>
+                <select class="form-control" name="nuevo_responsable" required>
+                    <option value="">Seleccione...</option>
+                    {% for user in usuarios_todos %}
+                        <option value="{{ user.username }}">
+                            {{ user.oficina_regional or 'GLOBAL' }} - {{ user.username }} ({{ user.role }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    function setReasignarData(dni, actual) {
+        document.getElementById('dni_reasignar').value = dni;
+        document.getElementById('span_dni').innerText = dni;
+        document.getElementById('span_actual').innerText = actual;
+    }
+</script>
+{% endif %}
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>

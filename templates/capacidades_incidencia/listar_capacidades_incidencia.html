@@ -75,7 +75,7 @@
     </div>
 
     <!-- Botón -->
-    {% if current_user.role in ['admin','gestor'] %}
+    {% if current_user.role in ['admin','admin_regional','gestor'] %}
       <div class="d-flex justify-content-end">
         <a href="/form_capacidades_incidencia" class="btn btn-success label-principal mb-3">
           Nueva Capacidad de Incidencia
@@ -88,7 +88,8 @@
       <table id="tabla" class="table table-striped">
         <thead>
           <tr>
-            {% if current_user.role in ['admin','gestor'] %}<th>Acciones</th>{% endif %}
+            {% if current_user.role != 'viewer' %}<th>Acciones</th>{% endif %}
+            <th>Ficha</th>
             <th>Ficha</th>
             <th>Participante</th>
             <th>DNI</th>
@@ -107,7 +108,7 @@
         <tbody>
           {% for capacidad in capacidades %}
             <tr>
-              {% if current_user.role in ['admin','gestor'] %}
+              {% if current_user.role != 'viewer' %}
               <td>
                 <div class="btn-group">
                   <a href="/editar_capacidades_incidencia/{{ capacidad.id }}" class="btn btn-primary btn-icon" title="Editar">
