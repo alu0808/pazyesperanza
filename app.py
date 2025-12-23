@@ -349,28 +349,7 @@ def edit_user(user_id):
         flash('Usuario no encontrado.', 'danger')
         return redirect(url_for('admin_dashboard'))
 
-    if request.method == 'POST':
-        user.username = request.form['username'].strip()
-        user.role = request.form['role'].strip()
-        oficina_regional = request.form.get('oficina_regional', '').strip()
-
-        if user.role not in ('admin', 'gestor', 'viewer'):
-            flash('Rol inválido.', 'danger')
-            return redirect(url_for('edit_user', user_id=user.id))
-
-        if user.role == 'gestor' and not oficina_regional:
-            flash('Debe seleccionar una oficina regional para el rol Gestor.', 'danger')
-            return redirect(url_for('edit_user', user_id=user.id))
-
-        user.oficina_regional = oficina_regional or None
-
-        if request.form['password']:
-            user.set_password(request.form['password'])
-
-        db.session.commit()
-        flash('Usuario actualizado exitosamente.', 'success')
-        return redirect(url_for('admin_dashboard'))
-
+    # Lista de oficinas (puedes moverla a una constante global si prefieres)
     oficinas = [
         "Oficina Nacional",
         "Oficina Reg. Apurímac",
@@ -378,6 +357,48 @@ def edit_user(user_id):
         "Oficina Reg. Ayacucho",
         "Oficina Reg. San Martín",
     ]
+
+    if request.method == 'POST':
+        user.username = request.form['username'].strip()
+        new_role = request.form['role'].strip()
+        new_oficina = request.form.get('oficina_regional', '').strip()
+
+        # 1. Validar roles permitidos
+        valid_roles = ('admin', 'admin_regional', 'gestor', 'viewer')
+        if new_role not in valid_roles:
+            flash('Rol inválido.', 'danger')
+            return redirect(url_for('edit_user', user_id=user.id))
+
+        # 2. Lógica de Oficina Regional
+        if new_role == 'admin':
+            user.oficina_regional = None  # Admin es global
+
+        elif new_role in ('admin_regional', 'gestor'):
+            if not new_oficina:
+                flash(f'Debe seleccionar una Oficina Regional para el rol de {new_role}.', 'danger')
+                return redirect(url_for('edit_user', user_id=user.id))
+            user.oficina_regional = new_oficina
+
+        elif new_role == 'viewer':
+            # Viewer puede ser global (None) o regional
+            user.oficina_regional = new_oficina if new_oficina else None
+
+        # 3. Asignar nuevo rol
+        user.role = new_role
+
+        # 4. Cambiar contraseña solo si se envió algo
+        if request.form['password'].strip():
+            user.set_password(request.form['password'].strip())
+
+        try:
+            db.session.commit()
+            flash('Usuario actualizado exitosamente.', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar usuario: {str(e)}', 'danger')
+            return redirect(url_for('edit_user', user_id=user.id))
+
     return render_template('edit_user.html', user=user, oficinas=oficinas)
 
 
