@@ -90,7 +90,6 @@
           <tr>
             {% if current_user.role != 'viewer' %}<th>Acciones</th>{% endif %}
             <th>Ficha</th>
-            <th>Ficha</th>
             <th>Participante</th>
             <th>DNI</th>
             <th>Iniciativa</th>
@@ -108,13 +107,15 @@
         <tbody>
           {% for capacidad in capacidades %}
             <tr>
+              <tr>
               {% if current_user.role != 'viewer' %}
               <td>
                 <div class="btn-group">
                   <a href="/editar_capacidades_incidencia/{{ capacidad.id }}" class="btn btn-primary btn-icon" title="Editar">
                     <i class="fas fa-edit"></i>
                   </a>
-                  {% if current_user.role == 'admin' %}
+
+                  {% if current_user.role in ['admin', 'admin_regional'] %}
                   <form method="POST" action="/eliminar_capacidades_incidencia/{{ capacidad.id }}"
                         onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta capacidad?');"
                         style="display:inline;">
@@ -122,6 +123,14 @@
                       <i class="fas fa-trash-alt"></i>
                     </button>
                   </form>
+                  {% endif %}
+
+                  {% if current_user.role == 'admin' %}
+                    <button type="button" class="btn btn-warning btn-icon" title="Reasignar Responsable"
+                            data-toggle="modal" data-target="#modalReasignarCap"
+                            onclick="setReasignarDataCap('{{ capacidad.id }}', '{{ capacidad.registro.nombre }}', '{{ capacidad.responsable_registro }}')">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
                   {% endif %}
                 </div>
               </td>
@@ -229,5 +238,53 @@
       showPage(1);
     })();
   </script>
+
+  {% if current_user.role == 'admin' %}
+    <div class="modal fade" id="modalReasignarCap" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title">Reasignar Responsable de Registro</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form method="POST" action="{{ url_for('reasignar_responsable_capacidad') }}">
+              <div class="modal-body">
+                <input type="hidden" name="capacidad_id_reasignar" id="capacidad_id_reasignar">
+
+                <p>Se cambiará el usuario responsable del registro:</p>
+                <p><strong>Participante:</strong> <span id="span_participante"></span></p>
+                <p class="text-muted small">Responsable Actual: <span id="span_actual_cap"></span></p>
+
+                <div class="form-group">
+                    <label>Nuevo Responsable:</label>
+                    <select class="form-control" name="nuevo_responsable" required>
+                        <option value="">Seleccione...</option>
+                        {% for user in usuarios_todos %}
+                            <option value="{{ user.username }}">
+                                {{ user.oficina_regional or 'GLOBAL' }} - {{ user.username }} ({{ user.role }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+              </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+        function setReasignarDataCap(id, participante, actual) {
+            document.getElementById('capacidad_id_reasignar').value = id;
+            document.getElementById('span_participante').innerText = participante;
+            document.getElementById('span_actual_cap').innerText = actual;
+        }
+    </script>
+  {% endif %}
 </body>
 </html>

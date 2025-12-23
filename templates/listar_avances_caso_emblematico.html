@@ -174,7 +174,7 @@
     </div>
 
     <!-- Botón -->
-    {% if current_user.role in ['admin', 'gestor'] %}
+    {% if current_user.role in ['admin', 'admin_regional', 'gestor'] %}
         <div class="button-container mb-3">
             <a href="/form_avances_caso_emblematico" class="btn btn-success label-principal">Nuevo Avance de Caso</a>
         </div>
@@ -185,8 +185,7 @@
         <table id="tabla" class="table table-striped">
             <thead>
             <tr>
-                {% if current_user.role in ['admin', 'gestor'] %}
-                    <th>Acciones</th>{% endif %}
+                {% if current_user.role != 'viewer' %}<th>Acciones</th>{% endif %}
                 <th>Ficha</th>
                 <th>Nombre Caso</th>
                 <th class="wrap-lg">Principales Ocurrencias</th>
@@ -202,14 +201,15 @@
             <tbody>
             {% for avance in avances_caso_emblematico %}
                 <tr>
-                    {% if current_user.role in ['admin', 'gestor'] %}
+                    {% if current_user.role != 'viewer' %}
                         <td>
                             <div class="btn-group">
                                 <a href="/editar_avances_caso_emblematico/{{ avance.id }}"
                                    class="btn btn-primary btn-icon" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                {% if current_user.role == 'admin' %}
+
+                                {% if current_user.role in ['admin', 'admin_regional'] %}
                                     <form method="POST"
                                           action="/eliminar_avance_caso_emblematico/{{ avance.id }}"
                                           onsubmit="return confirm('¿Estás seguro de que deseas eliminar este avance?');"
@@ -218,6 +218,14 @@
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>
+                                {% endif %}
+
+                                {% if current_user.role == 'admin' %}
+                                    <button type="button" class="btn btn-warning btn-icon" title="Reasignar Responsable"
+                                            data-toggle="modal" data-target="#modalReasignarAvance"
+                                            onclick="setReasignarDataAvance('{{ avance.id }}', '{{ avance.nombre_caso }}', '{{ avance.responsable_registro }}')">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
                                 {% endif %}
                             </div>
                         </td>
@@ -332,5 +340,52 @@
         showPage(1);
     })();
 </script>
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="modalReasignarAvance" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">Reasignar Responsable de Avance</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="POST" action="{{ url_for('reasignar_responsable_avance_caso') }}">
+          <div class="modal-body">
+            <input type="hidden" name="avance_id_reasignar" id="avance_id_reasignar">
+
+            <p>Se cambiará el usuario responsable del registro:</p>
+            <p><strong>Caso:</strong> <span id="span_caso_av"></span></p>
+            <p class="text-muted small">Responsable Actual: <span id="span_actual_av"></span></p>
+
+            <div class="form-group">
+                <label>Nuevo Responsable:</label>
+                <select class="form-control" name="nuevo_responsable" required>
+                    <option value="">Seleccione...</option>
+                    {% for user in usuarios_todos %}
+                        <option value="{{ user.username }}">
+                            {{ user.oficina_regional or 'GLOBAL' }} - {{ user.username }} ({{ user.role }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    function setReasignarDataAvance(id, caso, actual) {
+        document.getElementById('avance_id_reasignar').value = id;
+        document.getElementById('span_caso_av').innerText = caso;
+        document.getElementById('span_actual_av').innerText = actual;
+    }
+</script>
+{% endif %}
 </body>
 </html>
