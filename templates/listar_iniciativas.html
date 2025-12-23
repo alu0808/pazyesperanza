@@ -163,7 +163,7 @@
     </div>
 
     <!-- Botón crear -->
-    {% if current_user.role in ['admin', 'gestor'] %}
+    {% if current_user.role in ['admin', 'admin_regional', 'gestor'] %}
         <div class="d-flex justify-content-end">
             <a href="/form_iniciativas" class="btn btn-success label-principal mb-2">Nueva Iniciativa</a>
         </div>
@@ -175,8 +175,9 @@
         <table id="tabla" class="table table-striped">
             <thead>
             <tr>
-                {% if current_user.role in ['admin', 'gestor'] %}
-                    <th>Acciones</th>{% endif %}
+                {% if current_user.role != 'viewer' %}
+                    <th>Acciones</th>
+                {% endif %}
                 <th>Ficha</th>
                 <th>Nombre Iniciativa</th>
                 <th>Derecho Genérico</th>
@@ -264,14 +265,15 @@
             <tbody>
             {% for iniciativa in iniciativas %}
                 <tr>
-                    {% if current_user.role in ['admin', 'gestor'] %}
+                    {% if current_user.role != 'viewer' %}
                         <td>
                             <div class="btn-group">
                                 <a href="/editar_iniciativa/{{ iniciativa.nombre_iniciativa }}"
                                    class="btn btn-primary btn-icon" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                {% if current_user.role == 'admin' %}
+
+                                {% if current_user.role in ['admin', 'admin_regional'] %}
                                     <form method="POST"
                                           action="/eliminar_iniciativa/{{ iniciativa.nombre_iniciativa }}"
                                           onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta iniciativa?');"
@@ -281,6 +283,16 @@
                                         </button>
                                     </form>
                                 {% endif %}
+
+                                <div class="btn-group">
+                                    {% if current_user.role == 'admin' %}
+                                        <button type="button" class="btn btn-warning btn-icon" title="Cambiar Oficina (Reasignar)"
+                                                data-toggle="modal" data-target="#modalReasignarIni"
+                                                onclick="setReasignarDataIniciativa('{{ iniciativa.nombre_iniciativa }}', '{{ iniciativa.responsable_registro }}')">
+                                            <i class="fas fa-exchange-alt"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
                             </div>
                         </td>
                     {% endif %}
@@ -458,5 +470,53 @@
 
     })();
 </script>
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="modalReasignarIni" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">Reasignar Iniciativa (Cambiar Oficina)</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="POST" action="{{ url_for('reasignar_responsable_iniciativa') }}">
+          <div class="modal-body">
+            <input type="hidden" name="nombre_iniciativa_reasignar" id="nombre_iniciativa_reasignar">
+
+            <p>Se cambiará la propiedad y la Oficina Regional de:</p>
+            <p><strong>Iniciativa:</strong> <span id="span_nombre_ini"></span></p>
+            <p class="text-muted small">Responsable Actual: <span id="span_actual_ini"></span></p>
+
+            <div class="form-group">
+                <label>Nuevo Responsable:</label>
+                <select class="form-control" name="nuevo_responsable" required>
+                    <option value="">Seleccione...</option>
+                    {% for user in usuarios_todos %}
+                        <option value="{{ user.username }}">
+                            {{ user.oficina_regional or 'GLOBAL' }} - {{ user.username }} ({{ user.role }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="text-danger">¡Cuidado! Esto moverá la iniciativa a la Oficina Regional del usuario seleccionado.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    function setReasignarDataIniciativa(nombre, actual) {
+        document.getElementById('nombre_iniciativa_reasignar').value = nombre;
+        document.getElementById('span_nombre_ini').innerText = nombre;
+        document.getElementById('span_actual_ini').innerText = actual;
+    }
+</script>
+{% endif %}
 </body>
 </html>

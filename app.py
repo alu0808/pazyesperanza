@@ -16,6 +16,11 @@ from sqlalchemy.sql import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload
 from weasyprint import HTML, CSS
+from io import BytesIO
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from flask import send_file
+
 PERU_TZ = pytz.timezone("America/Lima")
 
 app = Flask(__name__)
@@ -112,14 +117,40 @@ user_iniciativa = db.Table(
 
 from flask import abort
 
+
 def is_admin():
     return current_user.is_authenticated and current_user.role == 'admin'
+
+
+def is_admin_regional():
+    return current_user.is_authenticated and current_user.role == 'admin_regional'
+
 
 def is_gestor():
     return current_user.is_authenticated and current_user.role == 'gestor'
 
+
 def is_viewer():
     return current_user.is_authenticated and current_user.role == 'viewer'
+
+
+# Nueva función para verificar si el usuario tiene permiso de editar registro
+def can_edit_record(registro_responsable_user):
+
+    if is_admin():
+        return True
+
+    # Obtenemos el usuario creador del registro para ver su oficina
+    creador = User.query.filter_by(username=registro_responsable_user).first()
+
+    if not creador:
+        return False  # Si no existe el usuario creador, solo admin general toca esto
+
+    # Admin Regional y Gestor editan si coinciden en oficina regional
+    if is_admin_regional() or is_gestor():
+        return current_user.oficina_regional == creador.oficina_regional
+
+    return False
 
 def iniciativas_visibles_q():
     q = Iniciativa.query
@@ -240,47 +271,72 @@ def admin_dashboard():
 @login_required
 @roles_required('admin')
 def create_user():
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
-        role = request.form['role'].strip()
-        oficina_regional = request.form.get('oficina_regional', '').strip()
-
-        # Validaciones básicas
-        if role not in ('admin', 'gestor', 'viewer'):
-            flash('Rol inválido.', 'danger')
-            return redirect(url_for('create_user'))
-
-        if role == 'gestor' and not oficina_regional:
-            flash('Debe seleccionar una oficina regional para el rol Gestor.', 'danger')
-            return redirect(url_for('create_user'))
-
-        if not username or not password:
-            flash('Usuario y contraseña son obligatorios.', 'danger')
-            return redirect(url_for('create_user'))
-
-        # Crear
-        new_user = User(
-            username=username,
-            role=role,
-            oficina_regional=oficina_regional or None
-        )
-        new_user.set_password(password)  # asumiendo que ya tienes este método
-
-        db.session.add(new_user)
-        db.session.commit()
-        flash('Usuario creado exitosamente.', 'success')
-        return redirect(url_for('admin_dashboard'))
-
-    # GET
-    # Opcional: pasar la lista de OR desde backend
+    # Lista de oficinas disponibles (puedes agregar más según tu necesidad)
     oficinas = [
         "Oficina Nacional",
         "Oficina Reg. Apurímac",
         "Oficina Reg. Huánuco",
         "Oficina Reg. Ayacucho",
         "Oficina Reg. San Martín",
+        # Agrega aquí otras oficinas si es necesario (ej. Lima, Cusco, etc.)
     ]
+
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        role = request.form['role'].strip()
+        oficina_regional = request.form.get('oficina_regional', '').strip()
+
+        # 1. Validar que el usuario no exista previamente
+        if User.query.filter_by(username=username).first():
+            flash('El nombre de usuario ya existe. Por favor elija otro.', 'danger')
+            return redirect(url_for('create_user'))
+
+        # 2. Validar roles permitidos (Agregamos 'admin_regional')
+        valid_roles = ('admin', 'admin_regional', 'gestor', 'viewer')
+        if role not in valid_roles:
+            flash('Rol inválido.', 'danger')
+            return redirect(url_for('create_user'))
+
+        # 3. Lógica de Oficina Regional según el Rol
+        if role == 'admin':
+            # El Admin General es global, forzamos a que no tenga oficina específica
+            oficina_regional = None
+
+        elif role in ('admin_regional', 'gestor'):
+            # Para estos roles, la oficina es OBLIGATORIA
+            if not oficina_regional:
+                flash(f'Debe seleccionar una Oficina Regional para el rol de {role}.', 'danger')
+                return redirect(url_for('create_user'))
+
+        elif role == 'viewer':
+            # El Viewer puede tener oficina (ver solo esa región) o estar vacío (ver todo)
+            if not oficina_regional:
+                oficina_regional = None
+
+        if not username or not password:
+            flash('Usuario y contraseña son obligatorios.', 'danger')
+            return redirect(url_for('create_user'))
+
+        # Crear el nuevo usuario
+        new_user = User(
+            username=username,
+            role=role,
+            oficina_regional=oficina_regional
+        )
+        new_user.set_password(password)
+
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Usuario creado exitosamente.', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear usuario: {str(e)}', 'danger')
+            return redirect(url_for('create_user'))
+
+    # GET: Renderizar el formulario pasando las oficinas
     return render_template('create_user.html', oficinas=oficinas)
 
 # Ruta para editar un usuario
@@ -348,9 +404,10 @@ def delete_user(user_id):
 ########################################################################################################################################
 @app.route('/', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')  # Solo los usuarios con rol 'admin' pueden acceder
+# Agregamos 'admin_regional' a la lista de roles permitidos
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def index():
-    return render_template('index.html')  # Nuevo index.html con opciones para navegar
+    return render_template('index.html')
 
 def validar_longitud(campo, valor, max_length):
     if len(valor.strip()) > max_length:
@@ -394,7 +451,7 @@ class Registro(db.Model):
 
 @app.route('/form_registro_inicial', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def form_registro_inicial():
     if request.method == 'POST':
         # Validación del DNI y eliminación de espacios en blanco
@@ -434,32 +491,104 @@ def form_registro_inicial():
 
     return render_template('form_registro_inicial.html')
 
+
+@app.route('/reasignar_responsable', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable():
+    dni = request.form.get('dni_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    registro = Registro.query.filter_by(dni=dni).first()
+
+    if registro and nuevo_responsable:
+        registro.responsable_registro = nuevo_responsable
+        db.session.commit()
+        flash(f'Responsable del DNI {dni} actualizado a {nuevo_responsable}.', 'success')
+    else:
+        flash('Error al reasignar responsable.', 'danger')
+
+    return redirect(url_for('listar_registros'))
+
+
+@app.route('/eliminar_registro/<dni>', methods=['POST'])
+@login_required
+@roles_required('admin', 'admin_regional')
+def eliminar_registro(dni):
+    registro = Registro.query.filter_by(dni=dni).first()
+
+    if not registro:
+        flash('El registro no existe.', 'danger')
+        return redirect(url_for('listar_registros'))
+
+    # Verificación de permiso de oficina para Admin Regional
+    if is_admin_regional():
+        creador = User.query.filter_by(username=registro.responsable_registro).first()
+        if not creador or creador.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar registros de otra oficina.', 'danger')
+            return redirect(url_for('listar_registros'))
+
+    if is_admin():
+        # Admin General: Eliminación definitiva (o lo que decidas)
+        # db.session.delete(registro) # Descomentar para delete físico
+        registro.estado = 'INA'  # O delete lógico
+        flash("Registro eliminado/inactivado por Administrador.", "success")
+
+    elif is_admin_regional():
+        # Admin Regional: Solo inactiva
+        registro.estado = 'INA'
+        flash("Registro marcado como inactivo por Administrador Regional.", "warning")
+
+    db.session.commit()
+    return redirect(url_for('listar_registros'))
+
 # LISTAR REGISTROS
 @app.route('/listar_registros', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def listar_registros():
-    if is_admin() or is_viewer():
-        # admin y viewer
-        registros_q = Registro.query
-    else:
-        # gestor solo ve los registros donde él es responsable_registro
-        registros_q = Registro.query.filter(
-            Registro.responsable_registro == current_user.username  # o current_user.id si el campo es FK a id
-        )
+    # Obtener el filtro del dropdown (si existe)
+    filtro_oficina = request.args.get('oficina', '').strip()
 
-    registros = (registros_q
-                 .order_by(Registro.fecha_registro.desc())  # Ordenar por fecha de registro (descendente)
-                 .all())
+    # Base de la consulta: Traemos el Registro Y la Oficina del usuario responsable
+    # Usamos outerjoin por si el usuario responsable fue borrado o es null
+    q = db.session.query(Registro, User.oficina_regional) \
+        .outerjoin(User, User.username == Registro.responsable_registro)
 
-    return render_template('listar_registros.html', registros=registros)
+    # Lógica de permisos y filtros
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        # Admin y Viewer Global ven todo
+        # Si seleccionaron una oficina en el filtro, aplicamos el filtro
+        if filtro_oficina:
+            q = q.filter(User.oficina_regional == filtro_oficina)
 
+    elif current_user.oficina_regional:
+        # Admin Regional, Gestor y Viewer Regional solo ven SU oficina
+        q = q.filter(User.oficina_regional == current_user.oficina_regional)
+
+    # Ordenar y ejecutar
+    resultados = q.order_by(Registro.fecha_registro.desc()).all()
+
+    # Lista de usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    # Lista de oficinas para el filtro (Solo admin/viewer global)
+    oficinas_filtro = [
+        "Oficina Nacional", "Oficina Reg. Apurímac", "Oficina Reg. Huánuco",
+        "Oficina Reg. Ayacucho", "Oficina Reg. San Martín"
+    ]
+
+    return render_template('listar_registros.html',
+                           registros=resultados,  # OJO: Ahora esto es una lista de tuplas (registro, oficina)
+                           usuarios_todos=usuarios_todos,
+                           oficinas_filtro=oficinas_filtro,
+                           filtro_actual=filtro_oficina)
 ################################################################################################################################
 ################################################################################################################################
 #EDITAR REGISTROS INICIALES
 @app.route('/editar_registro/<dni>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def editar_registro(dni):
     # Obtener el registro existente usando el DNI
     registro = Registro.query.filter_by(dni=dni).first()
@@ -504,47 +633,11 @@ def editar_registro(dni):
                            )
 
 #ELIMINAR REGISTROS INICIALES
-@app.route('/eliminar_registro/<dni>', methods=['POST'])
-@login_required
-@roles_required('admin')
-def eliminar_registro(dni):
-    # Buscar el registro por DNI
-    registro = Registro.query.filter_by(dni=dni).first()
 
-    if not registro:
-        flash('El registro no existe.', 'danger')
-        return redirect(url_for('listar_registros'))
-
-
-    # # Validar si el participante está asociado a alguna iniciativa
-    # if registro.iniciativas:
-    #     flash("El participante no puede ser eliminado porque está asociado a una o más iniciativas.", "danger")
-    #     return redirect(url_for('listar_registros'))
-
-    # # Verificar si el participante tiene capacidades relacionadas
-    # if registro.capacidades:  # Asegúrate de que la relación esté configurada como backref
-    #     flash('No se puede eliminar el participante porque tiene capacidades relacionadas.', 'danger')
-    #     return redirect(url_for('listar_registros'))
-
-    try:
-        # Marcar el registro como inactivo
-        registro.estado = 'INA'  # INA = Inactivo
-        db.session.commit()
-        flash("El participante ha sido marcado como inactivo.", "success")
-        # Eliminar el registro de la base de datos
-        # db.session.delete(registro)
-        # db.session.commit()
-        # flash('El registro ha sido eliminado con éxito.', 'success')
-    except Exception as e:
-        # Si ocurre un error, lo gestionamos
-        db.session.rollback()
-        flash(f'Ocurrió un error al eliminar el registro: {e}', 'danger')
-
-    return redirect(url_for('listar_registros'))
 
 @app.route('/dashboard', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')  # Solo usuarios con estos roles pueden acceder
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer') # Solo usuarios con estos roles pueden acceder
 def dashboard():
     return render_template('dashboard.html')  # Renderiza el archivo HTML del dashboard
 
@@ -657,7 +750,7 @@ OR_CHOICES = [
 
 @app.route('/form_iniciativas', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def form_iniciativas():
     if request.method == 'POST':
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
@@ -856,17 +949,57 @@ def get_registros():
     return jsonify(registros_json)
 
 # LISTAR INICIATIVAS
+
+@app.route('/reasignar_responsable_iniciativa', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_iniciativa():
+    nombre_iniciativa = request.form.get('nombre_iniciativa_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
+    nuevo_user = User.query.filter_by(username=nuevo_responsable).first()
+
+    if iniciativa and nuevo_user:
+        # 1. Cambiamos el dueño
+        iniciativa.responsable_registro = nuevo_user.username
+        # 2. IMPORTANTE: Actualizamos la oficina de la iniciativa para que coincida con el nuevo dueño
+        iniciativa.oficina_regional = nuevo_user.oficina_regional
+
+        db.session.commit()
+        flash(f'Iniciativa reasignada a {nuevo_responsable} (Oficina: {nuevo_user.oficina_regional or "Global"}).',
+              'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_iniciativas'))
 @app.route('/listado_iniciativas', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def listar_iniciativas():
-    iniciativas = iniciativas_visibles_q().all()
-    return render_template('listar_iniciativas.html', iniciativas=iniciativas)
+    q = Iniciativa.query
+
+    # Lógica de Permisos:
+    # 1. Admin y Viewer Global (sin oficina) ven TODO.
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+        # 2. Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+    elif current_user.oficina_regional:
+        q = q.filter(Iniciativa.oficina_regional == current_user.oficina_regional)
+
+    iniciativas = q.all()
+
+    # NUEVO: Obtener usuarios para el modal (Solo si es admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    # NUEVO: Pasar usuarios_todos al render_template
+    return render_template('listar_iniciativas.html', iniciativas=iniciativas, usuarios_todos=usuarios_todos)
 
 # EDITAR INICIATIVAS
 @app.route('/editar_iniciativa/<nombre_iniciativa>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Viewer quitado (no edita), agregado admin_regional
 def editar_iniciativa(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
 
@@ -1048,7 +1181,7 @@ def editar_iniciativa(nombre_iniciativa):
 # ELIMINAR INICIATIVA
 @app.route('/eliminar_iniciativa/<nombre_iniciativa>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional')
 def eliminar_iniciativa(nombre_iniciativa):
     # Obtener la iniciativa usando el nombre_iniciativa
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
@@ -1056,6 +1189,11 @@ def eliminar_iniciativa(nombre_iniciativa):
     if not iniciativa:
         flash('La iniciativa no existe.', 'danger')
         return redirect(url_for('listar_iniciativas'))
+
+    if not is_admin():  # Si no es admin general (es admin_regional)
+        if iniciativa.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar iniciativas de otra región.', 'danger')
+            return redirect(url_for('listar_iniciativas'))
 
     # Verificar si la iniciativa tiene capacidades relacionadas
     if iniciativa.capacidades:  # Asegúrate de que la relación esté configurada correctamente
@@ -1159,7 +1297,7 @@ class ProcesoIniciativa(db.Model):
 
 @app.route('/form_registro_proceso_iniciativa', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def form_registro_proceso_iniciativa():
     if request.method == 'POST':
         nombre_iniciativa = request.form['nombre_iniciativa'].strip().lower()
@@ -1280,39 +1418,46 @@ def form_registro_proceso_iniciativa():
 # LISTAR PROCESO INICIATIVAS
 @app.route('/listar_proceso_iniciativa', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_proceso_iniciativa():
-    if is_admin() or is_viewer():
-        procesos_q = (ProcesoIniciativa.query
-                      .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(ProcesoIniciativa.nombre_iniciativa)))
-    else:
-        or_user = (current_user.oficina_regional or '').strip()
-        if not or_user:
-            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
-            return redirect(url_for('index'))
-        procesos_q = (ProcesoIniciativa.query
-                      .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(ProcesoIniciativa.nombre_iniciativa))
-                      .filter(Iniciativa.oficina_regional == or_user))
+    # Base de la consulta con JOIN a Iniciativa
+    procesos_q = (ProcesoIniciativa.query
+                  .join(Iniciativa,
+                        func.lower(Iniciativa.nombre_iniciativa) == func.lower(ProcesoIniciativa.nombre_iniciativa)))
+
+    # Lógica de permisos
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+    elif current_user.oficina_regional:
+        # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+        or_user = current_user.oficina_regional
+        procesos_q = procesos_q.filter(Iniciativa.oficina_regional == or_user)
 
     procesos = (procesos_q
                 .order_by(Iniciativa.nombre_iniciativa.asc(),
                           ProcesoIniciativa.fecha_registro.asc())
                 .all())
 
-    # Numeración por iniciativa (igual que ya tienes)
+    # Numeración por iniciativa (lógica existente)
     registros_por_iniciativa = {}
     for p in procesos:
         clave = p.nombre_iniciativa
         registros_por_iniciativa[clave] = registros_por_iniciativa.get(clave, 0) + 1
         p.numero_registro = registros_por_iniciativa[clave]
 
-    return render_template('listar_proceso_iniciativa.html', procesos=procesos)
+    # NUEVO: Usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    return render_template('listar_proceso_iniciativa.html',
+                           procesos=procesos,
+                           usuarios_todos=usuarios_todos)
 
 
 # EDITAR PROCESO DE INICIATIVA
 @app.route('/editar_proceso_iniciativa/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def editar_proceso_iniciativa(id):
     # Buscar el proceso de iniciativa por id usando filter_by y first()
     proceso_iniciativas = ProcesoIniciativa.query.filter_by(id=id).first()
@@ -1472,28 +1617,50 @@ def editar_proceso_iniciativa(id):
 # ELIMINAR PROCESO INICIATIVAS
 @app.route('/eliminar_proceso_iniciativa/<int:id>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional') # Gestor NO elimina
 def eliminar_proceso_iniciativa(id):
-    # Buscar el proceso de iniciativa por su id
     proceso_iniciativa = ProcesoIniciativa.query.filter_by(id=id).first()
 
     if not proceso_iniciativa:
-        flash('La iniciativa no existe.', 'danger')
+        flash('El proceso no existe.', 'danger')
         return redirect(url_for('listar_proceso_iniciativa'))
 
+    # VALIDACIÓN ADMIN REGIONAL
+    if not is_admin(): # Es admin_regional
+        # Verificar la oficina de la iniciativa padre
+        ini = Iniciativa.query.filter(func.lower(Iniciativa.nombre_iniciativa) == func.lower(proceso_iniciativa.nombre_iniciativa)).first()
+        if ini and ini.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar procesos de otra región.', 'danger')
+            return redirect(url_for('listar_proceso_iniciativa'))
+
     try:
-        # Eliminar el proceso de la base de datos
         db.session.delete(proceso_iniciativa)
         db.session.commit()
         flash('El proceso de iniciativa ha sido eliminado correctamente.', 'success')
-    except:
-        # En caso de error, hacer rollback
+    except Exception as e:
         db.session.rollback()
-        flash('Hubo un error al intentar eliminar el proceso de iniciativa.', 'danger')
+        flash(f'Error al eliminar: {str(e)}', 'danger')
 
-    # Redirigir a la lista de procesos de iniciativas
     return redirect(url_for('listar_proceso_iniciativa'))
 
+
+@app.route('/reasignar_responsable_proceso', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_proceso():
+    proceso_id = request.form.get('proceso_id_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    proceso = ProcesoIniciativa.query.filter_by(id=proceso_id).first()
+
+    if proceso and nuevo_responsable:
+        proceso.responsable_registro = nuevo_responsable
+        db.session.commit()
+        flash(f'Responsable del proceso actualizado a {nuevo_responsable}.', 'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_proceso_iniciativa'))
 ########################################################################################################################################
 ########################################################################################################################################
 ############                      CAPACIDAD INCIDENCIA                   ###############################################################
@@ -1624,7 +1791,7 @@ def buscar_iniciativas_participante():
 
 @app.route('/form_capacidades_incidencia', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def form_capacidades_incidencia():
     if request.method == 'POST':
         registro_dni = request.form['registro_dni'].strip()
@@ -1701,31 +1868,39 @@ def form_capacidades_incidencia():
 
 @app.route('/listar_capacidades_incidencia', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_capacidades_incidencia():
-    if is_admin() or is_viewer():
-        capacidades_q = (CapacidadIncidencia.query
-                         .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(CapacidadIncidencia.nombre_iniciativa)))
-    else:
-        or_user = (current_user.oficina_regional or '').strip()
-        if not or_user:
-            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
-            return redirect(url_for('index'))
-        capacidades_q = (CapacidadIncidencia.query
-                         .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(CapacidadIncidencia.nombre_iniciativa))
-                         .filter(Iniciativa.oficina_regional == or_user))
+    # Base de la consulta
+    capacidades_q = (CapacidadIncidencia.query
+                     .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(
+        CapacidadIncidencia.nombre_iniciativa)))
+
+    # Lógica de permisos
+    # 1. Admin y Viewer Global ven TODO
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+        # 2. Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+    elif current_user.oficina_regional:
+        or_user = current_user.oficina_regional
+        capacidades_q = capacidades_q.filter(Iniciativa.oficina_regional == or_user)
 
     capacidades = (capacidades_q
                    .options(joinedload(CapacidadIncidencia.iniciativa), joinedload(CapacidadIncidencia.registro))
                    .order_by(CapacidadIncidencia.fecha_registro.desc())
                    .all())
 
-    return render_template('capacidades_incidencia/listar_capacidades_incidencia.html', capacidades=capacidades)
+    # NUEVO: Usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    return render_template('capacidades_incidencia/listar_capacidades_incidencia.html',
+                           capacidades=capacidades,
+                           usuarios_todos=usuarios_todos)
 
 
 @app.route('/editar_capacidades_incidencia/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def editar_capacidades_incidencia(id):
     # Buscar la capacidad en la base de datos por ID
     capacidad = CapacidadIncidencia.query.filter_by(id=id).first()
@@ -1781,28 +1956,53 @@ def editar_capacidades_incidencia(id):
 # ELIMINAR PROCESO INICIATIVAS
 @app.route('/eliminar_capacidades_incidencia/<int:id>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional') # Gestor NO elimina
 def eliminar_capacidades_incidencia(id):
-    # Buscar el proceso de iniciativa por su id
     capacidad = CapacidadIncidencia.query.filter_by(id=id).first()
 
     if not capacidad:
         flash('La capacidad no existe.', 'danger')
         return redirect(url_for('listar_capacidades_incidencia'))
 
+    # VALIDACIÓN ADMIN REGIONAL: Verificar que pertenezca a su oficina
+    if not is_admin(): # Es admin_regional
+        # Necesitamos acceder a la iniciativa para saber la oficina
+        if capacidad.iniciativa and capacidad.iniciativa.oficina_regional != current_user.oficina_regional:
+             flash('No tienes permiso para eliminar registros de otra región.', 'danger')
+             return redirect(url_for('listar_capacidades_incidencia'))
+
     try:
-        # Eliminar el proceso de la base de datos
         db.session.delete(capacidad)
         db.session.commit()
         flash('La Capacidad ha sido eliminado correctamente.', 'success')
     except:
-        # En caso de error, hacer rollback
         db.session.rollback()
         flash('Hubo un error al intentar eliminar la capacidad.', 'danger')
 
-    # Redirigir a la lista de procesos de iniciativas
     return redirect(url_for('listar_capacidades_incidencia'))
 
+
+@app.route('/reasignar_responsable_capacidad', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_capacidad():
+    capacidad_id = request.form.get('capacidad_id_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    capacidad = CapacidadIncidencia.query.filter_by(id=capacidad_id).first()
+
+    # Nota: Aquí solo cambiamos el responsable_registro (quien digitó).
+    # La oficina regional depende de la Iniciativa, por lo que no se cambia la oficina aquí directamente,
+    # salvo que quieras cambiar también la iniciativa asociada, lo cual es más complejo.
+
+    if capacidad and nuevo_responsable:
+        capacidad.responsable_registro = nuevo_responsable
+        db.session.commit()
+        flash(f'Responsable de la capacidad actualizado a {nuevo_responsable}.', 'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_capacidades_incidencia'))
 #######################################################################################################################################
 #######################################################################################################################################
 ############################################ AVANCES CAPACIDAD INCIDENCIA #############################################################
@@ -1892,7 +2092,7 @@ def buscar_iniciativas_participante_avances():
 
 @app.route('/form_avances_capacidades_incidencia', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def form_avances_capacidades_incidencia():
     if request.method == 'POST':
         # Obtener datos del formulario
@@ -1990,7 +2190,7 @@ def get_capacidad_avances(participant_dni):
 
 @app.route('/listar_avances_capacidades_incidencia', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_avances_capacidades_incidencia():
     # Obtener todos los avances ordenados por capacidad y fecha de registro
     q = (AvanceCapacidadIncidencia.query
@@ -2003,12 +2203,13 @@ def listar_avances_capacidades_incidencia():
         .joinedload(CapacidadIncidencia.registro)
     ))
 
-    if not (is_admin() or is_viewer()):
-        or_user = (current_user.oficina_regional or '').strip()
-        if not or_user:
-            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
-            return render_template('capacidades_incidencia/listar_avances_capacidades_incidencia.html', avances=[])
-        q = q.filter(Iniciativa.oficina_regional == or_user)
+    # Lógica de Permisos
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+    elif current_user.oficina_regional:
+        # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+        q = q.filter(Iniciativa.oficina_regional == current_user.oficina_regional)
 
     avances = (q.order_by(
         CapacidadIncidencia.registro_dni.asc(),
@@ -2016,29 +2217,32 @@ def listar_avances_capacidades_incidencia():
         AvanceCapacidadIncidencia.fecha_registro.asc()
     ).all())
 
-    # Añadir el número de registro (índice) para cada avance en su capacidad
+    # Lógica de numeración (existente)
     avances_con_numero = []
     capacidad_actual = None
     numero_registro = 0
-
     for avance in avances:
         if capacidad_actual != avance.capacidad_id:
             capacidad_actual = avance.capacidad_id
-            numero_registro = 1  # Reiniciar el conteo para cada nueva capacidad
+            numero_registro = 1
         else:
             numero_registro += 1
         avance.numero_registro = numero_registro
         avances_con_numero.append(avance)
 
+    # NUEVO: Usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
     return render_template(
         'capacidades_incidencia/listar_avances_capacidades_incidencia.html',
-        avances=avances_con_numero
+        avances=avances_con_numero,
+        usuarios_todos=usuarios_todos
     )
 
 
 @app.route('/editar_avances_capacidades_incidencia/<int:avance_id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def editar_avances_capacidades_incidencia(avance_id):
     # Buscar el avance por ID
     q = (AvanceCapacidadIncidencia.query
@@ -2098,20 +2302,29 @@ def editar_avances_capacidades_incidencia(avance_id):
         fecha_registro_value=fecha_registro_value
     )
 
+
 @app.route('/eliminar_avances_capacidades_incidencia/<int:avance_id>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional')  # Gestor NO elimina
 def eliminar_avances_capacidades_incidencia(avance_id):
     # Buscar el avance por ID
     avance = AvanceCapacidadIncidencia.query.filter_by(id=avance_id).first()
 
-    # Validar si el avance existe
     if not avance:
         flash('El avance no existe.', 'danger')
         return redirect(url_for('listar_avances_capacidades_incidencia'))
 
+    # VALIDACIÓN ADMIN REGIONAL
+    if not is_admin():  # Es admin_regional
+        # Necesitamos acceder a la iniciativa para validar la oficina
+        cap = CapacidadIncidencia.query.get(avance.capacidad_id)
+        ini = Iniciativa.query.filter_by(nombre_iniciativa=cap.nombre_iniciativa).first()
+
+        if ini and ini.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar avances de otra región.', 'danger')
+            return redirect(url_for('listar_avances_capacidades_incidencia'))
+
     try:
-        # Eliminar el avance de la base de datos
         db.session.delete(avance)
         db.session.commit()
         flash('El avance se eliminó exitosamente.', 'success')
@@ -2119,9 +2332,26 @@ def eliminar_avances_capacidades_incidencia(avance_id):
         db.session.rollback()
         flash(f'Error al eliminar el avance: {str(e)}', 'danger')
 
-    # Redirigir al listado de avances
     return redirect(url_for('listar_avances_capacidades_incidencia'))
 
+
+@app.route('/reasignar_responsable_avance_capacidad', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_avance_capacidad():
+    avance_id = request.form.get('avance_id_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    avance = AvanceCapacidadIncidencia.query.filter_by(id=avance_id).first()
+
+    if avance and nuevo_responsable:
+        avance.responsable_registro = nuevo_responsable
+        db.session.commit()
+        flash(f'Responsable del avance actualizado a {nuevo_responsable}.', 'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_avances_capacidades_incidencia'))
 ########################################################################################################################################
 ########################################################################################################################################
 ##########                        CASOS EMBLEMATICOS                     ###############################################################
@@ -2146,7 +2376,7 @@ class CasoEmblematico(db.Model):
 
 @app.route('/form_registro_casos_emblematicos', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def form_registro_casos_emblematicos():
     if request.method == 'POST':
         # Validar que el nombre genérico del caso no exista
@@ -2204,21 +2434,31 @@ def form_registro_casos_emblematicos():
 # LISTAR CASOS EMBLEMÁTICOS
 @app.route('/listar_casos_emblematicos')
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_casos_emblematicos():
     q = CasoEmblematico.query
-    if not (is_admin() or is_viewer()):
-        or_user = (current_user.oficina_regional or '').strip()
-        if not or_user:
-            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
-            return render_template('listar_casos_emblematicos.html', casos=[])
-        q = q.filter(CasoEmblematico.oficina_regional == or_user)
+
+    # Lógica de permisos
+    # 1. Admin y Viewer Global ven TODO
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+        # 2. Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+    elif current_user.oficina_regional:
+        q = q.filter(CasoEmblematico.oficina_regional == current_user.oficina_regional)
+
     casos = q.order_by(CasoEmblematico.fecha_registro.desc()).all()
-    return render_template('listar_casos_emblematicos.html', casos=casos)
+
+    # NUEVO: Usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    return render_template('listar_casos_emblematicos.html',
+                           casos=casos,
+                           usuarios_todos=usuarios_todos)
 # EDITAR CASO EMBLEMATICO
 @app.route('/editar_caso_emblematico/<nombre_caso>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def editar_caso_emblematico(nombre_caso):
     caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
 
@@ -2276,28 +2516,53 @@ def editar_caso_emblematico(nombre_caso):
 # ELIMINAR CASO EMBLEMATICO
 @app.route('/eliminar_caso_emblematico/<nombre_caso>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional') # Gestor NO elimina
 def eliminar_caso_emblematico(nombre_caso):
-    # Buscar el caso emblemático por nombre_caso
     caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
 
     if not caso:
         flash('El caso emblemático no existe.', 'danger')
         return redirect(url_for('listar_casos_emblematicos'))
 
+    # VALIDACIÓN ADMIN REGIONAL
+    if not is_admin(): # Si es admin_regional
+        if caso.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar casos de otra región.', 'danger')
+            return redirect(url_for('listar_casos_emblematicos'))
+
     try:
-        # Eliminar el caso de la base de datos
         db.session.delete(caso)
         db.session.commit()
-
         flash('El caso emblemático ha sido eliminado con éxito.', 'success')
     except Exception as e:
-        db.session.rollback()  # Revertir la operación en caso de error
+        db.session.rollback()
         flash(f'Error al eliminar el caso: {str(e)}', 'danger')
 
     return redirect(url_for('listar_casos_emblematicos'))
 
 
+@app.route('/reasignar_responsable_caso', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_caso():
+    nombre_caso = request.form.get('nombre_caso_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
+    nuevo_user = User.query.filter_by(username=nuevo_responsable).first()
+
+    if caso and nuevo_user:
+        # 1. Cambiamos el responsable
+        caso.responsable_registro = nuevo_user.username
+        # 2. Actualizamos la oficina para que coincida con el nuevo dueño
+        caso.oficina_regional = nuevo_user.oficina_regional
+
+        db.session.commit()
+        flash(f'Caso reasignado a {nuevo_responsable} (Oficina: {nuevo_user.oficina_regional or "Global"}).', 'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_casos_emblematicos'))
 ########################################################################################################################################
 ########################################################################################################################################
 ##########                        AVANCE DE LOS CASOS EMBLEMATICOS                     #################################################
@@ -2319,7 +2584,7 @@ class AvanceCasoEmblematico(db.Model):
 
 @app.route('/form_avances_caso_emblematico', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def form_avances_caso_emblematico():
     if request.method == 'POST':
         nombre_caso = (request.form.get('nombre_caso') or '').strip().lower()
@@ -2375,40 +2640,44 @@ def form_avances_caso_emblematico():
 # LISTAR AVANCES CASO EMBLEMATICO
 @app.route('/listar_avances_caso_emblematico')
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_avances_caso_emblematico():
-    # Obtener los registros en orden descendente por la fecha de registro
+    # Base de la consulta
     q = (db.session.query(AvanceCasoEmblematico)
          .join(CasoEmblematico, AvanceCasoEmblematico.nombre_caso == CasoEmblematico.nombre_caso)
          .options(joinedload(AvanceCasoEmblematico.caso)))
 
-    if not (is_admin() or is_viewer()):
-        or_user = (current_user.oficina_regional or '').strip()
-        if not or_user:
-            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
-            return render_template('listar_avances_caso_emblematico.html', avances_caso_emblematico=[])
+    # Lógica de permisos
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
 
-        q = q.filter(CasoEmblematico.oficina_regional == or_user)
+    elif current_user.oficina_regional:
+        # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+        q = q.filter(CasoEmblematico.oficina_regional == current_user.oficina_regional)
 
-        # Orden “estilo proceso”: por caso (A-Z) y por fecha (asc)
     avances = q.order_by(
         CasoEmblematico.nombre_caso.asc(),
         AvanceCasoEmblematico.fecha_registro.asc()
     ).all()
 
-    # Numeración dentro de cada caso (1,2,3,...)
+    # Lógica de numeración (existente)
     contador_por_caso = {}
     for av in avances:
         key = av.nombre_caso
         contador_por_caso[key] = contador_por_caso.get(key, 0) + 1
         av.numero_registro = contador_por_caso[key]
 
-    return render_template('listar_avances_caso_emblematico.html', avances_caso_emblematico=avances)
+    # NUEVO: Usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    return render_template('listar_avances_caso_emblematico.html',
+                           avances_caso_emblematico=avances,
+                           usuarios_todos=usuarios_todos)
 
 # EDITAR AVANCES CASO EMBLEMATICO
 @app.route('/editar_avances_caso_emblematico/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def editar_avances_caso_emblematico(id):
     # Buscar el proceso de iniciativa por id usando filter_by y first()
     avance_caso_emblematico = (AvanceCasoEmblematico.query
@@ -2473,29 +2742,51 @@ def editar_avances_caso_emblematico(id):
 # ELIMINAR AVANCES CASO EMBLEMATICO
 @app.route('/eliminar_avance_caso_emblematico/<int:id>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional') # Gestor NO elimina
 def eliminar_avance_caso_emblematico(id):
-    # Buscar el proceso de iniciativa por su id
-    avances_caso_emblematico = AvanceCasoEmblematico.query.filter_by(id=id).first()
+    # Buscar el avance por ID
+    avance_caso = AvanceCasoEmblematico.query.filter_by(id=id).first()
 
-    if not avances_caso_emblematico:
+    if not avance_caso:
         flash('El avance de caso emblematico no existe.', 'danger')
         return redirect(url_for('listar_avances_caso_emblematico'))
 
+    # VALIDACIÓN ADMIN REGIONAL
+    if not is_admin(): # Es admin_regional
+        # Verificar la oficina del caso padre
+        caso = CasoEmblematico.query.filter_by(nombre_caso=avance_caso.nombre_caso).first()
+        if caso and caso.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar avances de otra región.', 'danger')
+            return redirect(url_for('listar_avances_caso_emblematico'))
+
     try:
-        # Eliminar el proceso de la base de datos
-        db.session.delete(avances_caso_emblematico)
+        db.session.delete(avance_caso)
         db.session.commit()
         flash('El avance de caso emblematico ha sido eliminado correctamente.', 'success')
-    except:
-        # En caso de error, hacer rollback
+    except Exception as e:
         db.session.rollback()
-        flash('Hubo un error al intentar eliminar el avance de caso emblematico.', 'danger')
+        flash(f'Error al intentar eliminar: {str(e)}', 'danger')
 
-    # Redirigir a la lista de procesos de iniciativas
     return redirect(url_for('listar_avances_caso_emblematico'))
 
 
+@app.route('/reasignar_responsable_avance_caso', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_avance_caso():
+    avance_id = request.form.get('avance_id_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    avance = AvanceCasoEmblematico.query.filter_by(id=avance_id).first()
+
+    if avance and nuevo_responsable:
+        avance.responsable_registro = nuevo_responsable
+        db.session.commit()
+        flash(f'Responsable del avance actualizado a {nuevo_responsable}.', 'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_avances_caso_emblematico'))
 ########################################################################################################################################
 ########################################################################################################################################
 ##########                          POLITICA NACIONAL Y MEMORIA                          ###############################################
@@ -2523,7 +2814,7 @@ class PoliticaNacionalMemoria(db.Model):
 
 @app.route('/form_registro_politica_nacional_memoria', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def form_registro_politica_nacional_memoria():
     if request.method == 'POST':
         # Validar que el nombre de la política o sitio de memoria no exista
@@ -2580,22 +2871,31 @@ def form_registro_politica_nacional_memoria():
 # LISTAR Politica nacional Memoria
 @app.route('/listar_politica_nacional_memoria')
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_politica_nacional_memoria():
     q = PoliticaNacionalMemoria.query
-    if not (is_admin() or is_viewer()):
-        or_user = (current_user.oficina_regional or '').strip()
-        if not or_user:
-            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
-            return render_template('listar_politica_nacional_memoria.html', politica_memoria=[])
-        q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+
+    # Lógica de permisos
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+    elif current_user.oficina_regional:
+        # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+        q = q.filter(PoliticaNacionalMemoria.oficina_regional == current_user.oficina_regional)
+
     politica_memoria = q.order_by(PoliticaNacionalMemoria.fecha_registro.desc()).all()
-    return render_template('listar_politica_nacional_memoria.html', politica_memoria=politica_memoria)
+
+    # NUEVO: Usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    return render_template('listar_politica_nacional_memoria.html',
+                           politica_memoria=politica_memoria,
+                           usuarios_todos=usuarios_todos)
 
 # EDITAR Politica nacional Memoria
 @app.route('/editar_politica_nacional_memoria/<nombre_politica_memoria>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def editar_politica_nacional_memoria(nombre_politica_memoria):
     politica_memoria = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
 
@@ -2656,28 +2956,54 @@ def editar_politica_nacional_memoria(nombre_politica_memoria):
 # ELIMINAR Politica nacional Memoria
 @app.route('/eliminar_politica_nacional_memoria/<nombre_politica_memoria>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional') # Gestor NO elimina
 def eliminar_politica_nacional_memoria(nombre_politica_memoria):
-    # Buscar el caso emblemático por nombre_politica_memoria
     politica_memoria = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
 
     if not politica_memoria:
         flash('La politica nacional y memoria no existe.', 'danger')
         return redirect(url_for('listar_politica_nacional_memoria'))
 
+    # VALIDACIÓN ADMIN REGIONAL
+    if not is_admin(): # Es admin_regional
+        if politica_memoria.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar registros de otra región.', 'danger')
+            return redirect(url_for('listar_politica_nacional_memoria'))
+
     try:
-        # Eliminar el caso de la base de datos
         db.session.delete(politica_memoria)
         db.session.commit()
-
         flash('La politica nacional y memoria ha sido eliminado con éxito.', 'success')
     except Exception as e:
-        db.session.rollback()  # Revertir la operación en caso de error
-        flash(f'Error al eliminar la politica nacional y memoria: {str(e)}', 'danger')
+        db.session.rollback()
+        flash(f'Error al eliminar: {str(e)}', 'danger')
 
     return redirect(url_for('listar_politica_nacional_memoria'))
 
 
+@app.route('/reasignar_responsable_politica', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_politica():
+    nombre_politica = request.form.get('nombre_politica_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
+
+    politica = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica).first()
+    nuevo_user = User.query.filter_by(username=nuevo_responsable).first()
+
+    if politica and nuevo_user:
+        # 1. Cambiamos el responsable
+        politica.responsable_registro = nuevo_user.username
+        # 2. Actualizamos la oficina
+        politica.oficina_regional = nuevo_user.oficina_regional
+
+        db.session.commit()
+        flash(f'Registro reasignado a {nuevo_responsable} (Oficina: {nuevo_user.oficina_regional or "Global"}).',
+              'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_politica_nacional_memoria'))
 ######################################################################################################################################
 ########################################################################################################################################
 ##########                         AVANCES POLITICA NACIONAL Y MEMORIA                          ########################################
@@ -2699,7 +3025,7 @@ class AvancePoliticaMemoria(db.Model):
 
 @app.route('/form_avances_politica_nacional_memoria', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def form_avances_politica_nacional_memoria():
     if request.method == 'POST':
         nombre_politica_memoria = (request.form.get('nombre_politica_memoria') or '').strip().lower()
@@ -2753,40 +3079,47 @@ def form_avances_politica_nacional_memoria():
 # LISTAR AVANCES POLITICA Y MEMORIA
 @app.route('/listar_avances_politica_nacional_memoria')
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_avances_politica_nacional_memoria():
-    # Obtener los registros en orden descendente por la fecha de registro
+    # Base de la consulta
     q = (db.session.query(AvancePoliticaMemoria)
-         .join(PoliticaNacionalMemoria, AvancePoliticaMemoria.nombre_politica_memoria == PoliticaNacionalMemoria.nombre_politica_memoria)
+         .join(PoliticaNacionalMemoria,
+               AvancePoliticaMemoria.nombre_politica_memoria == PoliticaNacionalMemoria.nombre_politica_memoria)
          .options(joinedload(AvancePoliticaMemoria.politica)))
 
-    if not (is_admin() or is_viewer()):
-        or_user = (current_user.oficina_regional or '').strip()
-        if not or_user:
-            flash('Tu usuario no tiene Oficina Regional asignada. Pídele al admin que la configure.', 'danger')
-            return render_template('listar_avances_politica_nacional_memoria.html', avances_politica_memoria=[])
+    # Lógica de Permisos
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
 
-        q = q.filter(PoliticaNacionalMemoria.oficina_regional == or_user)
+    elif current_user.oficina_regional:
+        # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+        q = q.filter(PoliticaNacionalMemoria.oficina_regional == current_user.oficina_regional)
 
-        # Orden “estilo proceso”: por caso (A-Z) y por fecha (asc)
     avances = q.order_by(
         PoliticaNacionalMemoria.nombre_politica_memoria.asc(),
         AvancePoliticaMemoria.fecha_registro.asc()
     ).all()
 
-    # Numeración dentro de cada caso (1,2,3,...)
+    # Lógica de numeración (existente)
     contador_por_caso = {}
     for av in avances:
         key = av.nombre_politica_memoria
         contador_por_caso[key] = contador_por_caso.get(key, 0) + 1
         av.numero_registro = contador_por_caso[key]
 
-    return render_template('listar_avances_politica_nacional_memoria.html', avances_politica_memoria=avances)
+    # NUEVO: Usuarios para el modal de reasignar (Solo admin)
+    usuarios_todos = User.query.all() if is_admin() else []
+
+    return render_template(
+        'listar_avances_politica_nacional_memoria.html',
+        avances_politica_memoria=avances,
+        usuarios_todos=usuarios_todos
+    )
 
 # EDITAR AVANCES POLITICA Y MEMORIA
 @app.route('/editar_avances_politica_nacional_memoria/<int:id>', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor') # Agregado admin_regional
 def editar_avances_politica_nacional_memoria(id):
     avances_politica_memoria = (AvancePoliticaMemoria.query
                                .options(joinedload(AvancePoliticaMemoria.politica))
@@ -2849,30 +3182,51 @@ def editar_avances_politica_nacional_memoria(id):
 # ELIMINAR AVANCES POLITICA Y MEMORIA
 @app.route('/eliminar_avances_politica_nacional_memoria/<int:id>', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'admin_regional') # Gestor NO elimina
 def eliminar_avances_politica_nacional_memoria(id):
-    # Buscar el proceso de iniciativa por su id
-    avances_caso_emblematico = AvancePoliticaMemoria.query.filter_by(id=id).first()
+    # Buscar el avance por ID
+    avance = AvancePoliticaMemoria.query.filter_by(id=id).first()
 
-    if not avances_caso_emblematico:
-        flash('El avance de politica nacional y/o memoria no existe.', 'danger')
+    if not avance:
+        flash('El avance no existe.', 'danger')
         return redirect(url_for('listar_avances_politica_nacional_memoria'))
 
-    try:
-        # Eliminar el proceso de la base de datos
-        db.session.delete(avances_caso_emblematico)
-        db.session.commit()
-        flash('El avance de politica nacional y/o memoria ha sido eliminado correctamente.', 'success')
-    except:
-        # En caso de error, hacer rollback
-        db.session.rollback()
-        flash('Hubo un error al intentar eliminar el avance de politica nacional y/o memoria.', 'danger')
+    # VALIDACIÓN ADMIN REGIONAL
+    if not is_admin(): # Es admin_regional
+        # Verificar la oficina de la política padre
+        poli = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=avance.nombre_politica_memoria).first()
+        if poli and poli.oficina_regional != current_user.oficina_regional:
+            flash('No tienes permiso para eliminar avances de otra región.', 'danger')
+            return redirect(url_for('listar_avances_politica_nacional_memoria'))
 
-    # Redirigir a la lista de procesos de iniciativas
+    try:
+        db.session.delete(avance)
+        db.session.commit()
+        flash('El avance se ha eliminado correctamente.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar el avance: {str(e)}', 'danger')
+
     return redirect(url_for('listar_avances_politica_nacional_memoria'))
 
 
+@app.route('/reasignar_responsable_avance_politica', methods=['POST'])
+@login_required
+@roles_required('admin')
+def reasignar_responsable_avance_politica():
+    avance_id = request.form.get('avance_id_reasignar')
+    nuevo_responsable = request.form.get('nuevo_responsable')
 
+    avance = AvancePoliticaMemoria.query.filter_by(id=avance_id).first()
+
+    if avance and nuevo_responsable:
+        avance.responsable_registro = nuevo_responsable
+        db.session.commit()
+        flash(f'Responsable del avance actualizado a {nuevo_responsable}.', 'success')
+    else:
+        flash('Error al reasignar.', 'danger')
+
+    return redirect(url_for('listar_avances_politica_nacional_memoria'))
 
 
 
@@ -2887,7 +3241,7 @@ def eliminar_avances_politica_nacional_memoria(id):
 
 @app.route('/get_objetivo_especifico/<nombre_iniciativa>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def get_objetivo_especifico(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
     if not iniciativa:
@@ -2911,7 +3265,7 @@ def get_objetivo_especifico(nombre_iniciativa):
 ########################################################################################################################################
 @app.route('/get_componentes/<nombre_iniciativa>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def get_componentes(nombre_iniciativa):
     iniciativa = Iniciativa.query.filter_by(nombre_iniciativa=nombre_iniciativa).first()
     if iniciativa:
@@ -2931,7 +3285,7 @@ def get_componentes(nombre_iniciativa):
 ########################################################################################################################################
 @app.route('/get_numero_formulario/<nombre_caso>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def get_numero_formulario(nombre_caso):
     # Buscar el caso emblemático en la base de datos
     caso = CasoEmblematico.query.filter_by(nombre_caso=nombre_caso).first()
@@ -2956,7 +3310,7 @@ def get_numero_formulario(nombre_caso):
 ########################################################################################################################################
 @app.route('/get_numero_formulario_politica/<nombre_politica_memoria>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor')
+@roles_required('admin', 'admin_regional', 'gestor')
 def get_numero_formulario_politica(nombre_politica_memoria):
     politica = PoliticaNacionalMemoria.query.filter_by(nombre_politica_memoria=nombre_politica_memoria).first()
 
@@ -3045,7 +3399,7 @@ FASES_MAP = {
 
 @app.route('/iniciativa/<path:nombre_iniciativa>/pdf', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def iniciativa_pdf(nombre_iniciativa):
     # búsqueda case-insensitive, por si el nombre tiene mayúsculas o espacios
     iniciativa = (Iniciativa.query
@@ -3109,7 +3463,7 @@ def capacidad_incidencia_pdf(cap_id):
 
 @app.route('/registro/<dni>/pdf', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def registro_pdf(dni):
     registro = Registro.query.filter_by(dni=dni).first()
     if not registro:
@@ -3134,7 +3488,7 @@ def registro_pdf(dni):
 
 @app.route('/proceso_iniciativa_pdf/<int:id>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def proceso_iniciativa_pdf(id):
     # 1) Traer proceso y su iniciativa canónica
     proceso = ProcesoIniciativa.query.get_or_404(id)
@@ -3223,7 +3577,7 @@ def proceso_iniciativa_pdf(id):
 
 @app.route('/avance_capacidad_pdf/<int:avance_id>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def avance_capacidad_pdf(avance_id):
     # Traer avance + relaciones necesarias
     q = (
@@ -3314,7 +3668,7 @@ def avance_capacidad_pdf(avance_id):
 
 @app.route('/caso_emblematico_pdf/<string:nombre_caso>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def caso_emblematico_pdf(nombre_caso):
     # Búsqueda (case-insensitive) + restricción por OR igual que en listar
     q = CasoEmblematico.query.filter(
@@ -3357,7 +3711,7 @@ def caso_emblematico_pdf(nombre_caso):
 
 @app.route('/avance_caso_emblematico_pdf/<int:avance_id>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def avance_caso_emblematico_pdf(avance_id):
     q = (AvanceCasoEmblematico.query
          .join(CasoEmblematico, AvanceCasoEmblematico.nombre_caso == CasoEmblematico.nombre_caso)
@@ -3411,7 +3765,7 @@ def avance_caso_emblematico_pdf(avance_id):
 
 @app.route('/politica_nacional_memoria_pdf/<nombre_politica_memoria>', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def politica_nacional_memoria_pdf(nombre_politica_memoria):
     # Normaliza a lower() para coincidir con cómo guardas el PK
     name_l = (nombre_politica_memoria or '').strip().lower()
@@ -3519,7 +3873,7 @@ def _numero_monitoreo_para(avance):
 
 @app.route('/avance_politica_memoria_pdf/<int:id>')
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def avance_politica_memoria_pdf(id):
     avance = (AvancePoliticaMemoria.query
               .options(joinedload(AvancePoliticaMemoria.politica))
@@ -3612,7 +3966,7 @@ def upsert_participacion(iniciativa_nombre, registro, estado, cambiado_por=None)
 
 @app.route('/listar_participaciones_iniciativas', methods=['GET'])
 @login_required
-@roles_required('admin', 'gestor', 'viewer')
+@roles_required('admin', 'admin_regional', 'gestor')
 def listar_participaciones_iniciativas():
     # Filtros opcionales por querystring
     filtro_iniciativa = (request.args.get('iniciativa') or '').strip()
@@ -3666,6 +4020,92 @@ def listar_participaciones_iniciativas():
         iniciativas_todas=iniciativas_todas,
         filtro_iniciativa=filtro_iniciativa,
         filtro_estado=filtro_estado
+    )
+
+
+@app.route('/descargar_excel_registros')
+@login_required
+@roles_required('admin', 'admin_regional', 'gestor', 'viewer')
+def descargar_excel_registros():
+    # 1. Reutilizamos la misma lógica de filtrado que en 'listar_registros'
+    if is_admin() or is_viewer():
+        registros_q = Registro.query
+    else:
+        # Gestor solo descarga sus registros
+        registros_q = Registro.query.filter(
+            Registro.responsable_registro == current_user.username
+        )
+
+    registros = registros_q.order_by(Registro.fecha_registro.desc()).all()
+
+    # 2. Crear el libro de Excel y la hoja
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Registros Iniciales"
+
+    # 3. Definir Cabeceras
+    headers = [
+        "DNI", "Nombre", "Edad", "Sexo", "Lugar Nacimiento",
+        "Departamento", "Provincia", "Distrito", "Calle",
+        "Comunidad", "Estado", "Responsable", "Fecha Registro"
+    ]
+    ws.append(headers)
+
+    # 4. Dar estilo a la cabecera (Negrita, fondo verde oscuro como tu tabla HTML, texto blanco)
+    header_fill = PatternFill(start_color="18834d", end_color="18834d", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    # 5. Llenar los datos
+    for reg in registros:
+        # Formatear fecha a string para evitar conflictos de zona horaria en Excel
+        fecha_str = reg.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if reg.fecha_registro else ""
+
+        row = [
+            reg.dni,
+            reg.nombre,
+            reg.edad,
+            reg.sexo,
+            reg.lugar_nacimiento,
+            reg.departamento,
+            reg.provincia,
+            reg.distrito,
+            reg.calle,
+            reg.comunidad,
+            reg.estado,
+            reg.responsable_registro,
+            fecha_str
+        ]
+        ws.append(row)
+
+    # 6. Ajustar ancho de columnas automáticamente (opcional, visual)
+    from openpyxl.utils import get_column_letter
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter  # Get the column name
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column].width = adjusted_width
+
+    # 7. Guardar en memoria y enviar
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="Reporte_Registros_Iniciales.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 if __name__ == '__main__':
