@@ -583,6 +583,10 @@ def listar_registros():
         if filtro_oficina:
             q = q.filter(User.oficina_regional == filtro_oficina)
 
+    elif is_gestor():
+        # GESTOR: Solo ve lo que él mismo registró
+        q = q.filter(Registro.responsable_registro == current_user.username)
+
     elif current_user.oficina_regional:
         # Admin Regional, Gestor y Viewer Regional solo ven SU oficina
         q = q.filter(User.oficina_regional == current_user.oficina_regional)
@@ -1005,7 +1009,10 @@ def listar_iniciativas():
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
         pass
 
-        # 2. Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
+    elif is_gestor():
+        # GESTOR: Solo ve sus iniciativas
+        q = q.filter(Iniciativa.responsable_registro == current_user.username)
+
     elif current_user.oficina_regional:
         q = q.filter(Iniciativa.oficina_regional == current_user.oficina_regional)
 
@@ -1449,6 +1456,10 @@ def listar_proceso_iniciativa():
     # Lógica de permisos
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
         pass
+
+    elif is_gestor():
+        # GESTOR: Solo ve sus procesos
+        procesos_q = procesos_q.filter(ProcesoIniciativa.responsable_registro == current_user.username)
 
     elif current_user.oficina_regional:
         # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
@@ -1901,6 +1912,10 @@ def listar_capacidades_incidencia():
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
         pass
 
+    elif is_gestor():
+        # GESTOR: Solo ve sus capacidades registradas
+        capacidades_q = capacidades_q.filter(CapacidadIncidencia.responsable_registro == current_user.username)
+
         # 2. Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
     elif current_user.oficina_regional:
         or_user = current_user.oficina_regional
@@ -2228,6 +2243,10 @@ def listar_avances_capacidades_incidencia():
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
         pass
 
+    elif is_gestor():
+        # GESTOR: Solo ve sus avances
+        q = q.filter(AvanceCapacidadIncidencia.responsable_registro == current_user.username)
+
     elif current_user.oficina_regional:
         # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
         q = q.filter(Iniciativa.oficina_regional == current_user.oficina_regional)
@@ -2460,9 +2479,13 @@ def listar_casos_emblematicos():
     q = CasoEmblematico.query
 
     # Lógica de permisos
-    # 1. Admin y Viewer Global ven TODO
+    # 1. Admin y Viewer Global ven
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
         pass
+
+    elif is_gestor():
+        # GESTOR: Solo ve sus casos
+        q = q.filter(CasoEmblematico.responsable_registro == current_user.username)
 
         # 2. Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
     elif current_user.oficina_regional:
@@ -2671,6 +2694,10 @@ def listar_avances_caso_emblematico():
     # Lógica de permisos
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
         pass
+
+    elif is_gestor():
+        # GESTOR: Solo ve sus avances
+        q = q.filter(AvanceCasoEmblematico.responsable_registro == current_user.username)
 
     elif current_user.oficina_regional:
         # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
@@ -2900,6 +2927,10 @@ def listar_politica_nacional_memoria():
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
         pass
 
+    elif is_gestor():
+        # GESTOR: Solo ve sus políticas
+        q = q.filter(PoliticaNacionalMemoria.responsable_registro == current_user.username)
+
     elif current_user.oficina_regional:
         # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
         q = q.filter(PoliticaNacionalMemoria.oficina_regional == current_user.oficina_regional)
@@ -3111,6 +3142,10 @@ def listar_avances_politica_nacional_memoria():
     # Lógica de Permisos
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
         pass
+
+    elif is_gestor():
+        # GESTOR: Solo ve sus avances
+        q = q.filter(AvancePoliticaMemoria.responsable_registro == current_user.username)
 
     elif current_user.oficina_regional:
         # Admin Regional, Gestor y Viewer Regional ven SOLO su oficina
@@ -4049,13 +4084,18 @@ def listar_participaciones_iniciativas():
 @roles_required('admin', 'admin_regional', 'gestor', 'viewer')
 def descargar_excel_registros():
     # 1. Reutilizamos la misma lógica de filtrado que en 'listar_registros'
-    if is_admin() or is_viewer():
-        registros_q = Registro.query
-    else:
-        # Gestor solo descarga sus registros
-        registros_q = Registro.query.filter(
-            Registro.responsable_registro == current_user.username
-        )
+    registros_q = Registro.query.outerjoin(User, User.username == Registro.responsable_registro)
+
+    if is_admin() or (is_viewer() and not current_user.oficina_regional):
+        pass
+
+    elif is_gestor():
+        # GESTOR: Solo descarga sus registros
+        registros_q = registros_q.filter(Registro.responsable_registro == current_user.username)
+
+    elif current_user.oficina_regional:
+        # Admin Reg / Viewer Reg descargan su oficina
+        registros_q = registros_q.filter(User.oficina_regional == current_user.oficina_regional)
 
     registros = registros_q.order_by(Registro.fecha_registro.desc()).all()
 
