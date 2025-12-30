@@ -549,18 +549,26 @@ def eliminar_registro(dni):
             flash('No tienes permiso para eliminar registros de otra oficina.', 'danger')
             return redirect(url_for('listar_registros'))
 
+    # --- LÓGICA DE ELIMINACIÓN ---
+
     if is_admin():
-        # Admin General: Eliminación definitiva (o lo que decidas)
-        # db.session.delete(registro) # Descomentar para delete físico
-        registro.estado = 'INA'  # O delete lógico
-        flash("Registro eliminado/inactivado por Administrador.", "success")
+        # ADMINISTRADOR GENERAL: Intenta Eliminación Definitiva (Hard Delete)
+        try:
+            db.session.delete(registro)
+            db.session.commit()
+            flash("El participante ha sido ELIMINADO DEFINITIVAMENTE del sistema.", "success")
+        except Exception as e:
+            db.session.rollback()  # Revertir si hay error (por claves foráneas)
+            flash(
+                "No se pudo eliminar: El participante está vinculado a Iniciativas o Capacidades. Elimínelo de esos módulos primero.",
+                "danger")
 
     elif is_admin_regional():
-        # Admin Regional: Solo inactiva
+        # ADMINISTRADOR REGIONAL: Solo inactiva (Soft Delete)
         registro.estado = 'INA'
+        db.session.commit()
         flash("Registro marcado como inactivo por Administrador Regional.", "warning")
 
-    db.session.commit()
     return redirect(url_for('listar_registros'))
 
 # LISTAR REGISTROS
@@ -570,25 +578,33 @@ def eliminar_registro(dni):
 def listar_registros():
     # Obtener el filtro del dropdown (si existe)
     filtro_oficina = request.args.get('oficina', '').strip()
+    search_query = request.args.get('q', '').strip()
 
     # Base de la consulta: Traemos el Registro Y la Oficina del usuario responsable
     # Usamos outerjoin por si el usuario responsable fue borrado o es null
     q = db.session.query(Registro, User.oficina_regional) \
         .outerjoin(User, User.username == Registro.responsable_registro)
 
-    # Lógica de permisos y filtros
+    # 1. Aplicar filtro de búsqueda por DNI o Nombre (Si existe)
+    if search_query:
+        q = q.filter(
+            or_(
+                Registro.dni.ilike(f"%{search_query}%"),
+                Registro.nombre.ilike(f"%{search_query}%")
+            )
+        )
+
+    # 2. Lógica de permisos y filtros de oficina (Tu lógica existente)
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
-        # Admin y Viewer Global ven todo
-        # Si seleccionaron una oficina en el filtro, aplicamos el filtro
         if filtro_oficina:
             q = q.filter(User.oficina_regional == filtro_oficina)
 
+
     elif is_gestor():
-        # GESTOR: Solo ve lo que él mismo registró
         q = q.filter(Registro.responsable_registro == current_user.username)
 
+
     elif current_user.oficina_regional:
-        # Admin Regional, Gestor y Viewer Regional solo ven SU oficina
         q = q.filter(User.oficina_regional == current_user.oficina_regional)
 
     # Ordenar y ejecutar
@@ -604,10 +620,11 @@ def listar_registros():
     ]
 
     return render_template('listar_registros.html',
-                           registros=resultados,  # OJO: Ahora esto es una lista de tuplas (registro, oficina)
+                           registros=resultados,
                            usuarios_todos=usuarios_todos,
                            oficinas_filtro=oficinas_filtro,
-                           filtro_actual=filtro_oficina)
+                           filtro_actual=filtro_oficina,
+                           search_query=search_query)
 ################################################################################################################################
 ################################################################################################################################
 #EDITAR REGISTROS INICIALES
@@ -1902,10 +1919,22 @@ def form_capacidades_incidencia():
 @login_required
 @roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_capacidades_incidencia():
+    search_query = request.args.get('q', '').strip()
     # Base de la consulta
     capacidades_q = (CapacidadIncidencia.query
                      .join(Iniciativa, func.lower(Iniciativa.nombre_iniciativa) == func.lower(
-        CapacidadIncidencia.nombre_iniciativa)))
+        CapacidadIncidencia.nombre_iniciativa))
+                     .join(Registro, CapacidadIncidencia.registro_dni == Registro.dni))  # <--- NUEVO JOIN
+
+    # 2. Filtro de búsqueda
+    if search_query:
+        capacidades_q = capacidades_q.filter(
+            or_(
+                CapacidadIncidencia.registro_dni.ilike(f"%{search_query}%"),  # DNI
+                CapacidadIncidencia.nombre_iniciativa.ilike(f"%{search_query}%"),  # Iniciativa
+                Registro.nombre.ilike(f"%{search_query}%")  # <--- NUEVO: Nombre Participante
+            )
+        )
 
     # Lógica de permisos
     # 1. Admin y Viewer Global ven TODO
@@ -1931,7 +1960,8 @@ def listar_capacidades_incidencia():
 
     return render_template('capacidades_incidencia/listar_capacidades_incidencia.html',
                            capacidades=capacidades,
-                           usuarios_todos=usuarios_todos)
+                           usuarios_todos=usuarios_todos,
+                           search_query=search_query)
 
 
 @app.route('/editar_capacidades_incidencia/<int:id>', methods=['GET', 'POST'])
@@ -2228,16 +2258,27 @@ def get_capacidad_avances(participant_dni):
 @login_required
 @roles_required('admin', 'admin_regional', 'gestor', 'viewer')  # Agregado admin_regional
 def listar_avances_capacidades_incidencia():
+    search_query = request.args.get('q', '').strip()
     # Obtener todos los avances ordenados por capacidad y fecha de registro
     q = (AvanceCapacidadIncidencia.query
     .join(CapacidadIncidencia, AvanceCapacidadIncidencia.capacidad_id == CapacidadIncidencia.id)
     .join(Iniciativa, CapacidadIncidencia.nombre_iniciativa == Iniciativa.nombre_iniciativa)
+    .join(Registro, CapacidadIncidencia.registro_dni == Registro.dni)
     .options(
         joinedload(AvanceCapacidadIncidencia.capacidad_incidencia)
         .joinedload(CapacidadIncidencia.iniciativa),
         joinedload(AvanceCapacidadIncidencia.capacidad_incidencia)
         .joinedload(CapacidadIncidencia.registro)
     ))
+
+    if search_query:
+        q = q.filter(
+            or_(
+                CapacidadIncidencia.registro_dni.ilike(f"%{search_query}%"),  # DNI
+                CapacidadIncidencia.nombre_iniciativa.ilike(f"%{search_query}%"),  # Iniciativa
+                Registro.nombre.ilike(f"%{search_query}%")  # <--- NUEVO: Nombre Participante
+            )
+        )
 
     # Lógica de Permisos
     if is_admin() or (is_viewer() and not current_user.oficina_regional):
@@ -2276,7 +2317,8 @@ def listar_avances_capacidades_incidencia():
     return render_template(
         'capacidades_incidencia/listar_avances_capacidades_incidencia.html',
         avances=avances_con_numero,
-        usuarios_todos=usuarios_todos
+        usuarios_todos=usuarios_todos,
+        search_query=search_query
     )
 
 
