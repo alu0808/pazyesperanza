@@ -75,13 +75,30 @@
     </div>
 
     <!-- Botón -->
-    {% if current_user.role in ['admin','admin_regional','gestor'] %}
-      <div class="d-flex justify-content-end">
-        <a href="/form_capacidades_incidencia" class="btn btn-success label-principal mb-3">
-          Nueva Capacidad de Incidencia
-        </a>
-      </div>
-    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+
+        <form action="{{ url_for('listar_capacidades_incidencia') }}" method="GET" class="form-inline">
+            <div class="input-group input-group-sm">
+                <input type="text" name="q" class="form-control" placeholder="DNI, Nombre, Iniciativa" value="{{ search_query }}">
+                <div class="input-group-append">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            {% if search_query %}
+                <a href="{{ url_for('listar_capacidades_incidencia') }}" class="btn btn-secondary btn-sm ml-2" title="Limpiar búsqueda">
+                    <i class="fas fa-times"></i>
+                </a>
+            {% endif %}
+        </form>
+
+        {% if current_user.role in ['admin','admin_regional','gestor'] %}
+            <a href="/form_capacidades_incidencia" class="btn btn-success label-principal">
+                Nueva Capacidad de Incidencia
+            </a>
+        {% endif %}
+    </div>
 
     <!-- Tabla -->
     <div class="table-responsive mb-5">
